@@ -14,5 +14,5 @@ export class Theme {
       document.querySelector('meta[name=theme-color]')?.setAttribute('content', n === 'sky' ? '#061F9E' : '#3E2723');
     });
   }
-  toggle() { this.name.update((n) => (n === 'earth' ? 'sky' : 'earth')); }
+  set(name: ThemeName) { this.name.set(name); }
 }

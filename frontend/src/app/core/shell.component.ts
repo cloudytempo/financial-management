@@ -1,7 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Auth } from './auth.service';
-import { Theme } from './theme.service';
 import { MODULES } from './modules.config';
 import { IconComponent } from '../shared/icon.component';
 import { ModalComponent } from '../shared/modal.component';
@@ -18,15 +17,13 @@ import { ModalComponent } from '../shared/modal.component';
       <div class="usercard">
         <span class="ava">{{ initial() }}</span>
         <span class="who"><b>{{ auth.user()?.name }}</b><span>{{ auth.user()?.email }}</span></span>
-        <button class="icon-btn" (click)="theme.toggle()" aria-label="Switch theme" title="Switch theme"><app-icon name="palette" /></button>
         <button class="icon-btn" (click)="auth.logout()" aria-label="Sign out" title="Sign out"><app-icon name="logout" /></button>
       </div>
     </aside>
     <div style="min-width:0">
       <header class="topbar">
         <div class="brand"><span class="logo"><app-icon name="wallet" [size]="18" /></span>Home Ledger</div>
-        <div><button class="icon-btn" (click)="theme.toggle()" aria-label="Switch theme"><app-icon name="palette" /></button>
-          <button class="icon-btn" (click)="auth.logout()" aria-label="Sign out"><app-icon name="logout" /></button></div>
+        <div><button class="icon-btn" (click)="auth.logout()" aria-label="Sign out"><app-icon name="logout" /></button></div>
       </header>
       <main><router-outlet /></main>
     </div>
@@ -38,13 +35,12 @@ import { ModalComponent } from '../shared/modal.component';
   <app-modal [open]="moreOpen" title="More" (closed)="moreOpen = false">
     <div class="morelist">
       @for (n of more; track n.path) { <a [routerLink]="'/' + n.path" (click)="moreOpen = false"><span class="ic-badge"><app-icon [name]="n.icon" [size]="18" /></span>{{ n.label }}</a> }
-      <button (click)="theme.toggle()"><span class="ic-badge"><app-icon name="palette" [size]="18" /></span>Theme: {{ theme.name() === 'sky' ? 'Summer Sky' : 'Earth' }} (tap to switch)</button>
       <button (click)="moreOpen = false; auth.logout()"><span class="ic-badge"><app-icon name="logout" [size]="18" /></span>Sign out</button>
     </div>
   </app-modal>`,
 })
 export class ShellComponent {
-  auth = inject(Auth); theme = inject(Theme); moreOpen = false;
+  auth = inject(Auth); moreOpen = false;
   nav = [{ path: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', primary: true }, ...MODULES];
   primary = this.nav.filter((n) => n.primary);
   more = this.nav.filter((n) => !n.primary);

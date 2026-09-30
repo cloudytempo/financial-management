@@ -4,6 +4,7 @@ export interface AppModule { path: string; label: string; icon: string; primary?
 
 // Add future modules here: they appear in the sidebar/tab bar ("primary" ones get a tab; the rest go under More) and get a route automatically.
 export const MODULES: AppModule[] = [
+  { path: 'settings', label: 'Settings', icon: 'settings', load: () => import('../features/settings/settings.component').then((m) => m.SettingsComponent) },
   { path: 'expenses', label: 'Expenses', icon: 'wallet', primary: true, load: () => import('../features/expenses/expenses.component').then((m) => m.ExpensesComponent) },
   { path: 'income', label: 'Income', icon: 'banknote', load: () => import('../features/income/income.component').then((m) => m.IncomeComponent) },
   { path: 'budgets', label: 'Budget', icon: 'pie', load: () => import('../features/budgets/budgets.component').then((m) => m.BudgetsComponent) },

@@ -2,14 +2,13 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Auth } from '../../core/auth.service';
-import { Theme } from '../../core/theme.service';
 import { IconComponent } from '../../shared/icon.component';
 import { errMsg } from '../../shared/util';
 
 @Component({
   selector: 'app-auth', standalone: true, imports: [FormsModule, IconComponent],
   template: `
-  <div class="authwrap"><button class="icon-btn theme-fab" (click)="theme.toggle()" aria-label="Switch theme"><app-icon name="palette" /></button><div class="auth card">
+  <div class="authwrap"><div class="auth card">
     <div class="logo"><app-icon name="wallet" [size]="24" /></div>
     <h1>{{ mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Reset your password' : 'Welcome back' }}</h1>
     <p class="sub">{{ mode === 'signin' ? 'Sign in to Home Ledger' : mode === 'reset' ? 'Enter your username (email) and a new password' : 'Start tracking your money' }}</p>
@@ -29,7 +28,7 @@ import { errMsg } from '../../shared/util';
   </div></div>`,
 })
 export class AuthComponent {
-  theme = inject(Theme); private auth = inject(Auth); private router = inject(Router);
+  private auth = inject(Auth); private router = inject(Router);
   mode: 'signin' | 'signup' | 'reset' = 'signin';
   name = ''; email = ''; password = ''; confirm = ''; error = ''; info = '';
   go(e: Event, m: 'signin' | 'signup' | 'reset') { e.preventDefault(); this.mode = m; this.error = ''; this.info = ''; this.password = ''; this.confirm = ''; }

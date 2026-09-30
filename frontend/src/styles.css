@@ -23,6 +23,7 @@ a{color:var(--c2)}
 .ava{width:36px;height:36px;border-radius:50%;background:var(--g2);color:var(--c1);display:grid;place-items:center;font-weight:700;flex:none}
 .side .icon-btn{color:var(--side-text);background:transparent}.side .icon-btn:hover{background:rgba(255,255,255,.12)}
 main{padding:1.5rem 1.75rem 2rem;max-width:1300px;width:100%;margin:0 auto;min-width:0}
+main:has(.dashboard-page){max-width:none}
 .topbar,.tabbar{display:none}
 
 /* layout */
@@ -31,6 +32,31 @@ main{padding:1.5rem 1.75rem 2rem;max-width:1300px;width:100%;margin:0 auto;min-w
 .bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1rem;grid-auto-flow:dense;margin-bottom:1rem}
 .s3{grid-column:span 3}.s4{grid-column:span 4}.s5{grid-column:span 5}.s6{grid-column:span 6}.s7{grid-column:span 7}.s8{grid-column:span 8}.s12{grid-column:span 12}
 .stack{display:flex;flex-direction:column;gap:1rem}
+.dashboard-page{height:calc(100dvh - 3.5rem);min-width:0;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);gap:.65rem;overflow:hidden}
+.dashboard-page .page-head{margin:0}
+.dashboard-kpis{gap:.65rem;margin:0}
+.dashboard-kpis .s3{grid-column:span 3}
+.dashboard-carousel{min-width:0;min-height:0;display:flex;flex-direction:column;gap:.45rem}
+.dashboard-carousel-head{display:flex;align-items:center;justify-content:space-between;min-height:36px}
+.dashboard-track{display:flex;gap:.75rem;min-width:0;min-height:0;flex:1;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;touch-action:pan-x}
+.dashboard-track::-webkit-scrollbar{display:none}
+.dashboard-panel{flex:0 0 calc(50% - .375rem);min-width:0;min-height:0;height:100%;scroll-snap-align:start;scroll-snap-stop:always}
+.dashboard-panel>.card,.dashboard-panel app-prayer-widget{height:100%;min-height:0}
+.dashboard-panel>.card{display:flex;flex-direction:column;overflow:hidden}
+.dashboard-panel .card-h{flex:none}
+.dashboard-panel .chart-box{height:min(26vh,210px);min-height:120px;flex:none}
+.dashboard-panel .list{min-height:0;overflow:hidden}
+.dashboard-panel app-prayer-widget{display:block}
+.dashboard-panel app-prayer-widget .card{height:100%;display:flex;flex-direction:column}
+.calendar-shortcut{display:flex;align-items:flex-start;justify-content:center;flex-direction:column;gap:.6rem;color:var(--c2)}
+.calendar-shortcut h2{color:var(--ink)}
+.settings-panel{max-width:680px}
+.theme-options{display:flex;gap:.75rem;margin-top:1rem}
+.theme-option{display:flex;align-items:center;gap:.75rem;flex:1;text-align:left;padding:.85rem;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
+.theme-option[aria-pressed="true"]{border-color:var(--c2);box-shadow:0 0 0 2px var(--g2)}
+.theme-swatch{width:34px;height:34px;border-radius:50%;flex:none;border:3px solid var(--line)}
+.theme-swatch.earth{background:linear-gradient(135deg,#3E2723 50%,#A5D6A7 50%)}
+.theme-swatch.sky{background:linear-gradient(135deg,#061F9E 50%,#FCF300 50%)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:1rem 1.1rem;box-shadow:var(--shadow);min-width:0}
 .card-h{display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem;justify-content:space-between}
 .card-h h2{display:flex;align-items:center;gap:.5rem}
@@ -139,11 +165,21 @@ a.btn{text-decoration:none}
   .tabbar .ic{padding:.22rem 1rem;border-radius:99px;display:grid;place-items:center}
   .tabbar a.active{color:var(--c1);font-weight:700}.tabbar a.active .ic{background:var(--g2)}
   main{padding:1rem 1rem calc(5.6rem + env(safe-area-inset-bottom))}
+  .dashboard-page{height:calc(100dvh - 10rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+  .dashboard-kpis{display:flex;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory}
+  .dashboard-kpis::-webkit-scrollbar{display:none}
+  .dashboard-kpis .s3{flex:0 0 calc(50% - .325rem);scroll-snap-align:start}
+  .dashboard-panel{flex-basis:100%}
+  .dashboard-panel .chart-box{height:min(25vh,190px)}
 }
 @media(max-width:600px){
   h1{font-size:1.3rem}.bento,.cards{gap:.75rem}.card{padding:.85rem .9rem;border-radius:16px}
   .kpi{padding:.75rem;gap:.6rem}.kpi .chip-ic{width:36px;height:36px}.kpi .val{font-size:1.05rem}
   .chart-box{height:220px}.hide-sm{display:none}
+  .dashboard-page{gap:.5rem}
+  .dashboard-carousel-head{min-height:32px}
+  .dashboard-panel .chart-box{height:min(23vh,160px);min-height:110px}
+  .theme-options{flex-direction:column}
   .backdrop{align-items:flex-end;padding:0}.sheet{border-radius:22px 22px 0 0;width:100%;max-height:94vh;padding-bottom:calc(1.25rem + env(safe-area-inset-bottom))}
   input,select{font-size:16px}
 }
