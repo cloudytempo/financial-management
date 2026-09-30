@@ -44,3 +44,21 @@ Frontend: create `features/<name>/<name>.component.ts`, add one entry to `core/m
 - Prayer times use the free Aladhan API (JAKIM method) and browser geolocation, which needs `localhost` or HTTPS;
   otherwise it falls back to Kuala Lumpur.
 - Behind HTTPS/public access, put a reverse proxy in front and keep a strong JWT_SECRET.
+
+## Deploy on Render + Supabase
+1. Supabase: create a project (region Singapore), open SQL Editor and run `db/supabase.sql`.
+2. Supabase: click Connect, choose **Session pooler**, copy the URI (port 5432, host `*.pooler.supabase.com`) and put your DB password in it.
+   Render is IPv4-only, so do not use the direct `db.<ref>.supabase.co` string.
+3. Push this folder to GitHub. In Render choose New, Blueprint, pick the repo (it reads `render.yaml`), and set `DATABASE_URL` when asked.
+4. Open the Render URL, sign up, then import `data/belanjawanku.csv`.
+
+## Modules
+Expenses, Income, Budget, Bills & subscriptions, Installments, Goals, Calendar, Contacts.
+New tables (income, budgets, bills, bill_payments, contacts, events.type/time) are created automatically when the backend starts,
+so existing databases upgrade in place (also on Supabase, where row-level security is switched on for them too).
+How they work together: Budget compares limits with Expenses; Bills can add an Expense when marked paid (optional, per bill);
+Income vs Expenses gives "left after spending" on the dashboard; bill and installment due dates appear on the Calendar and dashboard.
+
+## Themes
+Palette icon (sidebar, top bar, or More on phones) switches between Earth (browns and greens) and Summer Sky (blues and yellows).
+The choice is remembered per device. Theme variables live at the top of `frontend/src/styles.css`.

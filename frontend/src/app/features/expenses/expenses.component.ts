@@ -40,23 +40,18 @@ import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
     <div class="card s8"><div class="card-h"><h2><app-icon name="trend" [size]="18" />Monthly: {{ year }} vs {{ year - 1 }}</h2></div>@if (monthlyCfg) { <app-chart [config]="monthlyCfg" /> }</div>
     <div class="card s4"><div class="card-h"><h2><app-icon name="calendar" [size]="18" />Annual totals</h2></div>@if (annualCfg) { <app-chart [config]="annualCfg" /> }</div>
     <div class="card s8"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ year }} by type, per month</h2></div>@if (typeCfg) { <app-chart [config]="typeCfg" /> }</div>
-    <div class="card s4"><div class="card-h"><h2><app-icon name="wallet" [size]="18" />{{ year }} share by type</h2></div>
-      @if (shareHasData) { <app-chart [config]="shareCfg" /> } @else { <div class="empty">No expenses recorded for {{ year }}.</div> }</div>
+    <div class="card s4"><div class="card-h"><h2><app-icon name="wallet" [size]="18" />{{ year }} share by type</h2></div>@if (shareCfg) { <app-chart [config]="shareCfg" /> }</div>
   </div>
 
   <div class="card">
-    <div class="card-h records-head"><h2>Records <span class="pill">{{ shown.length }}</span></h2>
-      <div class="row expense-filters">
-        <select [(ngModel)]="monthFilter" aria-label="Filter by month">
-          <option [ngValue]="0">All months</option>@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select>
-        <select [(ngModel)]="typeFilter" aria-label="Filter by type">
-          <option value="">All types</option>@for (t of typeOptions; track t) { <option [value]="t">{{ t }}</option> }</select>
-      </div></div>
+    <div class="card-h"><h2>Records <span class="pill">{{ shown.length }}</span></h2>
+      <div style="width:150px"><select [ngModel]="monthFilter" (ngModelChange)="monthFilter = +$event" aria-label="Filter by month">
+        <option [ngValue]="0">All months</option>@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></div></div>
     @if (!shown.length) { <div class="empty">No expenses here yet. Use “Add expense” or import your CSV.</div> }
     <ul class="list">@for (r of shown; track r.id) {
       <li class="item" [class.flag]="flagged.has(r.id)">
         <span class="ic-badge" [class.warn]="flagged.has(r.id)"><app-icon [name]="icon(r.type)" [size]="18" /></span>
-        <div class="grow"><div class="t">{{ r.type }} <span class="pill">{{ months[r.month - 1] }} {{ r.year }}</span> @if (flagged.has(r.id)) { <span class="badge">Unusual</span> }</div>
+        <div class="grow"><div class="t">{{ r.type }} <span class="pill">{{ months[r.month - 1] }}</span> @if (flagged.has(r.id)) { <span class="badge">Unusual</span> }</div>
           @if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
         <div class="amt">{{ fmt(r.amount) }}</div>
         <button class="icon-btn" (click)="edit(r)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
@@ -96,14 +91,14 @@ import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
 export class ExpensesComponent implements OnInit {
   private api = inject(Api);
   fmt = fmt; months = MONTHS; icon = typeIcon;
-  now = new Date(); year = this.now.getFullYear(); years: number[] = [this.year]; monthFilter = this.now.getMonth() + 1; typeFilter = '';
+  now = new Date(); year = this.now.getFullYear(); years: number[] = [this.year]; monthFilter = 0;
   rows: any[] = []; summary: any[] = []; anomalies: any[] = []; flagged = new Set<number>();
   form: any = this.blank(); error = ''; showForm = false; showImport = false;
   parsed: { records: any[]; blank: number } | null = null; skipFuture = true; importMsg = '';
-  monthlyCfg: any; typeCfg: any; annualCfg: any; shareCfg: any; shareHasData = false;
+  monthlyCfg: any; typeCfg: any; annualCfg: any; shareCfg: any;
   kTotal = 0; kAvg = 0; kTop = ''; kTopAmt = 0;
 
-  get shown() { return this.rows.filter((r) => r.year === this.year && (!this.monthFilter || r.month === this.monthFilter) && (!this.typeFilter || r.type === this.typeFilter)); }
+  get shown() { return this.rows.filter((r) => r.year === this.year && (!this.monthFilter || r.month === this.monthFilter)); }
   get typeOptions() { return [...new Set([...this.rows.map((r) => r.type), 'Electrical', 'Water', 'Internet', 'Misc', 'Savings'])].sort(); }
   get toImport() {
     if (!this.parsed) return [];
@@ -135,9 +130,7 @@ export class ExpensesComponent implements OnInit {
       label: t, backgroundColor: COLORS[i % COLORS.length],
       data: MONTHS.map((_, m) => sum((s) => s.year === y && s.month === m + 1 && s.type === t)) })) },
       options: { scales: { x: { stacked: true }, y: { stacked: true } } } };
-    const share = types.map((type, i) => ({ type, total: totals[i] })).filter((item) => Number.isFinite(item.total) && item.total > 0);
-    this.shareHasData = share.length > 0;
-    this.shareCfg = { type: 'pie', data: { labels: share.map((item) => item.type), datasets: [{ data: share.map((item) => item.total), backgroundColor: share.map((_, i) => COLORS[i % COLORS.length]) }] } };
+    this.shareCfg = { type: 'doughnut', data: { labels: types, datasets: [{ data: totals, backgroundColor: types.map((_, i) => COLORS[i % COLORS.length]) }] } };
     this.annualCfg = { type: 'bar', data: { labels: ys.map(String), datasets: [
       { label: 'Total (RM)', data: ys.map((yr) => sum((s) => s.year === yr)), backgroundColor: ys.map((yr) => (yr === y ? COLORS[0] : '#D7CCC8')) }] },
       options: { plugins: { legend: { display: false } } } };

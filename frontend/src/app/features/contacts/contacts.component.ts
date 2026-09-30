@@ -1,0 +1,81 @@
+import { Component, inject, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Api } from '../../core/api.service';
+import { IconComponent } from '../../shared/icon.component';
+import { ModalComponent } from '../../shared/modal.component';
+import { errMsg } from '../../shared/util';
+
+@Component({
+  selector: 'app-contacts', standalone: true, imports: [FormsModule, IconComponent, ModalComponent],
+  template: `
+  <div class="page-head">
+    <div><h1>Contacts</h1><p class="sub">Tap the green button to call straight from your phone</p></div>
+    <div class="actions">
+      @if (!hasEmergency) { <button class="btn ghost" (click)="seed()"><app-icon name="alert" [size]="18" /><span class="hide-sm">Emergency numbers</span></button> }
+      <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />Add contact</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <label style="position:relative"><span class="sr" style="position:absolute;left:-999px">Search contacts</span>
+      <input type="search" placeholder="Search name or number" [(ngModel)]="q" style="padding-left:2.4rem">
+      <span style="position:absolute;left:.75rem;top:2.15rem;color:var(--muted);line-height:0"><app-icon name="search" [size]="18" /></span></label>
+    <div class="seg" style="margin-top:.7rem"><button [class.on]="!cat" (click)="cat = ''">All</button>
+      @for (c of cats; track c) { <button [class.on]="cat === c" (click)="cat = c">{{ c }}</button> }</div>
+  </div>
+
+  <div class="card">
+    @if (!shown.length) { <div class="empty">{{ items.length ? 'No contacts match.' : 'No contacts yet. Add one, or start with the emergency numbers.' }}</div> }
+    <ul class="list">@for (c of shown; track c.id) {
+      <li class="item">
+        <span class="ava" style="width:42px;height:42px">{{ c.name.charAt(0).toUpperCase() }}</span>
+        <div class="grow"><div class="t">{{ c.name }} <span class="pill">{{ c.category }}</span></div>
+          <div class="s">{{ c.phone }}@if (c.notes) { · {{ c.notes }} }</div></div>
+        <button class="icon-btn" (click)="fav(c)" [attr.aria-label]="c.favorite ? 'Remove from favourites' : 'Add to favourites'" [style.color]="c.favorite ? '#F9A825' : ''">
+          <app-icon name="star" [size]="20" /></button>
+        <a class="btn green sm" [href]="tel(c.phone)" aria-label="Call"><app-icon name="call" [size]="16" /><span class="hide-sm">Call</span></a>
+        <a class="icon-btn" [href]="wa(c.phone)" target="_blank" rel="noopener" aria-label="WhatsApp"><app-icon name="message" [size]="18" /></a>
+        <button class="icon-btn" (click)="edit(c)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
+        <button class="icon-btn del" (click)="remove(c)" aria-label="Delete"><app-icon name="trash" [size]="18" /></button>
+      </li>
+    }</ul>
+  </div>
+
+  <app-modal [open]="showForm" [title]="form.id ? 'Edit contact' : 'Add contact'" (closed)="showForm = false">
+    <form (ngSubmit)="save()">
+      <div class="fields">
+        <label class="full">Name<input name="name" [(ngModel)]="form.name" required></label>
+        <label class="full">Phone number<input name="phone" type="tel" inputmode="tel" [(ngModel)]="form.phone" placeholder="e.g. 012-345 6789" required></label>
+        <label class="full">Category<select name="cat" [(ngModel)]="form.category">@for (c of cats; track c) { <option>{{ c }}</option> }</select></label>
+        <label class="full">Notes<input name="notes" [(ngModel)]="form.notes" placeholder="e.g. TNB careline, plumber"></label>
+        <label class="check full"><input type="checkbox" name="fav" [(ngModel)]="form.favorite"> Show on dashboard (quick call)</label>
+      </div>
+      @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
+      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">Cancel</button><button type="submit" class="btn">{{ form.id ? 'Save changes' : 'Add contact' }}</button></div>
+    </form>
+  </app-modal>`,
+})
+export class ContactsComponent implements OnInit {
+  private api = inject(Api);
+  cats = ['Family', 'Emergency', 'Utilities', 'Services', 'Work', 'Other'];
+  items: any[] = []; q = ''; cat = ''; showForm = false; error = ''; form: any = this.blank();
+  get hasEmergency() { return this.items.some((c) => c.category === 'Emergency'); }
+  get shown() {
+    const q = this.q.trim().toLowerCase();
+    return this.items.filter((c) => (!this.cat || c.category === this.cat) && (!q || c.name.toLowerCase().includes(q) || c.phone.replace(/\D/g, '').includes(q.replace(/\D/g, '') || '\u0000') || c.phone.includes(q)));
+  }
+  blank() { return { id: null, name: '', phone: '', category: 'Family', notes: '', favorite: false }; }
+  tel(p: string) { return 'tel:' + p.replace(/[^\d+]/g, ''); }
+  wa(p: string) { const d = p.replace(/[^\d+]/g, ''); return 'https://wa.me/' + (d.startsWith('+') ? d.slice(1) : d.startsWith('0') ? '60' + d.slice(1) : d); } // Malaysian 01x numbers -> 601x
+  ngOnInit() { this.load(); }
+  load() { this.api.get<any[]>('/contacts').subscribe((r) => (this.items = r)); }
+  openForm() { this.form = this.blank(); this.error = ''; this.showForm = true; }
+  edit(c: any) { this.form = { ...c }; this.error = ''; this.showForm = true; }
+  save() {
+    const f = this.form, req = f.id ? this.api.put('/contacts/' + f.id, f) : this.api.post('/contacts', f);
+    req.subscribe({ next: () => { this.showForm = false; this.load(); }, error: (e) => (this.error = errMsg(e)) });
+  }
+  fav(c: any) { this.api.put('/contacts/' + c.id, { ...c, favorite: !c.favorite }).subscribe(() => this.load()); }
+  remove(c: any) { if (confirm(`Delete ${c.name}?`)) this.api.del('/contacts/' + c.id).subscribe(() => this.load()); }
+  seed() { this.api.post('/contacts/emergency-seed', {}).subscribe(() => this.load()); }
+}

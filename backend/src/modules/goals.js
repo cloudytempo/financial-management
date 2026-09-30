@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const pool = require('../db');
-const { wrap } = require('../util');
+const { wrap, lockDown } = require('../util');
 const COLS = `id,name,target_amount::float8 AS target_amount,saved_amount::float8 AS saved_amount,
   to_char(target_date,'YYYY-MM-DD') AS target_date,status,last_progress_at`;
 const STALE_MONTHS = 2; // remind when an ongoing goal has had no progress change for this long
@@ -49,11 +49,12 @@ router.delete('/:id', wrap(async (req, res) => {
   res.status(204).end();
 }));
 
-const init = () => pool.query(`CREATE TABLE IF NOT EXISTS goals (
+const init = async () => { await pool.query(`CREATE TABLE IF NOT EXISTS goals (
   id SERIAL PRIMARY KEY, user_id INT NOT NULL REFERENCES users ON DELETE CASCADE,
   name TEXT NOT NULL, target_amount NUMERIC(12,2) NOT NULL CHECK (target_amount > 0),
   saved_amount NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (saved_amount >= 0),
   target_date DATE NOT NULL, status TEXT NOT NULL DEFAULT 'Ongoing' CHECK (status IN ('Ongoing','Complete')),
   last_progress_at TIMESTAMPTZ NOT NULL DEFAULT now(), created_at TIMESTAMPTZ DEFAULT now())`);
+  await lockDown(pool, ['goals']); };
 
 module.exports = { name: 'goals', router, init };
