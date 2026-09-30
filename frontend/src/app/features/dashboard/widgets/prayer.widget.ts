@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, Input, OnDestroy, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { IconComponent } from '../../../shared/icon.component';
 
@@ -7,7 +7,7 @@ const NAMES = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 @Component({
   selector: 'app-prayer-widget', standalone: true, imports: [IconComponent],
   template: `
-  <div class="card">
+  <div class="prayer-widget" [class.card]="framed">
     <div class="card-h"><h2><app-icon name="moon" [size]="18" />Prayer times</h2><span class="muted small">{{ place }}</span></div>
     @if (error) { <div class="err">{{ error }}</div> }
     <div class="prayer">
@@ -16,6 +16,7 @@ const NAMES = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
   </div>`,
 })
 export class PrayerWidget implements OnInit, OnDestroy {
+  @Input() framed = true;
   private http = inject(HttpClient);
   names = NAMES; times: any = {}; next = ''; place = 'Locating…'; error = ''; private timer: any;
 

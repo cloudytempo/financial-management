@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Api } from '../../core/api.service';
 import { Auth } from '../../core/auth.service';
@@ -27,59 +27,64 @@ import { PrayerWidget } from './widgets/prayer.widget';
       <div><div class="lbl">Needs attention</div><div class="val">{{ attentionCount }}</div><div class="foot">unusual, over budget or stalled</div></div></div>
   </div>
 
-  <section class="dashboard-carousel" aria-label="Dashboard cards">
-    <div class="dashboard-carousel-head"><h2>Overview</h2><div class="row"><button class="icon-btn" (click)="moveCarousel(-1)" aria-label="Previous dashboard cards"><app-icon name="left" /></button><button class="icon-btn" (click)="moveCarousel(1)" aria-label="Next dashboard cards"><app-icon name="right" /></button></div></div>
-    <div class="dashboard-track" #carousel>
-    <article class="dashboard-panel"><div class="card"><div class="card-h"><h2><app-icon name="trend" [size]="18" />Monthly expenses: this year vs last</h2></div>@if (expCfg) { <app-chart [config]="expCfg" /> }</div></article>
-    <article class="dashboard-panel"><div class="card"><div class="card-h"><h2><app-icon name="bell" [size]="18" />Upcoming payments</h2></div>
+  <section class="dashboard-grid" aria-label="Dashboard information">
+    <article class="card dashboard-card"><div class="card-h"><h2><app-icon name="trend" [size]="18" />Spending</h2></div><div class="dashboard-card-body">
+      <section class="dashboard-section"><h3>Monthly expenses: this year vs last</h3>@if (expCfg) { <app-chart [config]="expCfg" /> }</section>
+      <section class="dashboard-section"><h3>{{ curLabel }} by type</h3>@if (typeCfg) { <app-chart [config]="typeCfg" /> }</section>
+    </div></article>
+
+    <article class="card dashboard-card"><div class="card-h"><h2><app-icon name="banknote" [size]="18" />Cashflow & goals</h2></div><div class="dashboard-card-body">
+      <section class="dashboard-section"><h3>Income vs expenses</h3>@if (incCfg) { <app-chart [config]="incCfg" /> }</section>
+      <section class="dashboard-section"><h3><app-icon name="credit-card" [size]="16" />Installments by type</h3>@if (insCfg) { <app-chart [config]="insCfg" /> }</section>
+      <section class="dashboard-section"><h3><app-icon name="target" [size]="16" />Goal completion</h3>@if (goalCfg) { <app-chart [config]="goalCfg" /> }</section>
+    </div></article>
+
+    <article class="card dashboard-card"><div class="card-h"><h2><app-icon name="bell" [size]="18" />Upcoming & budgets</h2></div><div class="dashboard-card-body">
+      <section class="dashboard-section"><h3>Payments due in 30 days</h3>
       @if (!payments.length) { <div class="empty">Nothing due in the next 30 days.</div> }
-      <ul class="list">@for (u of payments.slice(0, 3); track u.key) {
+      <ul class="list">@for (u of payments.slice(0, 5); track u.key) {
         <li class="item"><span class="ic-badge" [class.warn]="u.days_left <= 3"><app-icon [name]="icon(u.cat)" [size]="18" /></span>
           <div class="grow"><div class="t">{{ u.title }}</div><div class="s">{{ u.due_date }} · {{ u.kind }}</div></div>
           <div class="amt">{{ fmt(u.amount) }}<div><span class="badge" [class.ok]="u.days_left > 3">{{ u.days_left < 0 ? 'Overdue' : u.days_left === 0 ? 'Today' : u.days_left + 'd' }}</span></div></div></li>
-      }</ul></div></article>
+      }</ul></section>
 
-    <article class="dashboard-panel"><div class="card"><div class="card-h"><h2><app-icon name="pie" [size]="18" />Budget, {{ curLabel }}</h2><a routerLink="/budgets" class="small">Manage</a></div>
+      <section class="dashboard-section"><div class="row between"><h3>Budget, {{ curLabel }}</h3><a routerLink="/budgets" class="small">Manage</a></div>
       @if (!budget.rows.length) { <div class="empty">No budgets yet. <a routerLink="/budgets">Set one</a> to track limits.</div> }
       <ul class="list">@for (r of budget.rows.slice(0, 4); track r.category) {
         <li class="item" style="display:block"><div class="row between small" style="flex-wrap:nowrap"><b>{{ r.category }}</b><span>{{ fmt(r.spent) }} / {{ fmt(r.limit) }}</span></div>
           <div class="bar" style="margin-top:.3rem" [class.warn]="r.status === 'warn'" [class.over]="r.status === 'over'"><i [style.width.%]="r.pct > 100 ? 100 : r.pct"></i></div></li>
-      }</ul></div></article>
-    <article class="dashboard-panel"><div class="card"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ curLabel }} by type</h2></div>@if (typeCfg) { <app-chart [config]="typeCfg" /> }</div></article>
-    <article class="dashboard-panel"><div class="card"><div class="card-h"><h2><app-icon name="banknote" [size]="18" />Income vs expenses</h2></div>@if (incCfg) { <app-chart [config]="incCfg" /> }</div></article>
+      }</ul></section>
+    </div></article>
 
-    <article class="dashboard-panel"><div class="card"><div class="card-h"><h2><app-icon name="credit-card" [size]="18" />Installments by type</h2></div>@if (insCfg) { <app-chart [config]="insCfg" /> }</div></article>
-    <article class="dashboard-panel"><div class="card"><div class="card-h"><h2><app-icon name="target" [size]="18" />Goal completion</h2></div>@if (goalCfg) { <app-chart [config]="goalCfg" /> }</div></article>
-    <article class="dashboard-panel"><div class="card"><div class="card-h"><h2><app-icon name="call" [size]="18" />Quick call</h2><a routerLink="/contacts" class="small">All</a></div>
+    <article class="card dashboard-card"><div class="card-h"><h2><app-icon name="moon" [size]="18" />Daily & follow-up</h2><a routerLink="/calendar" class="small">Calendar</a></div><div class="dashboard-card-body">
+      <app-prayer-widget [framed]="false" />
+      <section class="dashboard-section"><div class="row between"><h3>Quick call</h3><a routerLink="/contacts" class="small">All</a></div>
       @if (!favs.length) { <div class="empty">Star a contact to pin it here.</div> }
-      <ul class="list">@for (c of favs.slice(0, 3); track c.id) {
+      <ul class="list">@for (c of favs.slice(0, 5); track c.id) {
         <li class="item"><span class="ava" style="width:38px;height:38px">{{ c.name.charAt(0).toUpperCase() }}</span>
           <div class="grow"><div class="t">{{ c.name }}</div><div class="s">{{ c.phone }}</div></div>
           <a class="btn green sm" [href]="tel(c.phone)" aria-label="Call {{ c.name }}"><app-icon name="call" [size]="16" /></a></li>
-      }</ul></div></article>
+      }</ul></section>
 
-    <article class="dashboard-panel"><app-prayer-widget /></article>
-    <article class="dashboard-panel"><div class="card"><div class="card-h"><h2><app-icon name="alert" [size]="18" />Needs attention</h2></div>
+      <section class="dashboard-section"><h3><app-icon name="alert" [size]="16" />Needs attention</h3>
         @if (!attentionCount) { <div class="empty">All clear. Nothing unusual right now.</div> }
         <ul class="list">
-          @for (a of anomalies.slice(0, 1); track a.id) {
+          @for (a of anomalies.slice(0, 3); track a.id) {
             <li class="item"><span class="ic-badge warn"><app-icon [name]="icon(a.type)" [size]="18" /></span>
               <div class="grow"><div class="t">{{ a.type }} looks high</div><div class="s">{{ months[a.month - 1] }} {{ a.year }}</div></div>
               <div class="amt">{{ fmt(a.amount) }}<div><span class="badge">+{{ a.percentAbove }}%</span></div></div></li> }
-          @for (r of overBudget.slice(0, 1); track r.category) {
+          @for (r of overBudget.slice(0, 3); track r.category) {
             <li class="item"><span class="ic-badge warn"><app-icon name="pie" [size]="18" /></span>
               <div class="grow"><div class="t">{{ r.category }} over budget</div><div class="s">{{ fmt(r.spent) }} of {{ fmt(r.limit) }}</div></div><span class="badge">{{ r.pct }}%</span></li> }
-          @for (g of goalReminders.slice(0, 1); track g.id) {
+          @for (g of goalReminders; track g.id) {
             <li class="item"><span class="ic-badge brown"><app-icon name="target" [size]="18" /></span>
               <div class="grow"><div class="t">{{ g.name }}</div><div class="s">{{ g.stale ? 'No progress for ' + g.months_since_update + ' months' : 'Past target date' }}</div></div><span class="badge">Goal</span></li> }
-        </ul></div></article>
-    <article class="dashboard-panel"><div class="card calendar-shortcut"><app-icon name="calendar" [size]="28" /><h2>Calendar</h2><p class="sub">Events, bills and installments by date</p><a routerLink="/calendar" class="btn sm">Open calendar</a></div></article>
-    </div>
+        </ul></section>
+    </div></article>
   </section>
   </div>`,
 })
 export class DashboardComponent implements OnInit {
-  @ViewChild('carousel') carousel!: ElementRef<HTMLElement>;
   private api = inject(Api);
   fmt = fmt; months = MONTHS; icon = typeIcon; abs = Math.abs;
   hello = greeting(); firstName = (inject(Auth).user()?.name || '').split(' ')[0];
@@ -92,7 +97,6 @@ export class DashboardComponent implements OnInit {
   get overBudget() { return (this.budget.rows || []).filter((r: any) => r.status === 'over'); }
   get attentionCount() { return this.anomalies.length + this.goalReminders.length + this.overBudget.length; }
   tel(p: string) { return 'tel:' + p.replace(/[^\d+]/g, ''); }
-  moveCarousel(direction: number) { this.carousel.nativeElement.scrollBy({ left: direction * this.carousel.nativeElement.clientWidth, behavior: 'smooth' }); }
 
   private addPayments(list: any[]) { this.payments = [...this.payments, ...list].sort((a, b) => a.due_date.localeCompare(b.due_date)); }
 
