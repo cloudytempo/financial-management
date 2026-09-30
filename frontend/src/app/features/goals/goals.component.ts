@@ -83,7 +83,7 @@ export class GoalsComponent implements OnInit {
       this.items = r;
       const c = r.filter((g) => g.status === 'Complete').length;
       this.statusCfg = { type: 'doughnut', data: { labels: ['Complete', 'Ongoing'], datasets: [{ data: [c, r.length - c], backgroundColor: ['#66BB6A', '#5D4037'] }] } };
-      this.progressCfg = { type: 'bar', data: { labels: r.map((g) => g.name), datasets: [{ label: 'Progress %', data: r.map((g) => g.progress), backgroundColor: r.map((g) => (g.status === 'Complete' ? '#66BB6A' : '#8D6E63')) }] },
+      this.progressCfg = { type: 'bar', data: { labels: r.map((g) => g.name), datasets: [{ label: 'Progress %', data: r.map((g) => Number(g.progress)), backgroundColor: r.map((g) => (g.status === 'Complete' ? '#66BB6A' : '#8D6E63')) }] },
         options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { min: 0, max: 100 } } } };
     });
     this.api.get<any[]>('/goals/reminders').subscribe((r) => (this.reminders = r));

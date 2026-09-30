@@ -85,10 +85,10 @@ export class InstallmentsComponent implements OnInit {
     this.api.get<any[]>('/installments').subscribe((r) => (this.items = r));
     this.api.get<any[]>('/installments/upcoming?days=30').subscribe((r) => { this.upcoming = r; this.kDue = r.reduce((a, u) => a + u.amount, 0); });
     this.api.get<any[]>('/installments/summary').subscribe((s) => {
-      this.kMonthly = s.reduce((a, x) => a + x.monthly, 0); this.kRemaining = s.reduce((a, x) => a + x.remaining, 0);
+      this.kMonthly = s.reduce((a, x) => a + Number(x.monthly), 0); this.kRemaining = s.reduce((a, x) => a + Number(x.remaining), 0);
       this.chartCfg = { type: 'bar', data: { labels: s.map((x) => x.type), datasets: [
-        { label: 'Paid', data: s.map((x) => x.paid), backgroundColor: COLORS[0] },
-        { label: 'Remaining', data: s.map((x) => x.remaining), backgroundColor: COLORS[1] }] },
+        { label: 'Paid', data: s.map((x) => Number(x.paid)), backgroundColor: COLORS[0] },
+        { label: 'Remaining', data: s.map((x) => Number(x.remaining)), backgroundColor: COLORS[1] }] },
         options: { scales: { x: { stacked: true }, y: { stacked: true } } } };
     });
   }

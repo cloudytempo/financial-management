@@ -112,6 +112,9 @@ input:focus,select:focus{border-color:var(--c2);outline:2px solid var(--g1);outl
 
 /* modal / bottom sheet */
 .backdrop{position:fixed;inset:0;z-index:50;background:rgba(62,39,35,.5);display:flex;align-items:center;justify-content:center;padding:1rem}
+.loading-overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;gap:.75rem;background:rgba(255,255,255,.72);backdrop-filter:blur(2px);color:var(--c1);font-weight:700}
+.loading-spinner{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--c2);border-radius:50%;animation:loading-spin .75s linear infinite}
+@keyframes loading-spin{to{transform:rotate(360deg)}}
 .sheet{background:#fff;border-radius:22px;width:min(580px,100%);max-height:92vh;overflow:auto;padding:1.1rem 1.25rem 1.25rem;box-shadow:0 20px 60px rgba(62,39,35,.35)}
 .sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}.sheet-h h2{font-size:1.15rem}
 .sheet-f{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem}
@@ -161,11 +164,12 @@ a.btn{text-decoration:none}
   .tabbar .ic{padding:.22rem 1rem;border-radius:99px;display:grid;place-items:center}
   .tabbar a.active{color:var(--c1);font-weight:700}.tabbar a.active .ic{background:var(--g2)}
   main{padding:1rem 1rem calc(5.6rem + env(safe-area-inset-bottom))}
-  .dashboard-page{height:calc(100dvh - 10rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
-  .dashboard-kpis{display:flex;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory}
-  .dashboard-kpis::-webkit-scrollbar{display:none}
-  .dashboard-kpis .s3{flex:0 0 calc(50% - .325rem);scroll-snap-align:start}
-  .dashboard-grid{grid-template-rows:repeat(3,minmax(0,1fr))}
+  .dashboard-page{height:auto;min-height:calc(100dvh - 10rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));grid-template-rows:auto auto auto;overflow:visible}
+  .dashboard-kpis{display:grid;grid-template-columns:minmax(0,1fr);overflow:visible;scroll-snap-type:none}
+  .dashboard-kpis .s3{grid-column:auto}
+  .dashboard-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-auto-rows:auto}
+  .dashboard-card{min-height:260px}
+  .dashboard-card-body{overflow:visible}
   .dashboard-card-body .chart-box{height:155px}
 }
 @media(max-width:600px){

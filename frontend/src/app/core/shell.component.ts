@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Auth } from './auth.service';
 import { MODULES } from './modules.config';
+import { Loading } from './loading.service';
 import { IconComponent } from '../shared/icon.component';
 import { ModalComponent } from '../shared/modal.component';
 
@@ -32,6 +33,7 @@ import { ModalComponent } from '../shared/modal.component';
       <button class="tab" (click)="moreOpen = true"><span class="ic"><app-icon name="more" [size]="22" /></span>More</button>
     </nav>
   </div>
+  @if (loading.isLoading()) { <div class="loading-overlay" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Loading</span></div> }
   <app-modal [open]="moreOpen" title="More" (closed)="moreOpen = false">
     <div class="morelist">
       @for (n of more; track n.path) { <a [routerLink]="'/' + n.path" (click)="moreOpen = false"><span class="ic-badge"><app-icon [name]="n.icon" [size]="18" /></span>{{ n.label }}</a> }
@@ -40,7 +42,7 @@ import { ModalComponent } from '../shared/modal.component';
   </app-modal>`,
 })
 export class ShellComponent {
-  auth = inject(Auth); moreOpen = false;
+  auth = inject(Auth); loading = inject(Loading); moreOpen = false;
   nav = [{ path: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', primary: true }, ...MODULES];
   sidebarNav = this.nav.filter((n) => n.path !== 'calendar');
   primary = this.nav.filter((n) => n.primary);

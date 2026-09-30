@@ -91,14 +91,14 @@ import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
 export class ExpensesComponent implements OnInit {
   private api = inject(Api);
   fmt = fmt; months = MONTHS; icon = typeIcon;
-  now = new Date(); year = this.now.getFullYear(); years: number[] = [this.year]; monthFilter = 0;
+  now = new Date(); year = this.now.getFullYear(); years: number[] = [this.year]; monthFilter = this.now.getMonth() + 1;
   rows: any[] = []; summary: any[] = []; anomalies: any[] = []; flagged = new Set<number>();
   form: any = this.blank(); error = ''; showForm = false; showImport = false;
   parsed: { records: any[]; blank: number } | null = null; skipFuture = true; importMsg = '';
   monthlyCfg: any; typeCfg: any; annualCfg: any; shareCfg: any; hasTypeData = false; hasShareData = false;
   kTotal = 0; kAvg = 0; kTop = ''; kTopAmt = 0;
 
-  get shown() { return this.rows.filter((r) => r.year === this.year && (!this.monthFilter || r.month === this.monthFilter)); }
+  get shown() { return this.rows.filter((r) => Number(r.year) === this.year && (!this.monthFilter || Number(r.month) === this.monthFilter)); }
   get typeOptions() { return [...new Set([...this.rows.map((r) => r.type), 'Electrical', 'Water', 'Internet', 'Misc', 'Savings'])].sort(); }
   get toImport() {
     if (!this.parsed) return [];

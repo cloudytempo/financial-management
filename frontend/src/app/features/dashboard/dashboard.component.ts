@@ -153,7 +153,7 @@ export class DashboardComponent implements OnInit {
     this.delta = this.prevTotal ? Math.round(((this.curTotal - this.prevTotal) / this.prevTotal) * 100) : 0;
     const cur = inMonth(S, latest).filter((s) => Number(s.total) > 0);
     this.typeHasData = cur.length > 0;
-    this.typeCfg = { type: 'doughnut', data: { labels: cur.map((s) => s.type), datasets: [{ data: cur.map((s) => s.total), backgroundColor: cur.map((_, i) => COLORS[i % COLORS.length]) }] } };
+    this.typeCfg = { type: 'doughnut', data: { labels: cur.map((s) => s.type), datasets: [{ data: cur.map((s) => Number(s.total)), backgroundColor: cur.map((_, i) => COLORS[i % COLORS.length]) }] } };
     this.api.get<any>(`/budgets/status?year=${ly}&month=${lm}`).subscribe((b) => (this.budget = b));
   }
 }

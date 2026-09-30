@@ -77,7 +77,7 @@ export class BillsComponent implements OnInit {
     this.api.get<any[]>('/bills').subscribe((r) => (this.items = r));
     this.api.get<any>('/bills/summary').subscribe((s) => {
       this.sum = s;
-      this.cfg = { type: 'doughnut', data: { labels: s.by.map((x: any) => x.category), datasets: [{ data: s.by.map((x: any) => +x.monthly.toFixed(2)), backgroundColor: s.by.map((_: any, i: number) => COLORS[i % COLORS.length]) }] } };
+      this.cfg = { type: 'doughnut', data: { labels: s.by.map((x: any) => x.category), datasets: [{ data: s.by.map((x: any) => Number(Number(x.monthly).toFixed(2))), backgroundColor: s.by.map((_: any, i: number) => COLORS[i % COLORS.length]) }] } };
     });
   }
   openForm() { this.form = this.blank(); this.error = ''; this.showForm = true; }

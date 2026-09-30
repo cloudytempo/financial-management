@@ -67,7 +67,7 @@ export class IncomeComponent implements OnInit {
   rows: any[] = []; inc: any[] = []; exp: any[] = []; form: any = this.blank(); cfg: any; srcCfg: any;
   kIncome = 0; kAvg = 0; kSpent = 0; kNet = 0; kRate = 0;
 
-  get shown() { return this.rows.filter((r) => r.year === this.year); }
+  get shown() { return this.rows.filter((r) => Number(r.year) === this.year); }
   blank() { return { id: null, source: 'Salary', amount: null, month: this.now.getMonth() + 1, year: this.now.getFullYear(), remarks: '', recurring: true }; }
   ngOnInit() { this.load(); }
   setYear(y: number) { this.year = y; this.build(); }
@@ -76,13 +76,13 @@ export class IncomeComponent implements OnInit {
     this.api.get<any[]>('/expenses/summary').subscribe((e) => { this.exp = e; this.api.get<any[]>('/income/summary').subscribe((i) => { this.inc = i; this.build(); }); });
   }
   build() {
-    const y = this.year, sum = (L: any[], f: (s: any) => boolean) => L.filter(f).reduce((a, s) => a + s.total, 0);
-    this.years = [...new Set([...this.inc.map((s) => s.year), ...this.exp.map((s) => s.year), this.now.getFullYear()])].sort((a, b) => b - a);
-    const mI = MONTHS.map((_, i) => sum(this.inc, (s) => s.year === y && s.month === i + 1));
-    const mE = MONTHS.map((_, i) => sum(this.exp, (s) => s.year === y && s.month === i + 1));
+    const y = this.year, sum = (L: any[], f: (s: any) => boolean) => L.filter(f).reduce((a, s) => a + (Number(s.total) || 0), 0);
+    this.years = [...new Set([...this.inc.map((s) => Number(s.year)), ...this.exp.map((s) => Number(s.year)), this.now.getFullYear()])].sort((a, b) => b - a);
+    const mI = MONTHS.map((_, i) => sum(this.inc, (s) => Number(s.year) === y && Number(s.month) === i + 1));
+    const mE = MONTHS.map((_, i) => sum(this.exp, (s) => Number(s.year) === y && Number(s.month) === i + 1));
     this.cfg = { type: 'bar', data: { labels: MONTHS, datasets: [{ label: 'Income', data: mI, backgroundColor: COLORS[1] }, { label: 'Expenses', data: mE, backgroundColor: COLORS[0] }] } };
-    const srcs = [...new Set(this.inc.filter((s) => s.year === y).map((s) => s.source))];
-    this.srcCfg = { type: 'doughnut', data: { labels: srcs, datasets: [{ data: srcs.map((n) => sum(this.inc, (s) => s.year === y && s.source === n)), backgroundColor: srcs.map((_, i) => COLORS[i % COLORS.length]) }] } };
+    const srcs = [...new Set(this.inc.filter((s) => Number(s.year) === y).map((s) => s.source).filter(Boolean))];
+    this.srcCfg = { type: 'doughnut', data: { labels: srcs, datasets: [{ data: srcs.map((n) => sum(this.inc, (s) => Number(s.year) === y && s.source === n)), backgroundColor: srcs.map((_, i) => COLORS[i % COLORS.length]) }] } };
     this.kIncome = mI.reduce((a, b) => a + b, 0); this.kSpent = mE.reduce((a, b) => a + b, 0);
     const active = mI.filter((v) => v > 0).length; this.kAvg = active ? this.kIncome / active : 0;
     this.kNet = this.kIncome - this.kSpent; this.kRate = this.kIncome ? Math.round((this.kNet / this.kIncome) * 100) : 0;

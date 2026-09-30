@@ -85,8 +85,8 @@ export class BudgetsComponent implements OnInit {
     this.api.get<any>(`/budgets/status?year=${this.year}&month=${this.month}`).subscribe((s) => {
       this.st = s;
       this.cfg = s.rows.length ? { type: 'bar', data: { labels: s.rows.map((r: any) => r.category), datasets: [
-        { label: 'Budget', data: s.rows.map((r: any) => r.limit), backgroundColor: COLORS[8] },
-        { label: 'Spent', data: s.rows.map((r: any) => r.spent), backgroundColor: COLORS[0] }] } } : null;
+        { label: 'Budget', data: s.rows.map((r: any) => Number(r.limit)), backgroundColor: COLORS[8] },
+        { label: 'Spent', data: s.rows.map((r: any) => Number(r.spent)), backgroundColor: COLORS[0] }] } } : null;
     });
   }
   openForm(category = '', amount: number | null = null) { this.form = { category, amount: amount ? Math.ceil(amount / 10) * 10 : null }; this.error = ''; this.showForm = true; }
