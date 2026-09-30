@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: home-ledger
+    runtime: docker
+    dockerfilePath: ./Dockerfile.render
+    region: singapore
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL      # Supabase Session pooler string (paste in the Render dashboard)
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TZ
+        value: Asia/Kuala_Lumpur
