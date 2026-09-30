@@ -39,8 +39,8 @@ import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
   <div class="bento">
     <div class="card s8"><div class="card-h"><h2><app-icon name="trend" [size]="18" />Monthly: {{ year }} vs {{ year - 1 }}</h2></div>@if (monthlyCfg) { <app-chart [config]="monthlyCfg" /> }</div>
     <div class="card s4"><div class="card-h"><h2><app-icon name="calendar" [size]="18" />Annual totals</h2></div>@if (annualCfg) { <app-chart [config]="annualCfg" /> }</div>
-    <div class="card s8"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ year }} by type, per month</h2></div>@if (typeCfg) { <app-chart [config]="typeCfg" /> }</div>
-    <div class="card s4"><div class="card-h"><h2><app-icon name="wallet" [size]="18" />{{ year }} share by type</h2></div>@if (shareCfg) { <app-chart [config]="shareCfg" /> }</div>
+    <div class="card s8"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ year }} by type, per month</h2></div>@if (typeCfg && hasTypeData) { <app-chart [config]="typeCfg" /> } @else { <div class="empty">No expense types recorded for {{ year }}.</div> }</div>
+    <div class="card s4"><div class="card-h"><h2><app-icon name="wallet" [size]="18" />{{ year }} share by type</h2></div>@if (shareCfg && hasShareData) { <app-chart [config]="shareCfg" /> } @else { <div class="empty">No expense types recorded for {{ year }}.</div> }</div>
   </div>
 
   <div class="card">
@@ -95,7 +95,7 @@ export class ExpensesComponent implements OnInit {
   rows: any[] = []; summary: any[] = []; anomalies: any[] = []; flagged = new Set<number>();
   form: any = this.blank(); error = ''; showForm = false; showImport = false;
   parsed: { records: any[]; blank: number } | null = null; skipFuture = true; importMsg = '';
-  monthlyCfg: any; typeCfg: any; annualCfg: any; shareCfg: any;
+  monthlyCfg: any; typeCfg: any; annualCfg: any; shareCfg: any; hasTypeData = false; hasShareData = false;
   kTotal = 0; kAvg = 0; kTop = ''; kTopAmt = 0;
 
   get shown() { return this.rows.filter((r) => r.year === this.year && (!this.monthFilter || r.month === this.monthFilter)); }
@@ -117,25 +117,27 @@ export class ExpensesComponent implements OnInit {
 
   build() {
     const y = this.year, S = this.summary;
-    const ys = [...new Set(S.map((s) => s.year))].sort();
+    const ys = [...new Set(S.map((s) => Number(s.year)).filter(Number.isFinite))].sort();
     this.years = [...new Set([...ys, this.now.getFullYear()])].sort((a, b) => b - a);
-    const sum = (f: (s: any) => boolean) => S.filter(f).reduce((a, s) => a + s.total, 0);
-    const monthly = (yr: number) => MONTHS.map((_, i) => sum((s) => s.year === yr && s.month === i + 1));
+    const sum = (f: (s: any) => boolean) => S.filter(f).reduce((a, s) => a + (Number(s.total) || 0), 0);
+    const monthly = (yr: number) => MONTHS.map((_, i) => sum((s) => Number(s.year) === yr && Number(s.month) === i + 1));
     this.monthlyCfg = { type: 'bar', data: { labels: MONTHS, datasets: [
       { label: String(y - 1), data: monthly(y - 1), backgroundColor: '#D7CCC8' },
       { label: String(y), data: monthly(y), backgroundColor: COLORS[0] }] } };
-    const types = [...new Set(S.filter((s) => s.year === y).map((s) => s.type))];
-    const totals = types.map((t) => sum((s) => s.year === y && s.type === t));
+    const types = [...new Set(S.filter((s) => Number(s.year) === y).map((s) => s.type).filter(Boolean))];
+    const totals = types.map((t) => sum((s) => Number(s.year) === y && s.type === t));
+    this.hasTypeData = totals.some((total) => total > 0);
+    this.hasShareData = this.hasTypeData;
     this.typeCfg = { type: 'bar', data: { labels: MONTHS, datasets: types.map((t, i) => ({
       label: t, backgroundColor: COLORS[i % COLORS.length],
-      data: MONTHS.map((_, m) => sum((s) => s.year === y && s.month === m + 1 && s.type === t)) })) },
+      data: MONTHS.map((_, m) => sum((s) => Number(s.year) === y && Number(s.month) === m + 1 && s.type === t)) })) },
       options: { scales: { x: { stacked: true }, y: { stacked: true } } } };
     this.shareCfg = { type: 'doughnut', data: { labels: types, datasets: [{ data: totals, backgroundColor: types.map((_, i) => COLORS[i % COLORS.length]) }] } };
     this.annualCfg = { type: 'bar', data: { labels: ys.map(String), datasets: [
-      { label: 'Total (RM)', data: ys.map((yr) => sum((s) => s.year === yr)), backgroundColor: ys.map((yr) => (yr === y ? COLORS[0] : '#D7CCC8')) }] },
+      { label: 'Total (RM)', data: ys.map((yr) => sum((s) => Number(s.year) === yr)), backgroundColor: ys.map((yr) => (yr === y ? COLORS[0] : '#D7CCC8')) }] },
       options: { plugins: { legend: { display: false } } } };
     this.kTotal = totals.reduce((a, b) => a + b, 0);
-    const active = new Set(S.filter((s) => s.year === y).map((s) => s.month)).size;
+    const active = new Set(S.filter((s) => Number(s.year) === y).map((s) => Number(s.month))).size;
     this.kAvg = active ? this.kTotal / active : 0;
     const top = totals.indexOf(Math.max(...totals, 0));
     this.kTop = top >= 0 && totals.length ? types[top] : ''; this.kTopAmt = top >= 0 && totals.length ? totals[top] : 0;

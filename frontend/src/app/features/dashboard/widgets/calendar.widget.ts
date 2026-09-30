@@ -9,7 +9,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 @Component({
   selector: 'app-calendar-widget', standalone: true, imports: [FormsModule, IconComponent],
   template: `
-  <div class="card">
+  <div class="calendar-widget" [class.card]="framed">
     <div class="card-h">
       <h2><app-icon name="calendar" [size]="18" />{{ months[month] }} {{ year }}</h2>
       <div class="row" style="gap:.15rem"><button class="btn ghost sm" (click)="goTo(todayIso)">Today</button>
@@ -74,6 +74,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 })
 export class CalendarWidget implements OnInit {
   @Input() full = false;
+  @Input() framed = true;
   private api = inject(Api);
   months = MONTHS; dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; types = EVENT_TYPES; color = eventColor;
   now = new Date(); year = this.now.getFullYear(); month = this.now.getMonth();

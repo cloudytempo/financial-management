@@ -12,7 +12,7 @@ import { ModalComponent } from '../shared/modal.component';
     <aside class="side">
       <div class="brand"><span class="logo"><app-icon name="wallet" /></span>Home Ledger</div>
       <nav class="nav">
-        @for (n of nav; track n.path) { <a [routerLink]="'/' + n.path" routerLinkActive="active"><app-icon [name]="n.icon" />{{ n.label }}</a> }
+        @for (n of sidebarNav; track n.path) { <a [routerLink]="'/' + n.path" routerLinkActive="active"><app-icon [name]="n.icon" />{{ n.label }}</a> }
       </nav>
       <div class="usercard">
         <span class="ava">{{ initial() }}</span>
@@ -42,6 +42,7 @@ import { ModalComponent } from '../shared/modal.component';
 export class ShellComponent {
   auth = inject(Auth); moreOpen = false;
   nav = [{ path: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', primary: true }, ...MODULES];
+  sidebarNav = this.nav.filter((n) => n.path !== 'calendar');
   primary = this.nav.filter((n) => n.primary);
   more = this.nav.filter((n) => !n.primary);
   initial = computed(() => (this.auth.user()?.name || '?').charAt(0).toUpperCase());
