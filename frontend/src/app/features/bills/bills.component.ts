@@ -27,9 +27,7 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
   <div class="bento">
     <div class="card s4"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ 'Monthly cost by category' | tr }}</h2></div>@if (summaryLoading) { <app-skeleton variant="chart" /> } @else if (cfg) { <app-chart [config]="cfg" /> }</div>
     <div class="card s8">
-      <div class="card-h"><h2>{{ 'All bills' | tr }} <span class="pill">{{ items.length }}</span></h2>
-        @if (accounts.length) { <label class="account-payment-selector">{{ 'Payment account' | tr }}<select name="paymentAccount" [(ngModel)]="paymentAccountId"><option [ngValue]="null">{{ 'No account' | tr }}</option>@for (account of accounts; track account.id) { <option [ngValue]="account.id">{{ account.name }}</option> }</select></label> }
-      </div>
+      <div class="card-h"><h2>{{ 'All bills' | tr }} <span class="pill">{{ items.length }}</span></h2></div>
       @if (itemsLoading) { <app-skeleton [rows]="4" /> }
       @else if (!items.length) { <div class="empty">{{ 'No bills yet. Add Unifi, Netflix, insurance or road tax to get reminders.' | tr }}</div> }
       @else { <ul class="list">@for (b of items; track b.id) {
@@ -38,7 +36,7 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
           <div class="grow"><div class="t">{{ b.name }}
               @if (b.status !== 'active') { <span class="pill">{{ b.status | tr }}</span> }
               @if (b.autopay) { <span class="pill">{{ 'Auto-pay' | tr }}</span> }</div>
-            <div class="s">{{ (b.category || 'Bill') | tr }} · {{ b.frequency | tr }} · {{ 'Next' | tr }} {{ b.next_due }}
+            <div class="s">{{ (b.category || 'Bill') | tr }} · {{ b.frequency | tr }} · {{ 'Payment account' | tr }}: {{ b.account_name || ('No account' | tr) }} · {{ 'Next' | tr }} {{ b.next_due }}
               @if (b.status === 'active') { · <span class="badge" [class.ok]="b.days_left > 3">{{ b.days_left < 0 ? ('Overdue' | tr) : b.days_left === 0 ? ('Today' | tr) : ('in' | tr) + ' ' + b.days_left + ' ' + ('days' | tr) }}</span> }</div></div>
           <div class="amt">{{ fmt(b.amount) }}</div>
           <div class="bill-desktop-actions">
@@ -88,6 +86,7 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
         <label>{{ 'Repeats' | tr }}<select name="freq" [(ngModel)]="form.frequency"><option value="monthly">{{ 'Monthly' | tr }}</option><option value="quarterly">{{ 'Every 3 months' | tr }}</option><option value="yearly">{{ 'Yearly' | tr }}</option></select></label>
         <label>{{ 'Next due date' | tr }}<input name="due" type="date" [(ngModel)]="form.first_due" required></label>
         <label class="full">{{ 'Status' | tr }}<select name="status" [(ngModel)]="form.status"><option value="active">{{ 'Active' | tr }}</option><option value="paused">{{ 'Paused' | tr }}</option><option value="cancelled">{{ 'Cancelled' | tr }}</option></select></label>
+        <label class="full">{{ 'Payment account' | tr }}<select name="account" [(ngModel)]="form.account_id"><option [ngValue]="null">{{ 'No account' | tr }}</option>@for (account of accounts; track account.id) { <option [ngValue]="account.id">{{ account.name }}</option> }</select></label>
         <label class="check full"><input type="checkbox" name="auto" [(ngModel)]="form.autopay"> {{ 'Paid automatically (auto-debit)' | tr }}</label>
         <label class="check full"><input type="checkbox" name="exp" [(ngModel)]="form.add_expense"> {{ 'Add an expense automatically when I mark it paid' | tr }}</label>
       </div>
@@ -114,13 +113,13 @@ export class BillsComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
   fmt = fmt; icon = typeIcon; showForm = false; error = '';
   cats = ['Internet', 'Electrical', 'Water', 'Insurance', 'Subscription', 'Phone', 'Road tax', 'Assessment tax', 'Other'];
-  items: any[] = []; splits: any[] = []; accounts: any[] = []; paymentAccountId: number | null = null; itemsLoading = true; summaryLoading = true; splitsLoading = true; showSplitForm = false; splitError = ''; splitPeopleText = '';
+  items: any[] = []; splits: any[] = []; accounts: any[] = []; itemsLoading = true; summaryLoading = true; splitsLoading = true; showSplitForm = false; splitError = ''; splitPeopleText = '';
   splitForm: any = this.blankSplit(); sum: any = { count: 0, monthly: 0, yearly: 0, by: [] }; cfg: any; form: any = this.blank();
   get due() { return this.items.filter((b) => b.status === 'active' && b.days_left <= 30); }
   get dueTotal() { return this.due.reduce((a, b) => a + b.amount, 0); }
   get overdue() { return this.items.filter((b) => b.overdue).length; }
 
-  blank() { const d = new Date(); return { id: null, name: '', category: '', amount: null, frequency: 'monthly', first_due: iso(new Date(d.getFullYear(), d.getMonth() + 1, 1)), status: 'active', autopay: false, add_expense: false }; }
+  blank() { const d = new Date(); return { id: null, name: '', category: '', amount: null, frequency: 'monthly', first_due: iso(new Date(d.getFullYear(), d.getMonth() + 1, 1)), status: 'active', autopay: false, add_expense: false, account_id: null }; }
   ngOnInit() { this.load(); this.loadSplits(); this.api.get<any[]>('/accounts/options').subscribe((rows) => (this.accounts = rows)); }
   load() {
     this.itemsLoading = true; this.summaryLoading = true;
@@ -156,7 +155,7 @@ export class BillsComponent implements OnInit {
   pay(b: any) {
     const a = prompt(`${this.language.text('Amount paid for')} ${b.name} (MYR)`, String(b.amount));
     if (a === null) return;
-    this.api.post(`/bills/${b.id}/pay`, { amount: a, account_id: this.paymentAccountId }).subscribe({ next: () => this.load(), error: (e) => alert(errMsg(e)) });
+    this.api.post(`/bills/${b.id}/pay`, { amount: a, account_id: b.account_id }).subscribe({ next: () => this.load(), error: (e) => alert(errMsg(e)) });
   }
   undo(b: any) { if (confirm(`${this.language.text('Undo the last payment for')} ${b.name}?`)) this.api.post(`/bills/${b.id}/undo`, {}).subscribe(() => this.load()); }
   remove(b: any) { if (confirm(`${this.language.text('Delete')} ${b.name} ${this.language.text('and its payment history?')}`)) this.api.del('/bills/' + b.id).subscribe(() => this.load()); }

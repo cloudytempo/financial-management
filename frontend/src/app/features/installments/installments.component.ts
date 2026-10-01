@@ -45,7 +45,7 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
     <div class="card">
       <div class="row between" style="flex-wrap:nowrap">
         <div class="row" style="flex-wrap:nowrap;min-width:0"><span class="ic-badge"><app-icon [name]="icon(i.type)" [size]="18" /></span>
-          <div style="min-width:0"><div style="font-weight:700">{{ i.name || (i.type | tr) }} @if (i.completed) { <span class="badge ok">{{ 'Completed' | tr }}</span> }</div><div class="s muted small">{{ i.type | tr }} · {{ fmt(i.amount) }}/{{ 'month' | tr }} · {{ 'due day' | tr }} {{ i.due_day }}</div></div></div>
+          <div style="min-width:0"><div style="font-weight:700">{{ i.name || (i.type | tr) }} @if (i.completed) { <span class="badge ok">{{ 'Completed' | tr }}</span> }</div><div class="s muted small">{{ i.type | tr }} · {{ fmt(i.amount) }}/{{ 'month' | tr }} · {{ 'due day' | tr }} {{ i.due_day }} · {{ 'Payment account' | tr }}: {{ i.account_name || ('No account' | tr) }}</div></div></div>
         <div class="row" style="flex-wrap:nowrap;gap:0"><button class="icon-btn" (click)="edit(i)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
           <button class="icon-btn del" (click)="remove(i)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button></div>
       </div>
@@ -54,7 +54,7 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
       <div class="chips">
         @for (s of i.schedule; track s.period) {
           <button class="chip" [class.paid]="s.paid" [class.overdue]="s.overdue" (click)="toggle(i, s)"
-            [title]="(s.paid ? 'Paid. Tap to undo' : 'Tap to mark as paid') | tr">{{ label(s.due_date) }}</button>
+            [title]="(s.paid ? ('Paid. Tap to undo' | tr) : ('Tap to mark as paid' | tr)) + (s.account_name ? ' · ' + s.account_name : '')">{{ label(s.due_date) }}</button>
         }
       </div>
     </div>
@@ -70,7 +70,8 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
         <label>{{ 'Duration (months)' | tr }}<input name="dur" type="number" inputmode="numeric" min="1" [(ngModel)]="form.duration_months" required></label>
         <label>{{ 'Payment due day' | tr }}<input name="day" type="number" inputmode="numeric" min="1" max="31" [(ngModel)]="form.due_day" required></label>
         <label>{{ 'Start month' | tr }}<select name="sm" [(ngModel)]="form.start_month">@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></label>
-        <label class="full">{{ 'Start year' | tr }}<input name="sy" type="number" inputmode="numeric" [(ngModel)]="form.start_year" required></label>
+        <label>{{ 'Start year' | tr }}<input name="sy" type="number" inputmode="numeric" [(ngModel)]="form.start_year" required></label>
+        <label>{{ 'Payment account' | tr }}<select name="account" [(ngModel)]="form.account_id"><option [ngValue]="null">{{ 'No account' | tr }}</option>@for (account of accounts; track account.id) { <option [ngValue]="account.id">{{ account.name }}</option> }</select></label>
       </div>
       @if (error) { <div class="err" style="margin-top:.6rem">{{ error | tr }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="closeForm()">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add installment') | tr }}</button></div>
@@ -82,11 +83,11 @@ export class InstallmentsComponent implements OnInit {
   fmt = fmt; get months() { return MONTHS.map((_, i) => new Date(2024, i, 1).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { month: 'short' })); } icon = typeIcon;
   types = ['House', 'Phone', 'Shopee PayLater', 'Car', 'Other'];
   now = new Date(); showForm = false;
-  items: any[] = []; upcoming: any[] = []; accounts: any[] = []; paymentAccountId: number | null = null; chartCfg: any; form: any = this.blank(); error = '';
+  items: any[] = []; upcoming: any[] = []; accounts: any[] = []; chartCfg: any; form: any = this.blank(); error = '';
   itemsLoading = true; upcomingLoading = true; summaryLoading = true;
   kMonthly = 0; kRemaining = 0; kDue = 0;
 
-  blank() { return { id: null, type: 'House', name: '', amount: null, duration_months: 12, due_day: 1, start_month: this.now.getMonth() + 1, start_year: this.now.getFullYear() }; }
+  blank() { return { id: null, type: 'House', name: '', amount: null, duration_months: 12, due_day: 1, start_month: this.now.getMonth() + 1, start_year: this.now.getFullYear(), account_id: null }; }
   ngOnInit() { this.load(); this.api.get<any[]>('/accounts/options').subscribe((rows) => (this.accounts = rows)); }
   label(d: string) { return this.months[+d.slice(5, 7) - 1] + " '" + d.slice(2, 4); }
 
@@ -113,5 +114,5 @@ export class InstallmentsComponent implements OnInit {
     req.subscribe({ next: () => { this.closeForm(); this.load(); }, error: (e) => (this.error = errMsg(e)) });
   }
   remove(i: any) { if (confirm(`${this.language.text('Delete')} ${i.name || i.type} ${this.language.text('and its payment history?')}`)) this.api.del('/installments/' + i.id).subscribe(() => this.load()); }
-  toggle(i: any, s: any) { this.api.post(`/installments/${i.id}/payments`, { period: s.period, paid: !s.paid, account_id: this.paymentAccountId }).subscribe(() => this.load()); }
+  toggle(i: any, s: any) { this.api.post(`/installments/${i.id}/payments`, { period: s.period, paid: !s.paid, account_id: i.account_id }).subscribe(() => this.load()); }
 }

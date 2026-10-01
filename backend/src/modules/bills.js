@@ -1,9 +1,14 @@
 const router = require('express').Router();
 const pool = require('../db');
 const { wrap, lockDown, fmtDate, todayStr, daysBetween } = require('../util');
-const COLS = "id,name,category,amount::float8 AS amount,frequency,to_char(first_due,'YYYY-MM-DD') AS first_due,status,autopay,add_expense";
+const COLS = "b.id,b.name,b.category,b.amount::float8 AS amount,b.frequency,to_char(b.first_due,'YYYY-MM-DD') AS first_due,b.status,b.autopay,b.add_expense,b.account_id,a.name AS account_name";
 const ok = (b) => b.name && b.amount !== '' && b.amount != null && Number(b.amount) >= 0 && ['monthly', 'quarterly', 'yearly'].includes(b.frequency) &&
   /^\d{4}-\d{2}-\d{2}$/.test(b.first_due || '') && ['active', 'paused', 'cancelled'].includes(b.status || 'active');
+async function validAccount(householdId, value) {
+  if (value == null || value === '') return true;
+  const id = Number(value);
+  return Number.isInteger(id) && !!(await pool.query('SELECT 1 FROM accounts WHERE id=$1 AND household_id=$2 AND is_active=true', [id, householdId])).rowCount;
+}
 const PER_MONTH = { monthly: 1, quarterly: 1 / 3, yearly: 1 / 12 };
 const PER_YEAR = { monthly: 12, quarterly: 4, yearly: 1 };
 
@@ -22,7 +27,7 @@ function nextCycle(b, start) {
 }
 
 async function loadAll(householdId) {
-  const { rows } = await pool.query(`SELECT ${COLS} FROM bills WHERE household_id=$1 ORDER BY id`, [householdId]);
+  const { rows } = await pool.query(`SELECT ${COLS} FROM bills b LEFT JOIN accounts a ON a.id=b.account_id WHERE b.household_id=$1 ORDER BY b.id`, [householdId]);
   const p = await pool.query("SELECT bp.bill_id, to_char(MAX(bp.due_date),'YYYY-MM-DD') AS last_due, COUNT(*)::int AS paid_count FROM bill_payments bp JOIN bills b ON b.id=bp.bill_id WHERE b.household_id=$1 GROUP BY bp.bill_id", [householdId]);
   const last = new Map(p.rows.map((r) => [r.bill_id, r]));
   const today = todayStr();
@@ -103,15 +108,17 @@ router.delete('/splits/:id', wrap(async (req, res) => {
 router.post('/', wrap(async (req, res) => {
   if (!ok(req.body)) return res.status(400).json({ error: 'Invalid bill.' });
   const b = req.body;
-  await pool.query('INSERT INTO bills(household_id,name,category,amount,frequency,first_due,status,autopay,add_expense) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',
-    [req.household.id, b.name.trim(), (b.category || '').trim(), b.amount, b.frequency, b.first_due, b.status || 'active', !!b.autopay, !!b.add_expense]);
+  if (!(await validAccount(req.household.id, b.account_id))) return res.status(400).json({ error: 'Choose an active account in this household.' });
+  await pool.query('INSERT INTO bills(household_id,name,category,amount,frequency,first_due,status,autopay,add_expense,account_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
+    [req.household.id, b.name.trim(), (b.category || '').trim(), b.amount, b.frequency, b.first_due, b.status || 'active', !!b.autopay, !!b.add_expense, b.account_id || null]);
   res.status(201).json({ ok: true });
 }));
 router.put('/:id', wrap(async (req, res) => {
   if (!ok(req.body)) return res.status(400).json({ error: 'Invalid bill.' });
   const b = req.body;
-  const r = await pool.query('UPDATE bills SET name=$1,category=$2,amount=$3,frequency=$4,first_due=$5,status=$6,autopay=$7,add_expense=$8 WHERE id=$9 AND household_id=$10',
-    [b.name.trim(), (b.category || '').trim(), b.amount, b.frequency, b.first_due, b.status || 'active', !!b.autopay, !!b.add_expense, req.params.id, req.household.id]);
+  if (!(await validAccount(req.household.id, b.account_id))) return res.status(400).json({ error: 'Choose an active account in this household.' });
+  const r = await pool.query('UPDATE bills SET name=$1,category=$2,amount=$3,frequency=$4,first_due=$5,status=$6,autopay=$7,add_expense=$8,account_id=$9 WHERE id=$10 AND household_id=$11',
+    [b.name.trim(), (b.category || '').trim(), b.amount, b.frequency, b.first_due, b.status || 'active', !!b.autopay, !!b.add_expense, b.account_id || null, req.params.id, req.household.id]);
   r.rowCount ? res.json({ ok: true }) : res.status(404).json({ error: 'Not found' });
 }));
 router.delete('/:id', wrap(async (req, res) => {
@@ -124,8 +131,9 @@ router.post('/:id/pay', wrap(async (req, res) => {
   const bill = (await loadAll(req.household.id)).find((b) => b.id === +req.params.id);
   if (!bill) return res.status(404).json({ error: 'Not found' });
   const amount = req.body && req.body.amount !== '' && req.body.amount != null ? Number(req.body.amount) : bill.amount;
-  const accountId = req.body && req.body.account_id != null && req.body.account_id !== '' ? Number(req.body.account_id) : null;
-  if (accountId != null && (!Number.isInteger(accountId) || !(await pool.query('SELECT 1 FROM accounts WHERE id=$1 AND household_id=$2 AND is_active=true', [accountId, req.household.id])).rowCount))
+  const requestedAccount = req.body && Object.prototype.hasOwnProperty.call(req.body, 'account_id') ? req.body.account_id : bill.account_id;
+  const accountId = requestedAccount == null || requestedAccount === '' ? null : Number(requestedAccount);
+  if (!(await validAccount(req.household.id, accountId)))
     return res.status(400).json({ error: 'Choose an active account in this household.' });
   const client = await pool.connect();
   try {

@@ -123,7 +123,7 @@ const init = async () => {
     to_account_id INT NOT NULL REFERENCES accounts ON DELETE RESTRICT,
     amount NUMERIC(14,2) NOT NULL CHECK(amount > 0), transfer_date DATE NOT NULL, note TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CHECK(from_account_id <> to_account_id))`);
-  for (const table of ['expenses', 'income', 'bill_payments', 'installment_payments']) {
+  for (const table of ['expenses', 'income', 'bill_payments', 'installment_payments', 'bills', 'installments']) {
     if (!(await pool.query('SELECT to_regclass($1) AS name', [`public.${table}`])).rows[0].name) continue;
     await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS account_id INT REFERENCES accounts ON DELETE SET NULL`);
   }
