@@ -122,7 +122,7 @@ router.get('/households', requireAuth, wrap(async (req, res) => {
 router.get('/households/members', requireAuth, wrap(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT u.id,u.name FROM household_members m
-     JOIN users u ON u.id=m.user_id WHERE m.household_id=$1 ORDER BY lower(u.name),u.id`,
+    JOIN users u ON u.id=m.user_id WHERE m.household_id=$1 AND u.active_household_id=$1 ORDER BY lower(u.name),u.id`,
     [req.household.id]);
   res.json(rows);
 }));
