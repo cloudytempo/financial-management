@@ -7,10 +7,11 @@ import { Language } from '../../core/language.service';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { SkeletonComponent } from '../../shared/skeleton.component';
 import { errMsg } from '../../shared/util';
 
 @Component({
-  selector: 'app-settings', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe],
+  selector: 'app-settings', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head"><div><h1>{{ 'Settings' | tr }}</h1><p class="sub">{{ 'Manage your household and workspace' | tr }}</p></div></div>
   <section class="card settings-panel" aria-labelledby="household-title" style="margin-bottom:1rem">
@@ -18,7 +19,7 @@ import { errMsg } from '../../shared/util';
     <p class="sub">@if (auth.user()?.household?.name) { {{ 'Currently using' | tr }} <b>{{ auth.user()?.household?.name }}</b>. } @else { {{ 'No active household. Enter or create one to continue.' | tr }} }
       {{ 'A household password is required each time you enter another household.' | tr }}</p>
     <div class="row" style="margin-top:1rem"><h3 style="margin:0">{{ 'Members' | tr }}</h3><span class="pill">{{ members.length }}</span></div>
-    @if (membersLoading) { <p class="muted small" style="margin-top:.5rem">{{ 'Loading members...' | tr }}</p> }
+    @if (membersLoading) { <app-skeleton [rows]="3" /> }
     @else if (memberError) { <p class="err small" style="margin-top:.5rem">{{ memberError | tr }}</p> }
     @else if (!members.length) { <p class="muted small" style="margin-top:.5rem">{{ 'No members found.' | tr }}</p> }
     @else {

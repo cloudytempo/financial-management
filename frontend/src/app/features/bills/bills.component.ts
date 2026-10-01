@@ -7,9 +7,10 @@ import { ModalComponent } from '../../shared/modal.component';
 import { COLORS, errMsg, fmt, iso, typeIcon } from '../../shared/util';
 import { Language } from '../../core/language.service';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { SkeletonComponent } from '../../shared/skeleton.component';
 
 @Component({
-  selector: 'app-bills', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
+  selector: 'app-bills', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head">
     <div><h1>{{ 'Bills & subscriptions' | tr }}</h1><p class="sub">{{ 'Recurring payments with no end date, and when each is next due' | tr }}</p></div>
@@ -17,20 +18,21 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   </div>
 
   <div class="bento">
-    <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="repeat" /></span><div><div class="lbl">{{ 'Monthly cost' | tr }}</div><div class="val">{{ fmt(sum.monthly) }}</div><div class="foot">{{ sum.count }} {{ 'active' | tr }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Yearly cost' | tr }}</div><div class="val">{{ fmt(sum.yearly) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="clock" /></span><div><div class="lbl">{{ 'Due in 30 days' | tr }}</div><div class="val">{{ due.length }}</div><div class="foot">{{ fmt(dueTotal) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="alert" /></span><div><div class="lbl">{{ 'Overdue' | tr }}</div><div class="val" [class.up]="overdue">{{ overdue }}</div></div></div>
+    <div class="card kpi dark s3">@if (summaryLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="repeat" /></span><div><div class="lbl">{{ 'Monthly cost' | tr }}</div><div class="val">{{ fmt(sum.monthly) }}</div><div class="foot">{{ sum.count }} {{ 'active' | tr }}</div></div> }</div>
+    <div class="card kpi s3">@if (summaryLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Yearly cost' | tr }}</div><div class="val">{{ fmt(sum.yearly) }}</div></div> }</div>
+    <div class="card kpi s3">@if (itemsLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="clock" /></span><div><div class="lbl">{{ 'Due in 30 days' | tr }}</div><div class="val">{{ due.length }}</div><div class="foot">{{ fmt(dueTotal) }}</div></div> }</div>
+    <div class="card kpi s3">@if (itemsLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="alert" /></span><div><div class="lbl">{{ 'Overdue' | tr }}</div><div class="val" [class.up]="overdue">{{ overdue }}</div></div> }</div>
   </div>
 
   <div class="bento">
-    <div class="card s4"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ 'Monthly cost by category' | tr }}</h2></div>@if (cfg) { <app-chart [config]="cfg" /> }</div>
+    <div class="card s4"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ 'Monthly cost by category' | tr }}</h2></div>@if (summaryLoading) { <app-skeleton variant="chart" /> } @else if (cfg) { <app-chart [config]="cfg" /> }</div>
     <div class="card s8">
       <div class="card-h"><h2>{{ 'All bills' | tr }} <span class="pill">{{ items.length }}</span></h2>
         @if (accounts.length) { <label class="account-payment-selector">{{ 'Payment account' | tr }}<select name="paymentAccount" [(ngModel)]="paymentAccountId"><option [ngValue]="null">{{ 'No account' | tr }}</option>@for (account of accounts; track account.id) { <option [ngValue]="account.id">{{ account.name }}</option> }</select></label> }
       </div>
-      @if (!items.length) { <div class="empty">{{ 'No bills yet. Add Unifi, Netflix, insurance or road tax to get reminders.' | tr }}</div> }
-      <ul class="list">@for (b of items; track b.id) {
+      @if (itemsLoading) { <app-skeleton [rows]="4" /> }
+      @else if (!items.length) { <div class="empty">{{ 'No bills yet. Add Unifi, Netflix, insurance or road tax to get reminders.' | tr }}</div> }
+      @else { <ul class="list">@for (b of items; track b.id) {
         <li class="item bill-item" [class.flag]="b.overdue" [style.opacity]="b.status === 'active' ? 1 : .6">
           <span class="ic-badge" [class.warn]="b.overdue"><app-icon [name]="icon(b.category || b.name)" [size]="18" /></span>
           <div class="grow"><div class="t">{{ b.name }}
@@ -55,15 +57,16 @@ import { TranslatePipe } from '../../shared/translate.pipe';
             </div>
           </details>
         </li>
-      }</ul>
+      }</ul> }
     </div>
   </div>
 
   <div class="card split-card">
     <div class="card-h"><h2><app-icon name="users" [size]="18" />{{ 'Split bills' | tr }} <span class="pill">{{ splits.length }}</span></h2>
       <button class="btn sm" (click)="openSplitForm()"><app-icon name="plus" [size]="16" />{{ 'Split a bill' | tr }}</button></div>
-    @if (!splits.length) { <div class="empty">{{ 'No split bills yet.' | tr }} {{ 'Add a shared bill to track shares by participant.' | tr }}</div> }
-    <ul class="split-list">@for (split of splits; track split.id) {
+    @if (splitsLoading) { <app-skeleton [rows]="3" /> }
+    @else if (!splits.length) { <div class="empty">{{ 'No split bills yet.' | tr }} {{ 'Add a shared bill to track shares by participant.' | tr }}</div> }
+    @else { <ul class="split-list">@for (split of splits; track split.id) {
       <li class="split-entry">
         <div class="row between split-heading"><div class="grow"><div class="t">{{ split.name }} <span class="pill">{{ paidCount(split) }}/{{ split.shares.length }} {{ 'paid' | tr }}</span></div>
           <div class="s">{{ 'Due' | tr }} {{ split.due_date }} · {{ fmt(split.total_amount) }} {{ 'total' | tr }}</div></div>
@@ -73,7 +76,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
             <button class="chip" [class.paid]="share.paid" (click)="toggleShare(split, share)">{{ (share.paid ? 'Paid' : 'Mark paid') | tr }}</button></li>
         }</ul>
       </li>
-    }</ul>
+    }</ul> }
   </div>
 
   <app-modal [open]="showForm" [title]="(form.id ? 'Edit bill' : 'Add bill') | tr" (closed)="showForm = false">
@@ -111,7 +114,7 @@ export class BillsComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
   fmt = fmt; icon = typeIcon; showForm = false; error = '';
   cats = ['Internet', 'Electrical', 'Water', 'Insurance', 'Subscription', 'Phone', 'Road tax', 'Assessment tax', 'Other'];
-  items: any[] = []; splits: any[] = []; accounts: any[] = []; paymentAccountId: number | null = null; showSplitForm = false; splitError = ''; splitPeopleText = '';
+  items: any[] = []; splits: any[] = []; accounts: any[] = []; paymentAccountId: number | null = null; itemsLoading = true; summaryLoading = true; splitsLoading = true; showSplitForm = false; splitError = ''; splitPeopleText = '';
   splitForm: any = this.blankSplit(); sum: any = { count: 0, monthly: 0, yearly: 0, by: [] }; cfg: any; form: any = this.blank();
   get due() { return this.items.filter((b) => b.status === 'active' && b.days_left <= 30); }
   get dueTotal() { return this.due.reduce((a, b) => a + b.amount, 0); }
@@ -120,14 +123,16 @@ export class BillsComponent implements OnInit {
   blank() { const d = new Date(); return { id: null, name: '', category: '', amount: null, frequency: 'monthly', first_due: iso(new Date(d.getFullYear(), d.getMonth() + 1, 1)), status: 'active', autopay: false, add_expense: false }; }
   ngOnInit() { this.load(); this.loadSplits(); this.api.get<any[]>('/accounts/options').subscribe((rows) => (this.accounts = rows)); }
   load() {
-    this.api.get<any[]>('/bills').subscribe((r) => (this.items = r));
-    this.api.get<any>('/bills/summary').subscribe((s) => {
+    this.itemsLoading = true; this.summaryLoading = true;
+    this.api.get<any[]>('/bills').subscribe({ next: (r) => { this.items = r; this.itemsLoading = false; }, error: (e) => { this.error = errMsg(e); this.itemsLoading = false; } });
+    this.api.get<any>('/bills/summary').subscribe({ next: (s) => {
       this.sum = s;
       this.cfg = { type: 'doughnut', data: { labels: s.by.map((x: any) => this.language.text(x.category)), datasets: [{ data: s.by.map((x: any) => Number(Number(x.monthly).toFixed(2))), backgroundColor: s.by.map((_: any, i: number) => COLORS[i % COLORS.length]) }] } };
-    });
+      this.summaryLoading = false;
+    }, error: (e) => { this.error = errMsg(e); this.summaryLoading = false; } });
   }
   blankSplit() { return { name: '', total_amount: null, due_date: iso(new Date()) }; }
-  loadSplits() { this.api.get<any[]>('/bills/splits').subscribe((r) => (this.splits = r)); }
+  loadSplits() { this.splitsLoading = true; this.api.get<any[]>('/bills/splits').subscribe({ next: (r) => { this.splits = r; this.splitsLoading = false; }, error: (e) => { this.splitError = errMsg(e); this.splitsLoading = false; } }); }
   paidCount(split: any) { return split.shares.filter((share: any) => share.paid).length; }
   openSplitForm() { this.splitForm = this.blankSplit(); this.splitPeopleText = ''; this.splitError = ''; this.showSplitForm = true; }
   saveSplit() {

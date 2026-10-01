@@ -5,9 +5,10 @@ import { IconComponent } from '../../shared/icon.component';
 import { errMsg } from '../../shared/util';
 import { TranslatePipe } from '../../shared/translate.pipe';
 import { Language } from '../../core/language.service';
+import { SkeletonComponent } from '../../shared/skeleton.component';
 
 @Component({
-  selector: 'app-admin-reports', standalone: true, imports: [FormsModule, IconComponent, TranslatePipe],
+  selector: 'app-admin-reports', standalone: true, imports: [FormsModule, IconComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head"><div><p class="admin-kicker">{{ 'CASE MANAGEMENT' | tr }}</p><h1>{{ 'Reports' | tr }}</h1><p class="sub">{{ 'Review household membership concerns and track outcomes' | tr }}</p></div>
     <button class="icon-btn" (click)="load()" [attr.aria-label]="'Refresh' | tr" [title]="'Refresh' | tr"><app-icon name="refresh" /></button></div>
@@ -24,7 +25,8 @@ import { Language } from '../../core/language.service';
     </div>
   </div>
   <section class="card admin-report-table-card">
-    @if (!shown.length) { <div class="empty">{{ (reports.length ? 'No reports match these filters.' : 'No reports have been submitted.') | tr }}</div> }
+    @if (loading) { <app-skeleton [rows]="5" /> }
+    @else if (!shown.length) { <div class="empty">{{ (reports.length ? 'No reports match these filters.' : 'No reports have been submitted.') | tr }}</div> }
     @else {
       <div class="admin-report-table-wrap">
         <table class="admin-report-table">
@@ -55,7 +57,7 @@ import { Language } from '../../core/language.service';
 })
 export class AdminReportsComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
-  reports: any[] = []; query = ''; status = 'all'; error = '';
+  reports: any[] = []; query = ''; status = 'all'; error = ''; loading = true;
   filters = [
     { label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Reviewing', value: 'reviewing' },
     { label: 'Resolved', value: 'resolved' }, { label: 'Dismissed', value: 'dismissed' },
@@ -65,7 +67,7 @@ export class AdminReportsComponent implements OnInit {
     return this.reports.filter((report) => (!q || `${report.id} ${report.household_id} ${report.household_name} ${report.reporter_user_id} ${report.reporter_name} ${report.reported_user_id} ${report.reported_name} ${report.description}`.toLowerCase().includes(q)) && (this.status === 'all' || report.status === this.status));
   }
   ngOnInit() { this.load(); }
-  load() { this.api.get<any[]>('/admin/reports').subscribe({ next: (rows) => (this.reports = rows), error: (e) => (this.error = errMsg(e)) }); }
+  load() { this.loading = true; this.api.get<any[]>('/admin/reports').subscribe({ next: (rows) => { this.reports = rows; this.loading = false; }, error: (e) => { this.error = errMsg(e); this.loading = false; } }); }
   count(value: string) { return this.reports.filter((report) => report.status === value).length; }
   save(report: any) {
     this.error = '';

@@ -6,12 +6,13 @@ import { ChartComponent } from '../../shared/chart.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { SkeletonComponent } from '../../shared/skeleton.component';
 import { errMsg, fmt, iso, typeIcon } from '../../shared/util';
 
 const ACCOUNT_TYPES = ['cash', 'bank', 'savings', 'credit_card', 'investment', 'loan', 'other'];
 
 @Component({
-  selector: 'app-accounts', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
+  selector: 'app-accounts', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head">
     <div><h1>{{ 'Accounts' | tr }}</h1><p class="sub">{{ 'Track balances, assets, liabilities and transfers' | tr }}</p></div>
@@ -29,22 +30,25 @@ const ACCOUNT_TYPES = ['cash', 'bank', 'savings', 'credit_card', 'investment', '
 
   <div class="bento">
     <section class="card s7"><div class="card-h"><h2>{{ 'Account balances' | tr }}</h2><span class="pill">{{ activeAccounts.length }} {{ 'active' | tr }}</span></div>
-      @if (!accounts.length) { <div class="empty">{{ 'No accounts yet. Add cash, bank, savings or credit accounts to track your money.' | tr }}</div> }
-      <ul class="list">@for (account of accounts; track account.id) {
+      @if (accountsLoading) { <app-skeleton [rows]="3" /> }
+      @else if (!accounts.length) { <div class="empty">{{ 'No accounts yet. Add cash, bank, savings or credit accounts to track your money.' | tr }}</div> }
+      @else { <ul class="list">@for (account of accounts; track account.id) {
         <li class="item account-row" [class.account-inactive]="!account.is_active">
           <span class="ic-badge"><app-icon [name]="typeIcon(account.type)" [size]="18" /></span>
           <div class="grow"><div class="t">{{ account.name }} <span class="pill">{{ account.type | tr }}</span>
             @if (!account.is_active) { <span class="badge">{{ 'Inactive' | tr }}</span> }</div>
-            <div class="s">{{ account.is_liability ? ('Liability' | tr) : ('Asset' | tr) }} · {{ 'Opening balance' | tr }} {{ fmt(account.opening_balance) }}</div></div>
+            <div class="s">{{ account.is_liability ? ('Liability' | tr) : ('Asset' | tr) }} · {{ 'Opening balance' | tr }} {{ fmt(account.opening_balance) }}</div>
+            @if (account.type === 'credit_card') { <div class="s">{{ 'Statement day' | tr }} {{ account.statement_day }} · {{ 'Payment due day' | tr }} {{ account.due_day }}</div> }
+          </div>
           <div class="amt">{{ fmt(account.balance) }}</div>
           <button class="icon-btn" (click)="editAccount(account)" [attr.aria-label]="('Edit account' | tr) + ' ' + account.name"><app-icon name="pencil" [size]="18" /></button>
           @if (account.is_active) { <button class="icon-btn del" (click)="deactivate(account)" [attr.aria-label]="('Deactivate' | tr) + ' ' + account.name"><app-icon name="eye-off" [size]="18" /></button> }
           @else { <button class="icon-btn" (click)="activate(account)" [attr.aria-label]="('Activate' | tr) + ' ' + account.name"><app-icon name="check" [size]="18" /></button> }
         </li>
-      }</ul>
+      }</ul> }
     </section>
     <section class="card s5"><div class="card-h"><h2>{{ 'Balances by account' | tr }}</h2></div>
-      @if (chart) { <app-chart [config]="chart" /> } @else { <div class="empty">{{ 'Add an account to see balances.' | tr }}</div> }
+      @if (accountsLoading) { <app-skeleton variant="chart" /> } @else if (chart) { <app-chart [config]="chart" /> } @else { <div class="empty">{{ 'Add an account to see balances.' | tr }}</div> }
     </section>
   </div>
 
@@ -53,14 +57,15 @@ const ACCOUNT_TYPES = ['cash', 'bank', 'savings', 'credit_card', 'investment', '
       <label class="account-filter">{{ 'Account' | tr }}<select name="historyAccount" [(ngModel)]="historyAccountId"><option [ngValue]="null">{{ 'All accounts' | tr }}</option>
         @for (account of accounts; track account.id) { <option [ngValue]="account.id">{{ account.name }}</option> }</select></label>
     </div>
-    @if (!visibleTransactions.length) { <div class="empty">{{ 'Transactions linked to accounts will appear here.' | tr }}</div> }
-    <ul class="list">@for (transaction of visibleTransactions; track transaction.kind + '-' + transaction.source_id + '-' + transaction.account_id) {
+    @if (transactionsLoading) { <app-skeleton [rows]="4" /> }
+    @else if (!visibleTransactions.length) { <div class="empty">{{ 'Transactions linked to accounts will appear here.' | tr }}</div> }
+    @else { <ul class="list">@for (transaction of visibleTransactions; track transaction.kind + '-' + transaction.source_id + '-' + transaction.account_id) {
       <li class="item"><span class="ic-badge" [class.warn]="isOutflow(transaction)"><app-icon [name]="transactionIcon(transaction.kind)" [size]="18" /></span>
         <div class="grow"><div class="t">{{ transaction.description }} <span class="pill">{{ transaction.kind | tr }}</span></div>
           <div class="s">{{ transaction.account_name }} · {{ formatDate(transaction.transaction_date) }}@if (transaction.note) { · {{ transaction.note }} }</div></div>
         <div class="amt" [class.down]="!isOutflow(transaction)" [class.up]="isOutflow(transaction)">{{ isOutflow(transaction) ? '-' : '+' }}{{ fmt(transaction.amount) }}</div>
       </li>
-    }</ul>
+    }</ul> }
   </section>
 
   <app-modal [open]="showAccountForm" [title]="(accountForm.id ? 'Edit account' : 'Add account') | tr" (closed)="showAccountForm = false">
@@ -68,6 +73,10 @@ const ACCOUNT_TYPES = ['cash', 'bank', 'savings', 'credit_card', 'investment', '
       <label class="full">{{ 'Account name' | tr }}<input name="accountName" [(ngModel)]="accountForm.name" maxlength="80" required [placeholder]="'e.g. Main bank account' | tr"></label>
       <label>{{ 'Account type' | tr }}<select name="accountType" [(ngModel)]="accountForm.type">@for (type of accountTypes; track type) { <option [ngValue]="type">{{ type | tr }}</option> }</select></label>
       <label>{{ 'Opening balance (MYR)' | tr }}<input name="openingBalance" type="number" inputmode="decimal" step="0.01" [(ngModel)]="accountForm.opening_balance" required></label>
+      @if (accountForm.type === 'credit_card') {
+        <label>{{ 'Statement day' | tr }}<input name="statementDay" type="number" inputmode="numeric" min="1" max="31" [(ngModel)]="accountForm.statement_day" required></label>
+        <label>{{ 'Payment due day' | tr }}<input name="dueDay" type="number" inputmode="numeric" min="1" max="31" [(ngModel)]="accountForm.due_day" required></label>
+      }
     </div>
     @if (accountError) { <div class="err" style="margin-top:.6rem">{{ accountError | tr }}</div> }
     <div class="sheet-f"><button type="button" class="btn ghost" (click)="showAccountForm = false">{{ 'Cancel' | tr }}</button><button class="btn" type="submit">{{ (accountForm.id ? 'Save changes' : 'Add account') | tr }}</button></div></form>
@@ -88,6 +97,7 @@ const ACCOUNT_TYPES = ['cash', 'bank', 'savings', 'credit_card', 'investment', '
 export class AccountsComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
   accountTypes = ACCOUNT_TYPES; typeIcon = typeIcon; accounts: any[] = []; transactions: any[] = []; summary: any = { total_assets: 0, total_liabilities: 0, net_worth: 0 };
+  accountsLoading = true; transactionsLoading = true;
   chart: any; error = ''; accountError = ''; transferError = ''; showAccountForm = false; showTransferForm = false;
   historyAccountId: number | null = null;
   accountForm: any = this.blankAccount(); transferForm: any = this.blankTransfer();
@@ -95,10 +105,10 @@ export class AccountsComponent implements OnInit {
   get transferTargets() { return this.activeAccounts.filter((account) => account.id !== this.transferForm.from_account_id); }
   get visibleTransactions() { return this.transactions.filter((transaction) => this.historyAccountId == null || transaction.account_id === this.historyAccountId); }
   ngOnInit() { this.load(); }
-  blankAccount() { return { id: null, name: '', type: 'bank', opening_balance: 0 }; }
+  blankAccount() { return { id: null, name: '', type: 'bank', opening_balance: 0, statement_day: null, due_day: null }; }
   blankTransfer() { return { from_account_id: null, to_account_id: null, amount: null, transfer_date: iso(new Date()), note: '' }; }
   load() {
-    this.error = '';
+    this.error = ''; this.accountsLoading = true; this.transactionsLoading = true;
     this.api.get<any>('/accounts').subscribe({ next: (result) => {
       this.accounts = result.accounts; this.summary = result;
       this.chart = this.accounts.length ? { type: 'bar', data: {
@@ -107,11 +117,12 @@ export class AccountsComponent implements OnInit {
       }, options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } } : null;
       if (this.transferForm.from_account_id == null) this.transferForm.from_account_id = this.activeAccounts[0]?.id ?? null;
       this.transferForm.to_account_id = this.transferTargets[0]?.id ?? null;
-    }, error: (e) => (this.error = errMsg(e)) });
-    this.api.get<any[]>('/accounts/transactions').subscribe({ next: (rows) => (this.transactions = rows), error: (e) => (this.error = errMsg(e)) });
+      this.accountsLoading = false;
+    }, error: (e) => { this.error = errMsg(e); this.accountsLoading = false; } });
+    this.api.get<any[]>('/accounts/transactions').subscribe({ next: (rows) => { this.transactions = rows; this.transactionsLoading = false; }, error: (e) => { this.error = errMsg(e); this.transactionsLoading = false; } });
   }
   openAccount() { this.accountForm = this.blankAccount(); this.accountError = ''; this.showAccountForm = true; }
-  editAccount(account: any) { this.accountForm = { id: account.id, name: account.name, type: account.type, opening_balance: account.opening_balance }; this.accountError = ''; this.showAccountForm = true; }
+  editAccount(account: any) { this.accountForm = { id: account.id, name: account.name, type: account.type, opening_balance: account.opening_balance, statement_day: account.statement_day, due_day: account.due_day }; this.accountError = ''; this.showAccountForm = true; }
   saveAccount() {
     const request = this.accountForm.id ? this.api.put('/accounts/' + this.accountForm.id, this.accountForm) : this.api.post('/accounts', this.accountForm);
     request.subscribe({ next: () => { this.showAccountForm = false; this.load(); }, error: (e) => (this.accountError = errMsg(e)) });

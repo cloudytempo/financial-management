@@ -8,9 +8,10 @@ import { mapExpenseRows } from '../../shared/csv';
 import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
 import { Language } from '../../core/language.service';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { SkeletonComponent } from '../../shared/skeleton.component';
 
 @Component({
-  selector: 'app-expenses', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
+  selector: 'app-expenses', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head">
     <div><h1>{{ 'Expenses' | tr }}</h1><p class="sub">{{ 'Compare what you spend month to month and year to year' | tr }}</p></div>
@@ -25,13 +26,14 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   </div>
 
   <div class="bento">
-    <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="wallet" /></span><div><div class="lbl">{{ year }} {{ 'total' | tr }}</div><div class="val">{{ fmt(kTotal) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Average per month' | tr }}</div><div class="val">{{ fmt(kAvg) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="trend" /></span><div><div class="lbl">{{ 'Biggest category' | tr }}</div><div class="val">{{ (kTop || '-') | tr }}</div><div class="foot">{{ fmt(kTopAmt) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="alert" /></span><div><div class="lbl">{{ 'Unusual' | tr }}</div><div class="val">{{ anomalies.length }}</div><div class="foot">{{ 'flagged expenses' | tr }}</div></div></div>
+    <div class="card kpi dark s3">@if (summaryLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="wallet" /></span><div><div class="lbl">{{ year }} {{ 'total' | tr }}</div><div class="val">{{ fmt(kTotal) }}</div></div> }</div>
+    <div class="card kpi s3">@if (summaryLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Average per month' | tr }}</div><div class="val">{{ fmt(kAvg) }}</div></div> }</div>
+    <div class="card kpi s3">@if (summaryLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="trend" /></span><div><div class="lbl">{{ 'Biggest category' | tr }}</div><div class="val">{{ (kTop || '-') | tr }}</div><div class="foot">{{ fmt(kTopAmt) }}</div></div> }</div>
+    <div class="card kpi s3">@if (anomaliesLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="alert" /></span><div><div class="lbl">{{ 'Unusual' | tr }}</div><div class="val">{{ anomalies.length }}</div><div class="foot">{{ 'flagged expenses' | tr }}</div></div> }</div>
   </div>
 
-  @if (anomalies.length) {
+  @if (anomaliesLoading) { <app-skeleton [rows]="2" /> }
+  @else if (anomalies.length) {
     <div class="alert"><app-icon name="alert" /><div><b>{{ 'Unusual spending detected' | tr }}</b>
       <ul>@for (a of anomalies.slice(0, 4); track a.id) {
         <li>{{ a.type }}, {{ months[a.month - 1] }} {{ a.year }}: {{ fmt(a.amount) }} {{ 'is' | tr }} {{ a.percentAbove }}% {{ 'above its usual' | tr }} {{ fmt(a.average) }}</li>
@@ -39,18 +41,19 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   }
 
   <div class="bento">
-    <div class="card s8"><div class="card-h"><h2><app-icon name="trend" [size]="18" />{{ 'Monthly:' | tr }} {{ year }} {{ 'vs' | tr }} {{ year - 1 }}</h2></div>@if (monthlyCfg) { <app-chart [config]="monthlyCfg" /> }</div>
-    <div class="card s4"><div class="card-h"><h2><app-icon name="calendar" [size]="18" />{{ 'Annual totals' | tr }}</h2></div>@if (annualCfg) { <app-chart [config]="annualCfg" /> }</div>
-    <div class="card s8"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ year }} {{ 'by type, per month' | tr }}</h2></div>@if (typeCfg && hasTypeData) { <app-chart [config]="typeCfg" /> } @else { <div class="empty">{{ 'No expense types recorded for' | tr }} {{ year }}.</div> }</div>
-    <div class="card s4"><div class="card-h"><h2><app-icon name="wallet" [size]="18" />{{ year }} {{ 'share by type' | tr }}</h2></div>@if (shareCfg && hasShareData) { <app-chart [config]="shareCfg" /> } @else { <div class="empty">{{ 'No expense types recorded for' | tr }} {{ year }}.</div> }</div>
+    <div class="card s8"><div class="card-h"><h2><app-icon name="trend" [size]="18" />{{ 'Monthly:' | tr }} {{ year }} {{ 'vs' | tr }} {{ year - 1 }}</h2></div>@if (summaryLoading) { <app-skeleton variant="chart" /> } @else if (monthlyCfg) { <app-chart [config]="monthlyCfg" /> }</div>
+    <div class="card s4"><div class="card-h"><h2><app-icon name="calendar" [size]="18" />{{ 'Annual totals' | tr }}</h2></div>@if (summaryLoading) { <app-skeleton variant="chart" /> } @else if (annualCfg) { <app-chart [config]="annualCfg" /> }</div>
+    <div class="card s8"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ year }} {{ 'by type, per month' | tr }}</h2></div>@if (summaryLoading) { <app-skeleton variant="chart" /> } @else if (typeCfg && hasTypeData) { <app-chart [config]="typeCfg" /> } @else { <div class="empty">{{ 'No expense types recorded for' | tr }} {{ year }}.</div> }</div>
+    <div class="card s4"><div class="card-h"><h2><app-icon name="wallet" [size]="18" />{{ year }} {{ 'share by type' | tr }}</h2></div>@if (summaryLoading) { <app-skeleton variant="chart" /> } @else if (shareCfg && hasShareData) { <app-chart [config]="shareCfg" /> } @else { <div class="empty">{{ 'No expense types recorded for' | tr }} {{ year }}.</div> }</div>
   </div>
 
   <div class="card">
     <div class="card-h"><h2>{{ 'Records' | tr }} <span class="pill">{{ shown.length }}</span></h2>
       <div style="width:150px"><select [ngModel]="monthFilter" (ngModelChange)="monthFilter = +$event" [attr.aria-label]="'Filter by month' | tr">
         <option [ngValue]="0">{{ 'All months' | tr }}</option>@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></div></div>
-    @if (!shown.length) { <div class="empty">{{ 'No expenses here yet. Use “Add expense” or import your CSV.' | tr }}</div> }
-    <ul class="list">@for (r of shown; track r.id) {
+    @if (rowsLoading) { <app-skeleton [rows]="5" /> }
+    @else if (!shown.length) { <div class="empty">{{ 'No expenses here yet. Use “Add expense” or import your CSV.' | tr }}</div> }
+    @else { <ul class="list">@for (r of shown; track r.id) {
       <li class="item" [class.flag]="flagged.has(r.id)">
         <span class="ic-badge" [class.warn]="flagged.has(r.id)"><app-icon [name]="icon(r.type)" [size]="18" /></span>
           <div class="grow"><div class="t">{{ r.type | tr }} <span class="pill">{{ months[r.month - 1] }}</span> @if (flagged.has(r.id)) { <span class="badge">{{ 'Unusual' | tr }}</span> }</div>
@@ -58,7 +61,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <div class="amt">{{ fmt(r.amount) }}</div>
         <button class="icon-btn" (click)="edit(r)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
         <button class="icon-btn del" (click)="remove(r)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button>
-      </li>}</ul>
+      </li>}</ul> }
   </div>
 
   <app-modal [open]="showForm" [title]="(form.id ? 'Edit expense' : 'Add expense') | tr" (closed)="closeForm()">
@@ -100,6 +103,7 @@ export class ExpensesComponent implements OnInit {
   form: any = this.blank(); error = ''; showForm = false; showImport = false;
   parsed: { records: any[]; blank: number } | null = null; skipFuture = true; importMsg = '';
   monthlyCfg: any; typeCfg: any; annualCfg: any; shareCfg: any; hasTypeData = false; hasShareData = false;
+  rowsLoading = true; summaryLoading = true; anomaliesLoading = true;
   kTotal = 0; kAvg = 0; kTop = ''; kTopAmt = 0;
 
   get shown() { return this.rows.filter((r) => Number(r.year) === this.year && (!this.monthFilter || Number(r.month) === this.monthFilter)); }
@@ -114,9 +118,10 @@ export class ExpensesComponent implements OnInit {
   setYear(y: number) { this.year = y; this.build(); }
 
   load() {
-    this.api.get<any[]>('/expenses').subscribe((r) => (this.rows = r));
-    this.api.get<any[]>('/expenses/summary').subscribe((s) => { this.summary = s; this.build(); });
-    this.api.get<any[]>('/expenses/anomalies').subscribe((a) => { this.anomalies = a; this.flagged = new Set(a.map((x) => x.id)); });
+    this.rowsLoading = true; this.summaryLoading = true; this.anomaliesLoading = true;
+    this.api.get<any[]>('/expenses').subscribe({ next: (r) => { this.rows = r; this.rowsLoading = false; }, error: (e) => { this.error = errMsg(e); this.rowsLoading = false; } });
+    this.api.get<any[]>('/expenses/summary').subscribe({ next: (s) => { this.summary = s; this.build(); this.summaryLoading = false; }, error: (e) => { this.error = errMsg(e); this.summaryLoading = false; } });
+    this.api.get<any[]>('/expenses/anomalies').subscribe({ next: (a) => { this.anomalies = a; this.flagged = new Set(a.map((x) => x.id)); this.anomaliesLoading = false; }, error: (e) => { this.error = errMsg(e); this.anomaliesLoading = false; } });
   }
 
   build() {

@@ -7,9 +7,10 @@ import { ModalComponent } from '../../shared/modal.component';
 import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
 import { Language } from '../../core/language.service';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { SkeletonComponent } from '../../shared/skeleton.component';
 
 @Component({
-  selector: 'app-installments', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
+  selector: 'app-installments', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head">
     <div><h1>{{ 'Installments' | tr }}</h1><p class="sub">{{ 'Track every monthly payment until it is cleared' | tr }}</p></div>
@@ -20,25 +21,27 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   </div>
 
   <div class="bento">
-    <div class="card kpi dark s4"><span class="chip-ic"><app-icon name="credit-card" /></span><div><div class="lbl">{{ 'Monthly commitment' | tr }}</div><div class="val">{{ fmt(kMonthly) }}</div></div></div>
-    <div class="card kpi s4"><span class="chip-ic"><app-icon name="banknote" /></span><div><div class="lbl">{{ 'Remaining to pay' | tr }}</div><div class="val">{{ fmt(kRemaining) }}</div></div></div>
-    <div class="card kpi s4"><span class="chip-ic"><app-icon name="clock" /></span><div><div class="lbl">{{ 'Due in 30 days' | tr }}</div><div class="val">{{ upcoming.length }}</div><div class="foot">{{ fmt(kDue) }}</div></div></div>
+    <div class="card kpi dark s4">@if (summaryLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="credit-card" /></span><div><div class="lbl">{{ 'Monthly commitment' | tr }}</div><div class="val">{{ fmt(kMonthly) }}</div></div> }</div>
+    <div class="card kpi s4">@if (summaryLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="banknote" /></span><div><div class="lbl">{{ 'Remaining to pay' | tr }}</div><div class="val">{{ fmt(kRemaining) }}</div></div> }</div>
+    <div class="card kpi s4">@if (upcomingLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="clock" /></span><div><div class="lbl">{{ 'Due in 30 days' | tr }}</div><div class="val">{{ upcoming.length }}</div><div class="foot">{{ fmt(kDue) }}</div></div> }</div>
   </div>
 
   <div class="bento">
-    <div class="card s7"><div class="card-h"><h2><app-icon name="credit-card" [size]="18" />{{ 'Total by type' | tr }}</h2></div>@if (chartCfg) { <app-chart [config]="chartCfg" /> }</div>
+    <div class="card s7"><div class="card-h"><h2><app-icon name="credit-card" [size]="18" />{{ 'Total by type' | tr }}</h2></div>@if (summaryLoading) { <app-skeleton variant="chart" /> } @else if (chartCfg) { <app-chart [config]="chartCfg" /> }</div>
     <div class="card s5"><div class="card-h"><h2><app-icon name="bell" [size]="18" />{{ 'Due soon' | tr }}</h2></div>
-      @if (!upcoming.length) { <div class="empty">{{ 'Nothing due in the next 30 days.' | tr }}</div> }
-      <ul class="list">@for (u of upcoming; track u.installment_id + '-' + u.period) {
+      @if (upcomingLoading) { <app-skeleton [rows]="3" /> }
+      @else if (!upcoming.length) { <div class="empty">{{ 'Nothing due in the next 30 days.' | tr }}</div> }
+      @else { <ul class="list">@for (u of upcoming; track u.installment_id + '-' + u.period) {
         <li class="item"><span class="ic-badge" [class.warn]="u.days_left <= 3"><app-icon [name]="icon(u.type)" [size]="18" /></span>
           <div class="grow"><div class="t">{{ u.name || (u.type | tr) }}</div><div class="s">{{ u.due_date }} · {{ 'payment' | tr }} {{ u.period }} {{ 'of' | tr }} {{ u.of }}</div></div>
           <div class="amt">{{ fmt(u.amount) }}<div><span class="badge" [class.ok]="u.days_left > 3">{{ u.days_left < 0 ? -u.days_left + ' ' + ('days overdue' | tr) : u.days_left === 0 ? ('Today' | tr) : ('in' | tr) + ' ' + u.days_left + ' ' + ('days' | tr) }}</span></div></div></li>
-      }</ul></div>
+      }</ul> }</div>
   </div>
 
-  @if (!items.length) { <div class="card empty">{{ 'No installments yet. Add one to start tracking payments.' | tr }}</div> }
+  @if (itemsLoading) { <div class="cards"><section class="card"><app-skeleton [rows]="4" /></section><section class="card"><app-skeleton [rows]="4" /></section></div> }
+  @else if (!items.length) { <div class="card empty">{{ 'No installments yet. Add one to start tracking payments.' | tr }}</div> }
   <div class="cards">
-  @for (i of items; track i.id) {
+  @if (!itemsLoading) { @for (i of items; track i.id) {
     <div class="card">
       <div class="row between" style="flex-wrap:nowrap">
         <div class="row" style="flex-wrap:nowrap;min-width:0"><span class="ic-badge"><app-icon [name]="icon(i.type)" [size]="18" /></span>
@@ -55,7 +58,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         }
       </div>
     </div>
-  }
+  } }
   </div>
 
   <app-modal [open]="showForm" [title]="(form.id ? 'Edit installment' : 'Add installment') | tr" (closed)="closeForm()">
@@ -80,6 +83,7 @@ export class InstallmentsComponent implements OnInit {
   types = ['House', 'Phone', 'Shopee PayLater', 'Car', 'Other'];
   now = new Date(); showForm = false;
   items: any[] = []; upcoming: any[] = []; accounts: any[] = []; paymentAccountId: number | null = null; chartCfg: any; form: any = this.blank(); error = '';
+  itemsLoading = true; upcomingLoading = true; summaryLoading = true;
   kMonthly = 0; kRemaining = 0; kDue = 0;
 
   blank() { return { id: null, type: 'House', name: '', amount: null, duration_months: 12, due_day: 1, start_month: this.now.getMonth() + 1, start_year: this.now.getFullYear() }; }
@@ -87,15 +91,17 @@ export class InstallmentsComponent implements OnInit {
   label(d: string) { return this.months[+d.slice(5, 7) - 1] + " '" + d.slice(2, 4); }
 
   load() {
-    this.api.get<any[]>('/installments').subscribe((r) => (this.items = r));
-    this.api.get<any[]>('/installments/upcoming?days=30').subscribe((r) => { this.upcoming = r; this.kDue = r.reduce((a, u) => a + u.amount, 0); });
-    this.api.get<any[]>('/installments/summary').subscribe((s) => {
+    this.itemsLoading = true; this.upcomingLoading = true; this.summaryLoading = true;
+    this.api.get<any[]>('/installments').subscribe({ next: (r) => { this.items = r; this.itemsLoading = false; }, error: (e) => { this.error = errMsg(e); this.itemsLoading = false; } });
+    this.api.get<any[]>('/installments/upcoming?days=30').subscribe({ next: (r) => { this.upcoming = r; this.kDue = r.reduce((a, u) => a + u.amount, 0); this.upcomingLoading = false; }, error: (e) => { this.error = errMsg(e); this.upcomingLoading = false; } });
+    this.api.get<any[]>('/installments/summary').subscribe({ next: (s) => {
       this.kMonthly = s.reduce((a, x) => a + Number(x.monthly), 0); this.kRemaining = s.reduce((a, x) => a + Number(x.remaining), 0);
       this.chartCfg = { type: 'bar', data: { labels: s.map((x) => this.language.text(x.type)), datasets: [
         { label: this.language.text('Paid'), data: s.map((x) => Number(x.paid)), backgroundColor: COLORS[0] },
         { label: this.language.text('Remaining'), data: s.map((x) => Number(x.remaining)), backgroundColor: COLORS[1] }] },
         options: { scales: { x: { stacked: true }, y: { stacked: true } } } };
-    });
+      this.summaryLoading = false;
+    }, error: (e) => { this.error = errMsg(e); this.summaryLoading = false; } });
   }
   openForm() { this.form = this.blank(); this.error = ''; this.showForm = true; }
   closeForm() { this.showForm = false; this.error = ''; }

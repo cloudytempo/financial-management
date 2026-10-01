@@ -4,12 +4,13 @@ import { Api } from '../../../core/api.service';
 import { Language } from '../../../core/language.service';
 import { IconComponent } from '../../../shared/icon.component';
 import { TranslatePipe } from '../../../shared/translate.pipe';
+import { SkeletonComponent } from '../../../shared/skeleton.component';
 import { EVENT_TYPES, MONTHS, errMsg, eventColor, iso } from '../../../shared/util';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
 @Component({
-  selector: 'app-calendar-widget', standalone: true, imports: [FormsModule, IconComponent, TranslatePipe],
+  selector: 'app-calendar-widget', standalone: true, imports: [FormsModule, IconComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="calendar-widget" [class.card]="framed">
     <div class="card-h">
@@ -37,7 +38,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
       <div>
         <div class="sub-h" style="margin-top:0">{{ label(sel) }}</div>
-        @for (e of dayEvents; track e.id) {
+        @if (monthLoading) { <app-skeleton [rows]="2" /> }
+        @else { @for (e of dayEvents; track e.id) {
           <div class="ev" [style.--tc]="color(e.type)">
             <div class="grow"><div class="t">{{ e.title }}</div><div class="s">{{ e.event_time || ('All day' | tr) }} · {{ e.type | tr }}</div></div>
             <button class="icon-btn" (click)="edit(e)" [attr.aria-label]="'Edit event' | tr"><app-icon name="pencil" [size]="16" /></button>
@@ -47,7 +49,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
         @for (d of dayDues; track d.key) {
           <div class="ev" [style.--tc]="color('Payment')"><div class="grow"><div class="t">{{ d.title }}</div><div class="s">{{ d.kind | tr }} {{ 'due' | tr }} · RM {{ d.amount }}</div></div></div>
         }
-        @if (!dayEvents.length && !dayDues.length) { <div class="muted small" style="margin-top:.4rem">{{ 'Nothing on this day.' | tr }}</div> }
+        @if (!dayEvents.length && !dayDues.length) { <div class="muted small" style="margin-top:.4rem">{{ 'Nothing on this day.' | tr }}</div> } }
 
         <form (ngSubmit)="save()" style="margin-top:.9rem">
           <div class="sub-h" style="margin-top:0">{{ (form.id ? 'Edit event' : 'Add event') | tr }}</div>
@@ -62,13 +64,13 @@ const pad = (n: number) => String(n).padStart(2, '0');
         </form>
 
         <div class="sub-h">{{ 'Coming up' | tr }}</div>
-        @for (c of coming; track c.key) {
+        @if (upcomingLoading) { <app-skeleton [rows]="3" /> } @else { @for (c of coming; track c.key) {
           <div class="ev click" [style.--tc]="color(c.type)" (click)="goTo(c.date)" role="button" tabindex="0" (keydown.enter)="goTo(c.date)">
             <span class="datechip"><b>{{ c.date.slice(8) }}</b><span>{{ months[+c.date.slice(5, 7) - 1] }}</span></span>
             <div class="grow"><div class="t">{{ c.title }}</div><div class="s">{{ c.time || ((c.kind === 'event' ? 'All day' : c.kind + ' due') | tr) }} · {{ c.type | tr }}@if (c.overdue) { · <span class="badge">{{ 'Overdue' | tr }}</span> }</div></div>
           </div>
         }
-        @if (!coming.length) { <div class="muted small" style="margin-top:.4rem">{{ 'No events or due dates in the next 60 days.' | tr }}</div> }
+        @if (!coming.length) { <div class="muted small" style="margin-top:.4rem">{{ 'No events or due dates in the next 60 days.' | tr }}</div> } }
         @if (allComing.length > 6) { <button class="btn ghost sm" style="margin-top:.5rem" (click)="showAll = !showAll">{{ showAll ? ('Show less' | tr) : ('Show all' | tr) + ' ' + allComing.length }}</button> }
       </div>
     </div>
@@ -81,7 +83,7 @@ export class CalendarWidget implements OnInit {
   get months() { return MONTHS.map((_, i) => new Date(2024, i, 1).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { month: 'short' })); }
   dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; types = EVENT_TYPES; color = eventColor;
   now = new Date(); year = this.now.getFullYear(); month = this.now.getMonth();
-  todayIso = iso(this.now); sel = this.todayIso; showAll = false; error = '';
+  todayIso = iso(this.now); sel = this.todayIso; showAll = false; error = ''; monthLoading = true; upcomingLoading = true;
   events: any[] = []; upcoming: any[] = []; dues: any[] = []; hidden = new Set<string>();
   private inst: any[] = []; private bills: any[] = []; private dotMap = new Map<string, string[]>();
   form: any = this.blank();
@@ -105,10 +107,11 @@ export class CalendarWidget implements OnInit {
 
   ngOnInit() { this.loadMonth(); this.loadUpcoming(); this.loadDues(); }
   loadMonth() {
+    this.monthLoading = true;
     const last = new Date(this.year, this.month + 1, 0).getDate();
-    this.api.get<any[]>(`/events?from=${this.isoDay(1)}&to=${this.isoDay(last)}`).subscribe((r) => { this.events = r; this.rebuild(); });
+    this.api.get<any[]>(`/events?from=${this.isoDay(1)}&to=${this.isoDay(last)}`).subscribe({ next: (r) => { this.events = r; this.rebuild(); this.monthLoading = false; }, error: (e) => { this.error = errMsg(e); this.monthLoading = false; } });
   }
-  loadUpcoming() { this.api.get<any[]>('/events/upcoming?days=60').subscribe((r) => (this.upcoming = r)); }
+  loadUpcoming() { this.upcomingLoading = true; this.api.get<any[]>('/events/upcoming?days=60').subscribe({ next: (r) => { this.upcoming = r; this.upcomingLoading = false; }, error: (e) => { this.error = errMsg(e); this.upcomingLoading = false; } }); }
   loadDues() {
     this.api.get<any[]>('/installments/upcoming?days=365').subscribe((r) => { this.inst = r.map((u) => ({ key: 'i' + u.installment_id + '-' + u.period, date: u.due_date, title: u.name || u.type, kind: 'Installment', amount: u.amount })); this.mergeDues(); });
     this.api.get<any[]>('/bills/upcoming?days=365').subscribe((r) => { this.bills = r.map((b) => ({ key: 'b' + b.id, date: b.next_due, title: b.name, kind: 'Bill', amount: b.amount })); this.mergeDues(); });

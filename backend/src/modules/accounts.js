@@ -4,7 +4,9 @@ const { wrap, lockDown } = require('../util');
 const TYPES = ['cash', 'bank', 'savings', 'credit_card', 'investment', 'loan', 'other'];
 const LIABILITIES = new Set(['credit_card', 'loan']);
 const cleanName = (value) => String(value || '').trim();
-const accountOk = (body) => cleanName(body.name).length > 0 && cleanName(body.name).length <= 80 && TYPES.includes(body.type) && Number.isFinite(Number(body.opening_balance));
+const validDay = (value) => Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 31;
+const accountOk = (body) => cleanName(body.name).length > 0 && cleanName(body.name).length <= 80 && TYPES.includes(body.type) &&
+  Number.isFinite(Number(body.opening_balance)) && (body.type !== 'credit_card' || (validDay(body.statement_day) && validDay(body.due_day)));
 
 async function transactions(householdId, accountId = null) {
   const { rows } = await pool.query(`
@@ -38,7 +40,7 @@ async function transactions(householdId, accountId = null) {
 }
 
 async function accountsForHousehold(householdId) {
-  const accounts = (await pool.query(`SELECT id,name,type,opening_balance::float8 AS opening_balance,is_active,created_at
+  const accounts = (await pool.query(`SELECT id,name,type,opening_balance::float8 AS opening_balance,statement_day,due_day,is_active,created_at
     FROM accounts WHERE household_id=$1 ORDER BY is_active DESC,lower(name),id`, [householdId])).rows;
   const rows = await transactions(householdId);
   const balances = new Map(accounts.map((account) => [account.id, Number(account.opening_balance)]));
@@ -69,17 +71,17 @@ router.get('/transactions', wrap(async (req, res) => {
 router.post('/', wrap(async (req, res) => {
   const body = req.body || {};
   if (!accountOk(body)) return res.status(400).json({ error: 'Enter an account name, valid type and opening balance.' });
-  const { rows } = await pool.query(`INSERT INTO accounts(household_id,name,type,opening_balance) VALUES($1,$2,$3,$4)
-    RETURNING id,name,type,opening_balance::float8 AS opening_balance,is_active,created_at`,
-    [req.household.id, cleanName(body.name), body.type, Number(body.opening_balance)]);
+  const { rows } = await pool.query(`INSERT INTO accounts(household_id,name,type,opening_balance,statement_day,due_day) VALUES($1,$2,$3,$4,$5,$6)
+    RETURNING id,name,type,opening_balance::float8 AS opening_balance,statement_day,due_day,is_active,created_at`,
+    [req.household.id, cleanName(body.name), body.type, Number(body.opening_balance), body.type === 'credit_card' ? Number(body.statement_day) : null, body.type === 'credit_card' ? Number(body.due_day) : null]);
   res.status(201).json({ ...rows[0], is_liability: LIABILITIES.has(rows[0].type), balance: Number(rows[0].opening_balance) });
 }));
 router.put('/:id', wrap(async (req, res) => {
   const body = req.body || {};
   if (!accountOk(body)) return res.status(400).json({ error: 'Enter an account name, valid type and opening balance.' });
-  const result = await pool.query(`UPDATE accounts SET name=$1,type=$2,opening_balance=$3 WHERE id=$4 AND household_id=$5
-    RETURNING id,name,type,opening_balance::float8 AS opening_balance,is_active,created_at`,
-    [cleanName(body.name), body.type, Number(body.opening_balance), req.params.id, req.household.id]);
+  const result = await pool.query(`UPDATE accounts SET name=$1,type=$2,opening_balance=$3,statement_day=$4,due_day=$5 WHERE id=$6 AND household_id=$7
+    RETURNING id,name,type,opening_balance::float8 AS opening_balance,statement_day,due_day,is_active,created_at`,
+    [cleanName(body.name), body.type, Number(body.opening_balance), body.type === 'credit_card' ? Number(body.statement_day) : null, body.type === 'credit_card' ? Number(body.due_day) : null, req.params.id, req.household.id]);
   if (!result.rowCount) return res.status(404).json({ error: 'Account not found.' });
   const summary = await accountsForHousehold(req.household.id);
   res.json(summary.accounts.find((account) => account.id === result.rows[0].id));
@@ -111,7 +113,10 @@ const init = async () => {
   await pool.query(`CREATE TABLE IF NOT EXISTS accounts (
     id SERIAL PRIMARY KEY, household_id INT NOT NULL REFERENCES households ON DELETE CASCADE,
     name TEXT NOT NULL, type TEXT NOT NULL CHECK (type IN ('cash','bank','savings','credit_card','investment','loan','other')),
+    statement_day SMALLINT CHECK (statement_day BETWEEN 1 AND 31), due_day SMALLINT CHECK (due_day BETWEEN 1 AND 31),
     opening_balance NUMERIC(14,2) NOT NULL DEFAULT 0, is_active BOOLEAN NOT NULL DEFAULT true, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  await pool.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS statement_day SMALLINT');
+  await pool.query('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS due_day SMALLINT');
   await pool.query(`CREATE TABLE IF NOT EXISTS account_transfers (
     id BIGSERIAL PRIMARY KEY, household_id INT NOT NULL REFERENCES households ON DELETE CASCADE,
     from_account_id INT NOT NULL REFERENCES accounts ON DELETE RESTRICT,

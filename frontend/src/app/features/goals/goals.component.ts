@@ -7,9 +7,10 @@ import { ModalComponent } from '../../shared/modal.component';
 import { errMsg, fmt } from '../../shared/util';
 import { Language } from '../../core/language.service';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { SkeletonComponent } from '../../shared/skeleton.component';
 
 @Component({
-  selector: 'app-goals', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
+  selector: 'app-goals', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head">
     <div><h1>{{ 'Goals' | tr }}</h1><p class="sub">{{ 'Save towards what matters and keep it moving' | tr }}</p></div>
@@ -24,13 +25,17 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       }</ul></div></div>
   }
 
-  @if (items.length) {
+  @if (loading) {
+  <div class="bento"><section class="card s4"><app-skeleton variant="chart" /></section><section class="card s8"><app-skeleton variant="chart" /></section></div>
+  } @else if (items.length) {
   <div class="bento">
     <div class="card s4 goals-status-card"><div class="card-h"><h2><app-icon name="check" [size]="18" />{{ 'Completion status' | tr }}</h2></div>@if (statusCfg) { <app-chart [config]="statusCfg" /> }</div>
     <div class="card s8"><div class="card-h"><h2><app-icon name="target" [size]="18" />{{ 'Progress by goal (%)' | tr }}</h2></div>@if (progressCfg) { <app-chart [config]="progressCfg" /> }</div>
   </div> } @else { <div class="card empty">{{ 'No goals yet. Add one to start tracking.' | tr }}</div> }
 
   <div class="cards">
+  @if (loading) { <section class="card"><app-skeleton [rows]="3" /></section><section class="card"><app-skeleton [rows]="3" /></section> }
+  @else {
   @for (g of items; track g.id) {
     <div class="card">
       <div class="row between" style="flex-wrap:nowrap">
@@ -53,6 +58,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       }
     </div>
   }
+  }
   </div>
 
   <app-modal [open]="showForm" [title]="(form.id ? 'Edit goal' : 'Add goal') | tr" (closed)="closeForm()">
@@ -73,7 +79,7 @@ export class GoalsComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
   fmt = fmt; statuses = ['Ongoing', 'Complete']; showForm = false;
   items: any[] = []; reminders: any[] = []; inputs: Record<number, number> = {};
-  form: any = this.blank(); error = ''; statusCfg: any; progressCfg: any;
+  form: any = this.blank(); error = ''; statusCfg: any; progressCfg: any; loading = true;
 
   blank() {
     const d = new Date(); d.setFullYear(d.getFullYear() + 1);
@@ -81,13 +87,15 @@ export class GoalsComponent implements OnInit {
   }
   ngOnInit() { this.load(); }
   load() {
-    this.api.get<any[]>('/goals').subscribe((r) => {
+    this.loading = true;
+    this.api.get<any[]>('/goals').subscribe({ next: (r) => {
       this.items = r;
       const c = r.filter((g) => g.status === 'Complete').length;
       this.statusCfg = { type: 'doughnut', data: { labels: [this.language.text('Complete'), this.language.text('Ongoing')], datasets: [{ data: [c, r.length - c], backgroundColor: ['#66BB6A', '#5D4037'] }] } };
       this.progressCfg = { type: 'bar', data: { labels: r.map((g) => g.name), datasets: [{ label: this.language.text('Progress %'), data: r.map((g) => Number(g.progress)), backgroundColor: r.map((g) => (g.status === 'Complete' ? '#66BB6A' : '#8D6E63')) }] },
         options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { min: 0, max: 100 } } } };
-    });
+      this.loading = false;
+    }, error: (e) => { this.error = errMsg(e); this.loading = false; } });
     this.api.get<any[]>('/goals/reminders').subscribe((r) => (this.reminders = r));
   }
   private put(g: any) { return this.api.put('/goals/' + g.id, g); }

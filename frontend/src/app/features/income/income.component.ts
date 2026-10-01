@@ -7,9 +7,10 @@ import { ModalComponent } from '../../shared/modal.component';
 import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
 import { Language } from '../../core/language.service';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { SkeletonComponent } from '../../shared/skeleton.component';
 
 @Component({
-  selector: 'app-income', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
+  selector: 'app-income', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head">
     <div><h1>{{ 'Income' | tr }}</h1><p class="sub">{{ 'Salary, side gigs, pension, and other money coming in' | tr }}</p></div>
@@ -22,28 +23,29 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   <div class="seg" style="margin-bottom:1rem">@for (y of years; track y) { <button [class.on]="y === year" (click)="setYear(y)">{{ y }}</button> }</div>
 
   <div class="bento">
-    <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="banknote" /></span><div><div class="lbl">{{ year }} {{ 'income' | tr }}</div><div class="val">{{ fmt(kIncome) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Average per month' | tr }}</div><div class="val">{{ fmt(kAvg) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="wallet" /></span><div><div class="lbl">{{ 'Left after expenses' | tr }}</div><div class="val" [class.up]="kNet < 0">{{ fmt(kNet) }}</div><div class="foot">{{ 'expenses' | tr }} {{ fmt(kSpent) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="trend" /></span><div><div class="lbl">{{ 'Savings rate' | tr }}</div><div class="val">{{ kIncome ? kRate + '%' : '-' }}</div><div class="foot">{{ 'of income kept' | tr }}</div></div></div>
+    <div class="card kpi dark s3">@if (summaryLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="banknote" /></span><div><div class="lbl">{{ year }} {{ 'income' | tr }}</div><div class="val">{{ fmt(kIncome) }}</div></div> }</div>
+    <div class="card kpi s3">@if (summaryLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Average per month' | tr }}</div><div class="val">{{ fmt(kAvg) }}</div></div> }</div>
+    <div class="card kpi s3">@if (summaryLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="wallet" /></span><div><div class="lbl">{{ 'Left after expenses' | tr }}</div><div class="val" [class.up]="kNet < 0">{{ fmt(kNet) }}</div><div class="foot">{{ 'expenses' | tr }} {{ fmt(kSpent) }}</div></div> }</div>
+    <div class="card kpi s3">@if (summaryLoading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="trend" /></span><div><div class="lbl">{{ 'Savings rate' | tr }}</div><div class="val">{{ kIncome ? kRate + '%' : '-' }}</div><div class="foot">{{ 'of income kept' | tr }}</div></div> }</div>
   </div>
 
   <div class="bento">
-    <div class="card s8"><div class="card-h"><h2><app-icon name="trend" [size]="18" />{{ 'Income vs expenses' | tr }}, {{ year }}</h2></div>@if (cfg) { <app-chart [config]="cfg" /> }</div>
-    <div class="card s4"><div class="card-h"><h2><app-icon name="banknote" [size]="18" />{{ 'By source' | tr }}</h2></div>@if (srcCfg) { <app-chart [config]="srcCfg" /> }</div>
+    <div class="card s8"><div class="card-h"><h2><app-icon name="trend" [size]="18" />{{ 'Income vs expenses' | tr }}, {{ year }}</h2></div>@if (summaryLoading) { <app-skeleton variant="chart" /> } @else if (cfg) { <app-chart [config]="cfg" /> }</div>
+    <div class="card s4"><div class="card-h"><h2><app-icon name="banknote" [size]="18" />{{ 'By source' | tr }}</h2></div>@if (summaryLoading) { <app-skeleton variant="chart" /> } @else if (srcCfg) { <app-chart [config]="srcCfg" /> }</div>
   </div>
 
   <div class="card">
     <div class="card-h"><h2>{{ 'Records' | tr }} <span class="pill">{{ shown.length }}</span></h2></div>
-    @if (!shown.length) { <div class="empty">{{ 'No income recorded for' | tr }} {{ year }}. {{ 'Add any income source to see savings and budgets work together.' | tr }}</div> }
-    <ul class="list">@for (r of shown; track r.id) {
+    @if (rowsLoading) { <app-skeleton [rows]="5" /> }
+    @else if (!shown.length) { <div class="empty">{{ 'No income recorded for' | tr }} {{ year }}. {{ 'Add any income source to see savings and budgets work together.' | tr }}</div> }
+    @else { <ul class="list">@for (r of shown; track r.id) {
       <li class="item"><span class="ic-badge"><app-icon [name]="icon(r.source)" [size]="18" /></span>
         <div class="grow"><div class="t">{{ r.source | tr }} <span class="pill">{{ months[r.month - 1] }}</span> @if (r.recurring) { <span class="badge ok">{{ 'Recurring' | tr }}</span> }</div>
           @if (r.account_name) { <div class="s">{{ r.account_name }}</div> }@if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
         <div class="amt">{{ fmt(r.amount) }}</div>
         <button class="icon-btn" (click)="edit(r)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
         <button class="icon-btn del" (click)="remove(r)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button></li>
-    }</ul>
+    }</ul> }
   </div>
 
   <app-modal [open]="showForm" [title]="(form.id ? 'Edit income' : 'Add income') | tr" (closed)="showForm = false">
@@ -69,15 +71,18 @@ export class IncomeComponent implements OnInit {
   sources = ['Salary', 'Side gig', 'Pension', 'Freelance', 'Business', 'Rental', 'Investment', 'Bonus', 'Allowance', 'Commission', 'Other'];
   now = new Date(); year = this.now.getFullYear(); years = [this.year]; showForm = false; error = ''; msg = '';
   rows: any[] = []; inc: any[] = []; exp: any[] = []; accounts: any[] = []; form: any = this.blank(); cfg: any; srcCfg: any;
-  kIncome = 0; kAvg = 0; kSpent = 0; kNet = 0; kRate = 0;
+  kIncome = 0; kAvg = 0; kSpent = 0; kNet = 0; kRate = 0; rowsLoading = true; summaryLoading = true;
 
   get shown() { return this.rows.filter((r) => Number(r.year) === this.year); }
   blank() { return { id: null, source: 'Salary', amount: null, month: this.now.getMonth() + 1, year: this.now.getFullYear(), remarks: '', recurring: true, account_id: null }; }
   ngOnInit() { this.load(); this.api.get<any[]>('/accounts/options').subscribe((rows) => (this.accounts = rows)); }
   setYear(y: number) { this.year = y; this.build(); }
   load() {
-    this.api.get<any[]>('/income').subscribe((r) => (this.rows = r));
-    this.api.get<any[]>('/expenses/summary').subscribe((e) => { this.exp = e; this.api.get<any[]>('/income/summary').subscribe((i) => { this.inc = i; this.build(); }); });
+    this.rowsLoading = true; this.summaryLoading = true;
+    this.api.get<any[]>('/income').subscribe({ next: (r) => { this.rows = r; this.rowsLoading = false; }, error: (e) => { this.error = errMsg(e); this.rowsLoading = false; } });
+    this.api.get<any[]>('/expenses/summary').subscribe({ next: (e) => { this.exp = e; this.api.get<any[]>('/income/summary').subscribe({
+      next: (i) => { this.inc = i; this.build(); this.summaryLoading = false; }, error: (error) => { this.error = errMsg(error); this.summaryLoading = false; },
+    }); }, error: (e) => { this.error = errMsg(e); this.summaryLoading = false; } });
   }
   build() {
     const y = this.year, sum = (L: any[], f: (s: any) => boolean) => L.filter(f).reduce((a, s) => a + (Number(s.total) || 0), 0);

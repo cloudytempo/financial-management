@@ -3,24 +3,26 @@ import { HttpClient } from '@angular/common/http';
 import { IconComponent } from '../../../shared/icon.component';
 import { Language } from '../../../core/language.service';
 import { TranslatePipe } from '../../../shared/translate.pipe';
+import { SkeletonComponent } from '../../../shared/skeleton.component';
 
 const NAMES = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
 @Component({
-  selector: 'app-prayer-widget', standalone: true, imports: [IconComponent, TranslatePipe],
+  selector: 'app-prayer-widget', standalone: true, imports: [IconComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="prayer-widget" [class.card]="framed">
     <div class="card-h"><h2><app-icon name="moon" [size]="18" />{{ 'Prayer times' | tr }}</h2><span class="muted small">{{ place }}</span></div>
     @if (error) { <div class="err">{{ error | tr }}</div> }
-    <div class="prayer">
+    @if (loading) { <app-skeleton [rows]="6" /> }
+    @else { <div class="prayer">
       @for (n of names; track n) { <div [class.next]="next === n">{{ n | tr }}<b>{{ times[n] || '--:--' }}</b></div> }
-    </div>
+    </div> }
   </div>`,
 })
 export class PrayerWidget implements OnInit, OnDestroy {
   @Input() framed = true;
   private http = inject(HttpClient); private language = inject(Language);
-  names = NAMES; times: any = {}; next = ''; place = this.language.text('Locating…'); error = ''; private timer: any;
+  names = NAMES; times: any = {}; next = ''; place = this.language.text('Locating…'); error = ''; loading = true; private timer: any;
 
   ngOnInit() {
     const fallback = () => this.load(3.139, 101.6869, this.language.text('Kuala Lumpur (default location)'));
@@ -38,9 +40,9 @@ export class PrayerWidget implements OnInit, OnDestroy {
     this.http.get<any>(`https://api.aladhan.com/v1/timings/${date}?latitude=${lat}&longitude=${lng}&method=17`).subscribe({
       next: (r) => {
         NAMES.forEach((n) => (this.times[n] = (r.data.timings[n] || '').slice(0, 5)));
-        this.place = `${label} · ${r.data.meta.timezone}`; this.mark();
+        this.place = `${label} · ${r.data.meta.timezone}`; this.mark(); this.loading = false;
       },
-      error: () => { this.place = label; this.error = this.language.text('Could not load prayer times. Check your internet connection.'); },
+      error: () => { this.place = label; this.error = this.language.text('Could not load prayer times. Check your internet connection.'); this.loading = false; },
     });
   }
   mark() {

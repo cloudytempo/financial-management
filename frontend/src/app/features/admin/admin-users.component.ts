@@ -6,17 +6,19 @@ import { ModalComponent } from '../../shared/modal.component';
 import { errMsg } from '../../shared/util';
 import { TranslatePipe } from '../../shared/translate.pipe';
 import { Language } from '../../core/language.service';
+import { SkeletonComponent } from '../../shared/skeleton.component';
 
 @Component({
-  selector: 'app-admin-users', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe],
+  selector: 'app-admin-users', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head"><div><p class="admin-kicker">{{ 'DIRECTORY' | tr }}</p><h1>{{ 'Users' | tr }}</h1><p class="sub">{{ 'Manage finance accounts and access' | tr }}</p></div>
     <button class="icon-btn" (click)="load()" [attr.aria-label]="'Refresh' | tr" [title]="'Refresh' | tr"><app-icon name="refresh" /></button></div>
   <label class="admin-search">{{ 'Search users' | tr }}<input type="search" [(ngModel)]="query" [placeholder]="'Name, email or household' | tr"></label>
   @if (error) { <div class="err" style="margin:.7rem 0">{{ error | tr }}</div> }
   <section class="card admin-directory">
-    @if (!shown.length) { <div class="empty">{{ (users.length ? 'No users match.' : 'No users found.') | tr }}</div> }
-    <ul class="list">@for (user of shown; track user.id) {
+    @if (loading) { <app-skeleton [rows]="6" /> }
+    @else if (!shown.length) { <div class="empty">{{ (users.length ? 'No users match.' : 'No users found.') | tr }}</div> }
+    @else { <ul class="list">@for (user of shown; track user.id) {
       <li class="item admin-directory-row">
         <span class="ava">{{ user.name.charAt(0).toUpperCase() }}</span>
         <div class="grow"><div class="t">{{ user.name }} <span class="pill" [class.admin-status-off]="!user.is_active">{{ (user.is_active ? 'Active' : 'Deactivated') | tr }}</span></div>
@@ -26,7 +28,7 @@ import { Language } from '../../core/language.service';
         @if (user.is_active) { <button class="btn danger sm" (click)="deactivate(user)">{{ 'Deactivate' | tr }}</button> }
         @else { <span class="muted small">{{ 'Password reset required on next sign in' | tr }}</span> }
       </li>
-    }</ul>
+    }</ul> }
   </section>
   <app-modal [open]="showEdit" [title]="'Edit user' | tr" (closed)="showEdit = false">
     <form (ngSubmit)="save()"><div class="fields">
@@ -39,13 +41,13 @@ import { Language } from '../../core/language.service';
 })
 export class AdminUsersComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
-  users: any[] = []; query = ''; error = ''; showEdit = false; form: any = {};
+  users: any[] = []; query = ''; error = ''; loading = true; showEdit = false; form: any = {};
   get shown() {
     const q = this.query.trim().toLowerCase();
     return this.users.filter((user) => !q || `${user.name} ${user.email} ${user.household_name || ''}`.toLowerCase().includes(q));
   }
   ngOnInit() { this.load(); }
-  load() { this.api.get<any[]>('/admin/users').subscribe({ next: (rows) => (this.users = rows), error: (e) => (this.error = errMsg(e)) }); }
+  load() { this.loading = true; this.api.get<any[]>('/admin/users').subscribe({ next: (rows) => { this.users = rows; this.loading = false; }, error: (e) => { this.error = errMsg(e); this.loading = false; } }); }
   edit(user: any) { this.form = { id: user.id, name: user.name, email: user.email }; this.error = ''; this.showEdit = true; }
   save() {
     this.api.put('/admin/users/' + this.form.id, this.form).subscribe({

@@ -7,9 +7,10 @@ import { ModalComponent } from '../../shared/modal.component';
 import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
 import { Language } from '../../core/language.service';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { SkeletonComponent } from '../../shared/skeleton.component';
 
 @Component({
-  selector: 'app-budgets', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
+  selector: 'app-budgets', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head">
     <div><h1>{{ 'Budget' | tr }}</h1><p class="sub">{{ 'Set a limit per category and see how the month is going' | tr }}</p></div>
@@ -22,28 +23,30 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   </div>
 
   <div class="bento">
-    <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="pie" /></span><div><div class="lbl">{{ 'Total budget' | tr }}</div><div class="val">{{ fmt(st.totalLimit) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="wallet" /></span><div><div class="lbl">{{ 'Spent (budgeted)' | tr }}</div><div class="val">{{ fmt(st.totalSpent) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="banknote" /></span><div><div class="lbl">{{ 'Left' | tr }}</div><div class="val" [class.up]="st.totalLimit - st.totalSpent < 0">{{ fmt(st.totalLimit - st.totalSpent) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Safe to spend / day' | tr }}</div><div class="val">{{ st.safePerDay == null ? '-' : fmt(st.safePerDay) }}</div><div class="foot">{{ (st.safePerDay == null ? 'current month only' : 'for the rest of the month') | tr }}</div></div></div>
+    <div class="card kpi dark s3">@if (loading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="pie" /></span><div><div class="lbl">{{ 'Total budget' | tr }}</div><div class="val">{{ fmt(st.totalLimit) }}</div></div> }</div>
+    <div class="card kpi s3">@if (loading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="wallet" /></span><div><div class="lbl">{{ 'Spent (budgeted)' | tr }}</div><div class="val">{{ fmt(st.totalSpent) }}</div></div> }</div>
+    <div class="card kpi s3">@if (loading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="banknote" /></span><div><div class="lbl">{{ 'Left' | tr }}</div><div class="val" [class.up]="st.totalLimit - st.totalSpent < 0">{{ fmt(st.totalLimit - st.totalSpent) }}</div></div> }</div>
+    <div class="card kpi s3">@if (loading) { <app-skeleton variant="kpi" /> } @else { <span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Safe to spend / day' | tr }}</div><div class="val">{{ st.safePerDay == null ? '-' : fmt(st.safePerDay) }}</div><div class="foot">{{ (st.safePerDay == null ? 'current month only' : 'for the rest of the month') | tr }}</div></div> }</div>
   </div>
 
   <div class="bento">
     <div class="card s7"><div class="card-h"><h2><app-icon name="pie" [size]="18" />{{ 'Budget vs actual' | tr }}</h2></div>
-      @if (cfg) { <app-chart [config]="cfg" /> } @else { <div class="empty">{{ 'Set a budget to see the comparison.' | tr }}</div> }</div>
+      @if (loading) { <app-skeleton variant="chart" /> } @else if (cfg) { <app-chart [config]="cfg" /> } @else { <div class="empty">{{ 'Set a budget to see the comparison.' | tr }}</div> }</div>
     <div class="card s5"><div class="card-h"><h2><app-icon name="alert" [size]="18" />{{ 'Spending with no budget' | tr }}</h2></div>
+      @if (loading) { <app-skeleton [rows]="3" /> } @else {
       @if (!st.unbudgeted.length) { <div class="empty">{{ 'Every category you spent on has a budget.' | tr }}</div> }
       <ul class="list">@for (u of st.unbudgeted; track u.category) {
         <li class="item"><span class="ic-badge brown"><app-icon [name]="icon(u.category)" [size]="18" /></span>
           <div class="grow"><div class="t">{{ u.category | tr }}</div><div class="s">{{ fmt(u.spent) }} {{ 'this month' | tr }}</div></div>
           <button class="btn ghost sm" (click)="openForm(u.category, u.spent)">{{ 'Set limit' | tr }}</button></li>
-      }</ul></div>
+      }</ul> }</div>
   </div>
 
   <div class="card">
     <div class="card-h"><h2>{{ 'Categories' | tr }} <span class="pill">{{ st.rows.length }}</span></h2></div>
-    @if (!st.rows.length) { <div class="empty">{{ 'No budgets for' | tr }} {{ months[month - 1] }} {{ 'yet. Tap “Set budget”, for example Groceries RM 600.' | tr }}</div> }
-    <ul class="list">@for (r of st.rows; track r.category) {
+    @if (loading) { <app-skeleton [rows]="5" /> }
+    @else if (!st.rows.length) { <div class="empty">{{ 'No budgets for' | tr }} {{ months[month - 1] }} {{ 'yet. Tap “Set budget”, for example Groceries RM 600.' | tr }}</div> }
+    @else { <ul class="list">@for (r of st.rows; track r.category) {
       <li class="item" style="align-items:flex-start">
         <span class="ic-badge" [class.warn]="r.status === 'over'"><app-icon [name]="icon(r.category)" [size]="18" /></span>
         <div class="grow">
@@ -58,7 +61,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <button class="icon-btn" (click)="openForm(r.category, r.limit)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
         <button class="icon-btn del" (click)="remove(r)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button>
       </li>
-    }</ul>
+    }</ul> }
   </div>
 
   <app-modal [open]="showForm" [title]="'Set budget' | tr" (closed)="showForm = false">
@@ -77,7 +80,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
 export class BudgetsComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
   get remainingLabel() { return this.language.text('left'); }
-  fmt = fmt; get months() { return MONTHS.map((_, i) => new Date(2024, i, 1).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { month: 'short' })); } icon = typeIcon; showForm = false; error = '';
+  fmt = fmt; get months() { return MONTHS.map((_, i) => new Date(2024, i, 1).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { month: 'short' })); } icon = typeIcon; showForm = false; error = ''; loading = true;
   now = new Date(); year = this.now.getFullYear(); month = this.now.getMonth() + 1;
   st: any = { rows: [], unbudgeted: [], totalLimit: 0, totalSpent: 0, safePerDay: null }; cfg: any; catOptions: string[] = [];
   form: any = { category: '', amount: null };
@@ -85,12 +88,14 @@ export class BudgetsComponent implements OnInit {
   ngOnInit() { this.load(); this.api.get<any[]>('/expenses').subscribe((r) => (this.catOptions = [...new Set(r.map((x) => x.type))].sort())); }
   shift(n: number) { const d = new Date(this.year, this.month - 1 + n, 1); this.year = d.getFullYear(); this.month = d.getMonth() + 1; this.load(); }
   load() {
-    this.api.get<any>(`/budgets/status?year=${this.year}&month=${this.month}`).subscribe((s) => {
+    this.loading = true;
+    this.api.get<any>(`/budgets/status?year=${this.year}&month=${this.month}`).subscribe({ next: (s) => {
       this.st = s;
       this.cfg = s.rows.length ? { type: 'bar', data: { labels: s.rows.map((r: any) => this.language.text(r.category)), datasets: [
         { label: this.language.text('Budget'), data: s.rows.map((r: any) => Number(r.limit)), backgroundColor: COLORS[8] },
         { label: this.language.text('Spent'), data: s.rows.map((r: any) => Number(r.spent)), backgroundColor: COLORS[0] }] } } : null;
-    });
+      this.loading = false;
+    }, error: (e) => { this.error = errMsg(e); this.loading = false; } });
   }
   openForm(category = '', amount: number | null = null) { this.form = { category, amount: amount ? Math.ceil(amount / 10) * 10 : null }; this.error = ''; this.showForm = true; }
   save() {

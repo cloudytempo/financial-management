@@ -6,9 +6,10 @@ import { ModalComponent } from '../../shared/modal.component';
 import { errMsg } from '../../shared/util';
 import { TranslatePipe } from '../../shared/translate.pipe';
 import { Language } from '../../core/language.service';
+import { SkeletonComponent } from '../../shared/skeleton.component';
 
 @Component({
-  selector: 'app-contacts', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe],
+  selector: 'app-contacts', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head">
     <div><h1>{{ 'Contacts' | tr }}</h1><p class="sub">{{ 'Tap the green button to call straight from your phone' | tr }}</p></div>
@@ -27,8 +28,9 @@ import { Language } from '../../core/language.service';
   </div>
 
   <div class="card">
-    @if (!shown.length) { <div class="empty">{{ (items.length ? 'No contacts match.' : 'No contacts yet. Add one, or start with the emergency numbers.') | tr }}</div> }
-    <ul class="list">@for (c of shown; track c.id) {
+    @if (loading) { <app-skeleton [rows]="5" /> }
+    @else if (!shown.length) { <div class="empty">{{ (items.length ? 'No contacts match.' : 'No contacts yet. Add one, or start with the emergency numbers.') | tr }}</div> }
+    @else { <ul class="list">@for (c of shown; track c.id) {
       <li class="item">
         <span class="ava" style="width:42px;height:42px">{{ c.name.charAt(0).toUpperCase() }}</span>
         <div class="grow"><div class="t">{{ c.name }} <span class="pill">{{ c.category | tr }}</span></div>
@@ -40,7 +42,7 @@ import { Language } from '../../core/language.service';
         <button class="icon-btn" (click)="edit(c)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
         <button class="icon-btn del" (click)="remove(c)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button>
       </li>
-    }</ul>
+    }</ul> }
   </div>
 
   <app-modal [open]="showForm" [title]="form.id ? 'Edit contact' : 'Add contact'" (closed)="showForm = false">
@@ -60,7 +62,7 @@ import { Language } from '../../core/language.service';
 export class ContactsComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
   cats = ['Family', 'Emergency', 'Utilities', 'Services', 'Work', 'Other'];
-  items: any[] = []; q = ''; cat = ''; showForm = false; error = ''; form: any = this.blank();
+  items: any[] = []; q = ''; cat = ''; loading = true; showForm = false; error = ''; form: any = this.blank();
   get hasEmergency() { return this.items.some((c) => c.category === 'Emergency'); }
   get shown() {
     const q = this.q.trim().toLowerCase();
@@ -70,7 +72,7 @@ export class ContactsComponent implements OnInit {
   tel(p: string) { return 'tel:' + p.replace(/[^\d+]/g, ''); }
   wa(p: string) { const d = p.replace(/[^\d+]/g, ''); return 'https://wa.me/' + (d.startsWith('+') ? d.slice(1) : d.startsWith('0') ? '60' + d.slice(1) : d); } // Malaysian 01x numbers -> 601x
   ngOnInit() { this.load(); }
-  load() { this.api.get<any[]>('/contacts').subscribe((r) => (this.items = r)); }
+  load() { this.loading = true; this.api.get<any[]>('/contacts').subscribe({ next: (r) => { this.items = r; this.loading = false; }, error: (e) => { this.error = errMsg(e); this.loading = false; } }); }
   openForm() { this.form = this.blank(); this.error = ''; this.showForm = true; }
   edit(c: any) { this.form = { ...c }; this.error = ''; this.showForm = true; }
   save() {
