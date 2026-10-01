@@ -21,9 +21,9 @@ function nextCycle(b, start) {
   }
 }
 
-async function loadAll(uid) {
-  const { rows } = await pool.query(`SELECT ${COLS} FROM bills WHERE user_id=$1 ORDER BY id`, [uid]);
-  const p = await pool.query("SELECT bp.bill_id, to_char(MAX(bp.due_date),'YYYY-MM-DD') AS last_due, COUNT(*)::int AS paid_count FROM bill_payments bp JOIN bills b ON b.id=bp.bill_id WHERE b.user_id=$1 GROUP BY bp.bill_id", [uid]);
+async function loadAll(householdId) {
+  const { rows } = await pool.query(`SELECT ${COLS} FROM bills WHERE household_id=$1 ORDER BY id`, [householdId]);
+  const p = await pool.query("SELECT bp.bill_id, to_char(MAX(bp.due_date),'YYYY-MM-DD') AS last_due, COUNT(*)::int AS paid_count FROM bill_payments bp JOIN bills b ON b.id=bp.bill_id WHERE b.household_id=$1 GROUP BY bp.bill_id", [householdId]);
   const last = new Map(p.rows.map((r) => [r.bill_id, r]));
   const today = todayStr();
   return rows.map((b) => {
@@ -36,13 +36,13 @@ async function loadAll(uid) {
   });
 }
 
-router.get('/', wrap(async (req, res) => res.json((await loadAll(req.user.id)).sort((a, b) => a.next_due.localeCompare(b.next_due)))));
+router.get('/', wrap(async (req, res) => res.json((await loadAll(req.household.id)).sort((a, b) => a.next_due.localeCompare(b.next_due)))));
 router.get('/upcoming', wrap(async (req, res) => {
   const days = Number(req.query.days) || 30;
-  res.json((await loadAll(req.user.id)).filter((b) => b.status === 'active' && b.days_left <= days).sort((a, b) => a.next_due.localeCompare(b.next_due)));
+  res.json((await loadAll(req.household.id)).filter((b) => b.status === 'active' && b.days_left <= days).sort((a, b) => a.next_due.localeCompare(b.next_due)));
 }));
 router.get('/summary', wrap(async (req, res) => {
-  const all = (await loadAll(req.user.id)).filter((b) => b.status === 'active');
+  const all = (await loadAll(req.household.id)).filter((b) => b.status === 'active');
   const by = {};
   all.forEach((b) => { const k = b.category || 'Other'; by[k] = (by[k] || 0) + b.monthly_cost; });
   res.json({ count: all.length, monthly: all.reduce((a, b) => a + b.monthly_cost, 0), yearly: all.reduce((a, b) => a + b.yearly_cost, 0),
@@ -52,25 +52,25 @@ router.get('/summary', wrap(async (req, res) => {
 router.post('/', wrap(async (req, res) => {
   if (!ok(req.body)) return res.status(400).json({ error: 'Invalid bill.' });
   const b = req.body;
-  await pool.query('INSERT INTO bills(user_id,name,category,amount,frequency,first_due,status,autopay,add_expense) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',
-    [req.user.id, b.name.trim(), (b.category || '').trim(), b.amount, b.frequency, b.first_due, b.status || 'active', !!b.autopay, !!b.add_expense]);
+  await pool.query('INSERT INTO bills(household_id,name,category,amount,frequency,first_due,status,autopay,add_expense) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+    [req.household.id, b.name.trim(), (b.category || '').trim(), b.amount, b.frequency, b.first_due, b.status || 'active', !!b.autopay, !!b.add_expense]);
   res.status(201).json({ ok: true });
 }));
 router.put('/:id', wrap(async (req, res) => {
   if (!ok(req.body)) return res.status(400).json({ error: 'Invalid bill.' });
   const b = req.body;
-  const r = await pool.query('UPDATE bills SET name=$1,category=$2,amount=$3,frequency=$4,first_due=$5,status=$6,autopay=$7,add_expense=$8 WHERE id=$9 AND user_id=$10',
-    [b.name.trim(), (b.category || '').trim(), b.amount, b.frequency, b.first_due, b.status || 'active', !!b.autopay, !!b.add_expense, req.params.id, req.user.id]);
+  const r = await pool.query('UPDATE bills SET name=$1,category=$2,amount=$3,frequency=$4,first_due=$5,status=$6,autopay=$7,add_expense=$8 WHERE id=$9 AND household_id=$10',
+    [b.name.trim(), (b.category || '').trim(), b.amount, b.frequency, b.first_due, b.status || 'active', !!b.autopay, !!b.add_expense, req.params.id, req.household.id]);
   r.rowCount ? res.json({ ok: true }) : res.status(404).json({ error: 'Not found' });
 }));
 router.delete('/:id', wrap(async (req, res) => {
-  await pool.query('DELETE FROM bills WHERE id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+  await pool.query('DELETE FROM bills WHERE id=$1 AND household_id=$2', [req.params.id, req.household.id]);
   res.status(204).end();
 }));
 
 // Mark the current cycle paid. If the bill is set to "record as expense", a matching expense is created in the same transaction.
 router.post('/:id/pay', wrap(async (req, res) => {
-  const bill = (await loadAll(req.user.id)).find((b) => b.id === +req.params.id);
+  const bill = (await loadAll(req.household.id)).find((b) => b.id === +req.params.id);
   if (!bill) return res.status(404).json({ error: 'Not found' });
   const amount = req.body && req.body.amount !== '' && req.body.amount != null ? Number(req.body.amount) : bill.amount;
   const client = await pool.connect();
@@ -79,8 +79,8 @@ router.post('/:id/pay', wrap(async (req, res) => {
     let expId = null;
     if (bill.add_expense) {
       const [y, m] = bill.next_due.split('-').map(Number);
-      expId = (await client.query('INSERT INTO expenses(user_id,type,amount,month,year,remarks) VALUES($1,$2,$3,$4,$5,$6) RETURNING id',
-        [req.user.id, bill.category || bill.name, amount, m, y, 'Bill: ' + bill.name])).rows[0].id;
+      expId = (await client.query('INSERT INTO expenses(household_id,type,amount,month,year,remarks) VALUES($1,$2,$3,$4,$5,$6) RETURNING id',
+        [req.household.id, bill.category || bill.name, amount, m, y, 'Bill: ' + bill.name])).rows[0].id;
     }
     await client.query('INSERT INTO bill_payments(bill_id,due_date,paid_on,amount,expense_id) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING', [bill.id, bill.next_due, todayStr(), amount, expId]);
     await client.query('COMMIT');
@@ -88,11 +88,11 @@ router.post('/:id/pay', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 router.post('/:id/undo', wrap(async (req, res) => {
-  const own = await pool.query('SELECT 1 FROM bills WHERE id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+  const own = await pool.query('SELECT 1 FROM bills WHERE id=$1 AND household_id=$2', [req.params.id, req.household.id]);
   if (!own.rowCount) return res.status(404).json({ error: 'Not found' });
   const last = (await pool.query('SELECT id,expense_id FROM bill_payments WHERE bill_id=$1 ORDER BY due_date DESC LIMIT 1', [req.params.id])).rows[0];
   if (last) {
-    if (last.expense_id) await pool.query('DELETE FROM expenses WHERE id=$1 AND user_id=$2', [last.expense_id, req.user.id]);
+    if (last.expense_id) await pool.query('DELETE FROM expenses WHERE id=$1 AND household_id=$2', [last.expense_id, req.household.id]);
     await pool.query('DELETE FROM bill_payments WHERE id=$1', [last.id]);
   }
   res.json({ ok: true });
@@ -100,7 +100,7 @@ router.post('/:id/undo', wrap(async (req, res) => {
 
 const init = async () => {
   await pool.query(`CREATE TABLE IF NOT EXISTS bills (
-    id SERIAL PRIMARY KEY, user_id INT NOT NULL REFERENCES users ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY, household_id INT NOT NULL REFERENCES households ON DELETE CASCADE,
     name TEXT NOT NULL, category TEXT NOT NULL DEFAULT '', amount NUMERIC(12,2) NOT NULL CHECK (amount >= 0),
     frequency TEXT NOT NULL DEFAULT 'monthly' CHECK (frequency IN ('monthly','quarterly','yearly')),
     first_due DATE NOT NULL, status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused','cancelled')),

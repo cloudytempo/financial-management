@@ -1,10 +1,36 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Auth } from '../../core/auth.service';
 import { Theme } from '../../core/theme.service';
+import { errMsg } from '../../shared/util';
 
 @Component({
-  selector: 'app-settings', standalone: true,
+  selector: 'app-settings', standalone: true, imports: [FormsModule],
   template: `
-  <div class="page-head"><div><h1>Settings</h1><p class="sub">Personalize your workspace</p></div></div>
+  <div class="page-head"><div><h1>Settings</h1><p class="sub">Manage your household and workspace</p></div></div>
+  <section class="card settings-panel" aria-labelledby="household-title" style="margin-bottom:1rem">
+    <h2 id="household-title">Household</h2>
+    <p class="sub">Currently using <b>{{ auth.user()?.household?.name }}</b>. A household password is required each time you enter another household.</p>
+    @if (households.length) {
+      <div class="seg" style="margin:1rem 0">
+        @for (household of households; track household.id) {
+          <button type="button" [class.on]="household.active" (click)="select(household.name)">{{ household.name }}</button>
+        }
+      </div>
+    }
+    <div class="seg" style="margin:1rem 0">
+      <button type="button" [class.on]="householdMode === 'enter'" (click)="householdMode = 'enter'">Enter household</button>
+      <button type="button" [class.on]="householdMode === 'create'" (click)="householdMode = 'create'">Create new</button>
+    </div>
+    <form (ngSubmit)="saveHousehold()">
+      <div class="fields">
+        <label>Household name<input name="householdName" [(ngModel)]="householdName" required autocomplete="organization"></label>
+        <label>Household password<input name="householdPassword" type="password" [(ngModel)]="householdPassword" minlength="8" required autocomplete="current-password"></label>
+      </div>
+      @if (householdError) { <div class="err" style="margin-top:.6rem">{{ householdError }}</div> }
+      <div style="margin-top:1rem"><button class="btn" type="submit">{{ householdMode === 'create' ? 'Create and enter' : 'Enter household' }}</button></div>
+    </form>
+  </section>
   <section class="card settings-panel" aria-labelledby="appearance-title">
     <h2 id="appearance-title">Appearance</h2>
     <p class="sub">Choose a color theme</p>
@@ -18,6 +44,17 @@ import { Theme } from '../../core/theme.service';
     </div>
   </section>`,
 })
-export class SettingsComponent {
-  theme = inject(Theme);
+export class SettingsComponent implements OnInit {
+  theme = inject(Theme); auth = inject(Auth);
+  households: any[] = []; householdMode: 'enter' | 'create' = 'enter';
+  householdName = ''; householdPassword = ''; householdError = '';
+  ngOnInit() { this.auth.households().subscribe((rows) => (this.households = rows)); }
+  select(name: string) { this.householdMode = 'enter'; this.householdName = name; this.householdPassword = ''; }
+  saveHousehold() {
+    this.householdError = '';
+    const request = this.householdMode === 'create'
+      ? this.auth.createHousehold(this.householdName, this.householdPassword)
+      : this.auth.enterHousehold(this.householdName, this.householdPassword);
+    request.subscribe({ next: () => window.location.reload(), error: (error) => (this.householdError = errMsg(error)) });
+  }
 }

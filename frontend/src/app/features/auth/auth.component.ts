@@ -16,6 +16,14 @@ import { errMsg } from '../../shared/util';
       @if (mode === 'signup') { <label>Name<input name="name" [(ngModel)]="name" autocomplete="name" required></label> }
       <label>{{ mode === 'reset' ? 'Username (email)' : 'Email' }}<input name="email" type="email" [(ngModel)]="email" autocomplete="username" required></label>
       <label>{{ mode === 'reset' ? 'New password' : 'Password' }}<input name="password" type="password" [(ngModel)]="password" minlength="8" [attr.autocomplete]="mode === 'signin' ? 'current-password' : 'new-password'" required></label>
+      @if (mode === 'signup') {
+        <div class="seg" style="margin-bottom:1rem">
+          <button type="button" [class.on]="householdMode === 'create'" (click)="householdMode = 'create'">Create household</button>
+          <button type="button" [class.on]="householdMode === 'join'" (click)="householdMode = 'join'">Join household</button>
+        </div>
+        <label>Household name<input name="householdName" [(ngModel)]="householdName" autocomplete="organization" required></label>
+        <label>Household password<input name="householdPassword" type="password" [(ngModel)]="householdPassword" minlength="8" autocomplete="new-password" required></label>
+      }
       @if (mode === 'reset') { <label>Confirm new password<input name="confirm" type="password" [(ngModel)]="confirm" minlength="8" autocomplete="new-password" required></label> }
       @if (error) { <div class="err">{{ error }}</div> }
       @if (info) { <div class="okmsg">{{ info }}</div> }
@@ -31,6 +39,7 @@ export class AuthComponent {
   private auth = inject(Auth); private router = inject(Router);
   mode: 'signin' | 'signup' | 'reset' = 'signin';
   name = ''; email = ''; password = ''; confirm = ''; error = ''; info = '';
+  householdMode: 'create' | 'join' = 'create'; householdName = ''; householdPassword = '';
   go(e: Event, m: 'signin' | 'signup' | 'reset') { e.preventDefault(); this.mode = m; this.error = ''; this.info = ''; this.password = ''; this.confirm = ''; }
   submit() {
     this.error = ''; this.info = '';
@@ -41,7 +50,9 @@ export class AuthComponent {
         next: () => { this.mode = 'signin'; this.password = ''; this.confirm = ''; this.info = 'Password updated. Sign in with your new password.'; }, error: fail });
       return;
     }
-    const obs = this.mode === 'signup' ? this.auth.signup(this.name, this.email, this.password) : this.auth.login(this.email, this.password);
+    const obs = this.mode === 'signup'
+      ? this.auth.signup(this.name, this.email, this.password, this.householdMode, this.householdName, this.householdPassword)
+      : this.auth.login(this.email, this.password);
     obs.subscribe({ next: () => this.router.navigate(['/dashboard']), error: fail });
   }
 }

@@ -17,7 +17,7 @@ import { ModalComponent } from '../shared/modal.component';
       </nav>
       <div class="usercard">
         <span class="ava">{{ initial() }}</span>
-        <span class="who"><b>{{ auth.user()?.name }}</b><span>{{ auth.user()?.email }}</span></span>
+        <span class="who"><b>{{ auth.user()?.name }}</b><span>{{ auth.user()?.household?.name }}</span></span>
         <button class="icon-btn" (click)="auth.logout()" aria-label="Sign out" title="Sign out"><app-icon name="logout" /></button>
       </div>
     </aside>

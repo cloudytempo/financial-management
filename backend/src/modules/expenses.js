@@ -6,19 +6,19 @@ const ok = (b) => b.type && b.amount !== '' && b.amount != null && Number(b.amou
   b.month >= 1 && b.month <= 12 && b.year >= 2000 && b.year <= 2100;
 
 router.get('/', wrap(async (req, res) => {
-  const { rows } = await pool.query(`SELECT ${COLS} FROM expenses WHERE user_id=$1 ORDER BY year DESC, month DESC, type`, [req.user.id]);
+  const { rows } = await pool.query(`SELECT ${COLS} FROM expenses WHERE household_id=$1 ORDER BY year DESC, month DESC, type`, [req.household.id]);
   res.json(rows);
 }));
 
 router.get('/summary', wrap(async (req, res) => {
   const { rows } = await pool.query(
-    'SELECT year,month,type,SUM(amount)::float8 AS total FROM expenses WHERE user_id=$1 GROUP BY year,month,type ORDER BY year,month', [req.user.id]);
+    'SELECT year,month,type,SUM(amount)::float8 AS total FROM expenses WHERE household_id=$1 GROUP BY year,month,type ORDER BY year,month', [req.household.id]);
   res.json(rows);
 }));
 
 // Abnormality rule: amount > avg of the same type's other months + max(2 std-dev, 30% of avg); needs >=3 other records.
 router.get('/anomalies', wrap(async (req, res) => {
-  const { rows } = await pool.query(`SELECT ${COLS} FROM expenses WHERE user_id=$1`, [req.user.id]);
+  const { rows } = await pool.query(`SELECT ${COLS} FROM expenses WHERE household_id=$1`, [req.household.id]);
   const byType = {};
   rows.forEach((r) => (byType[r.type.toLowerCase()] ||= []).push(r));
   const out = [];
@@ -37,7 +37,7 @@ router.get('/anomalies', wrap(async (req, res) => {
 router.post('/import', wrap(async (req, res) => {
   const rows = Array.isArray(req.body?.rows) ? req.body.rows : [];
   if (!rows.length || rows.length > 5000) return res.status(400).json({ error: 'Send between 1 and 5000 rows.' });
-  const { rows: existing } = await pool.query('SELECT lower(type) AS t, amount::float8 AS a, month, year FROM expenses WHERE user_id=$1', [req.user.id]);
+  const { rows: existing } = await pool.query('SELECT lower(type) AS t, amount::float8 AS a, month, year FROM expenses WHERE household_id=$1', [req.household.id]);
   const seen = new Set(existing.map((e) => `${e.t}|${e.year}|${e.month}|${e.a}`));
   const fresh = []; let skipped = 0, invalid = 0;
   for (const r of rows) {
@@ -47,9 +47,9 @@ router.post('/import', wrap(async (req, res) => {
     seen.add(key); fresh.push(r);
   }
   if (fresh.length) await pool.query(
-    `INSERT INTO expenses(user_id,type,amount,month,year,remarks)
+    `INSERT INTO expenses(household_id,type,amount,month,year,remarks)
      SELECT $1, * FROM unnest($2::text[],$3::numeric[],$4::smallint[],$5::smallint[],$6::text[])`,
-    [req.user.id, fresh.map((r) => r.type.trim()), fresh.map((r) => r.amount), fresh.map((r) => r.month), fresh.map((r) => r.year), fresh.map((r) => r.remarks || '')]);
+    [req.household.id, fresh.map((r) => r.type.trim()), fresh.map((r) => r.amount), fresh.map((r) => r.month), fresh.map((r) => r.year), fresh.map((r) => r.remarks || '')]);
   res.json({ inserted: fresh.length, skipped, invalid });
 }));
 
@@ -57,7 +57,7 @@ router.post('/import', wrap(async (req, res) => {
 router.post('/import', wrap(async (req, res) => {
   const rows = Array.isArray(req.body && req.body.rows) ? req.body.rows.slice(0, 5000) : [];
   const key = (r) => [String(r.type).trim().toLowerCase(), +r.month, +r.year, Math.round(Number(r.amount) * 100), (r.remarks || '').trim()].join('|');
-  const existing = await pool.query('SELECT type,amount::float8 AS amount,month,year,remarks FROM expenses WHERE user_id=$1', [req.user.id]);
+  const existing = await pool.query('SELECT type,amount::float8 AS amount,month,year,remarks FROM expenses WHERE household_id=$1', [req.household.id]);
   const seen = new Set(existing.rows.map(key));
   let imported = 0, skipped = 0, invalid = 0;
   const client = await pool.connect();
@@ -66,8 +66,8 @@ router.post('/import', wrap(async (req, res) => {
     for (const r of rows) {
       if (!ok(r)) { invalid++; continue; }
       if (seen.has(key(r))) { skipped++; continue; }
-      await client.query('INSERT INTO expenses(user_id,type,amount,month,year,remarks) VALUES($1,$2,$3,$4,$5,$6)',
-        [req.user.id, String(r.type).trim(), r.amount, r.month, r.year, r.remarks || '']);
+      await client.query('INSERT INTO expenses(household_id,type,amount,month,year,remarks) VALUES($1,$2,$3,$4,$5,$6)',
+        [req.household.id, String(r.type).trim(), r.amount, r.month, r.year, r.remarks || '']);
       imported++;
     }
     await client.query('COMMIT');
@@ -78,21 +78,21 @@ router.post('/import', wrap(async (req, res) => {
 router.post('/', wrap(async (req, res) => {
   if (!ok(req.body)) return res.status(400).json({ error: 'Invalid expense.' });
   const b = req.body;
-  const { rows } = await pool.query(`INSERT INTO expenses(user_id,type,amount,month,year,remarks) VALUES($1,$2,$3,$4,$5,$6) RETURNING ${COLS}`,
-    [req.user.id, b.type.trim(), b.amount, b.month, b.year, b.remarks || '']);
+  const { rows } = await pool.query(`INSERT INTO expenses(household_id,type,amount,month,year,remarks) VALUES($1,$2,$3,$4,$5,$6) RETURNING ${COLS}`,
+    [req.household.id, b.type.trim(), b.amount, b.month, b.year, b.remarks || '']);
   res.status(201).json(rows[0]);
 }));
 
 router.put('/:id', wrap(async (req, res) => {
   if (!ok(req.body)) return res.status(400).json({ error: 'Invalid expense.' });
   const b = req.body;
-  const { rows } = await pool.query(`UPDATE expenses SET type=$1,amount=$2,month=$3,year=$4,remarks=$5 WHERE id=$6 AND user_id=$7 RETURNING ${COLS}`,
-    [b.type.trim(), b.amount, b.month, b.year, b.remarks || '', req.params.id, req.user.id]);
+  const { rows } = await pool.query(`UPDATE expenses SET type=$1,amount=$2,month=$3,year=$4,remarks=$5 WHERE id=$6 AND household_id=$7 RETURNING ${COLS}`,
+    [b.type.trim(), b.amount, b.month, b.year, b.remarks || '', req.params.id, req.household.id]);
   rows[0] ? res.json(rows[0]) : res.status(404).json({ error: 'Not found' });
 }));
 
 router.delete('/:id', wrap(async (req, res) => {
-  await pool.query('DELETE FROM expenses WHERE id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+  await pool.query('DELETE FROM expenses WHERE id=$1 AND household_id=$2', [req.params.id, req.household.id]);
   res.status(204).end();
 }));
 

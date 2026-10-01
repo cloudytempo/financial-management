@@ -7,8 +7,8 @@ router.get('/status', wrap(async (req, res) => {
   const now = new Date();
   const year = +req.query.year || now.getFullYear(), month = +req.query.month || now.getMonth() + 1;
   const b = await pool.query(`SELECT DISTINCT ON (lower(category)) category, amount::float8 AS amount FROM budgets
-    WHERE user_id=$1 AND (effective_year*12+effective_month) <= $2 ORDER BY lower(category), effective_year DESC, effective_month DESC`, [req.user.id, year * 12 + month]);
-  const e = await pool.query('SELECT lower(type) AS k, MIN(type) AS type, SUM(amount)::float8 AS spent FROM expenses WHERE user_id=$1 AND year=$2 AND month=$3 GROUP BY lower(type)', [req.user.id, year, month]);
+    WHERE household_id=$1 AND (effective_year*12+effective_month) <= $2 ORDER BY lower(category), effective_year DESC, effective_month DESC`, [req.household.id, year * 12 + month]);
+  const e = await pool.query('SELECT lower(type) AS k, MIN(type) AS type, SUM(amount)::float8 AS spent FROM expenses WHERE household_id=$1 AND year=$2 AND month=$3 GROUP BY lower(type)', [req.household.id, year, month]);
   const spent = new Map(e.rows.map((r) => [r.k, r.spent]));
   const isCur = year === now.getFullYear() && month === now.getMonth() + 1;
   const dim = new Date(year, month, 0).getDate(), day = isCur ? now.getDate() : dim;
@@ -27,18 +27,18 @@ router.get('/status', wrap(async (req, res) => {
 router.post('/', wrap(async (req, res) => {
   const { category, amount, year, month } = req.body || {};
   if (!category || !(Number(amount) > 0) || !(month >= 1 && month <= 12) || !(year >= 2000)) return res.status(400).json({ error: 'Category and a limit above 0 are required.' });
-  await pool.query('DELETE FROM budgets WHERE user_id=$1 AND lower(category)=lower($2) AND effective_year=$3 AND effective_month=$4', [req.user.id, category.trim(), year, month]);
-  await pool.query('INSERT INTO budgets(user_id,category,amount,effective_year,effective_month) VALUES($1,$2,$3,$4,$5)', [req.user.id, category.trim(), amount, year, month]);
+  await pool.query('DELETE FROM budgets WHERE household_id=$1 AND lower(category)=lower($2) AND effective_year=$3 AND effective_month=$4', [req.household.id, category.trim(), year, month]);
+  await pool.query('INSERT INTO budgets(household_id,category,amount,effective_year,effective_month) VALUES($1,$2,$3,$4,$5)', [req.household.id, category.trim(), amount, year, month]);
   res.status(201).json({ ok: true });
 }));
 router.delete('/:category', wrap(async (req, res) => {
-  await pool.query('DELETE FROM budgets WHERE user_id=$1 AND lower(category)=lower($2)', [req.user.id, req.params.category]);
+  await pool.query('DELETE FROM budgets WHERE household_id=$1 AND lower(category)=lower($2)', [req.household.id, req.params.category]);
   res.status(204).end();
 }));
 
 const init = async () => {
   await pool.query(`CREATE TABLE IF NOT EXISTS budgets (
-    id SERIAL PRIMARY KEY, user_id INT NOT NULL REFERENCES users ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY, household_id INT NOT NULL REFERENCES households ON DELETE CASCADE,
     category TEXT NOT NULL, amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
     effective_year SMALLINT NOT NULL, effective_month SMALLINT NOT NULL CHECK (effective_month BETWEEN 1 AND 12), created_at TIMESTAMPTZ DEFAULT now())`);
   await lockDown(pool, ['budgets']);

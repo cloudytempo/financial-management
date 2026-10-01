@@ -10,7 +10,7 @@ import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
   selector: 'app-income', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent],
   template: `
   <div class="page-head">
-    <div><h1>Income</h1><p class="sub">Salary and other money coming in, compared with what goes out</p></div>
+    <div><h1>Income</h1><p class="sub">Salary, side gigs, pension, and other money coming in</p></div>
     <div class="actions">
       <button class="btn ghost" (click)="carry()"><app-icon name="repeat" [size]="18" /><span class="hide-sm">Copy recurring</span></button>
       <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />Add income</button>
@@ -33,7 +33,7 @@ import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
 
   <div class="card">
     <div class="card-h"><h2>Records <span class="pill">{{ shown.length }}</span></h2></div>
-    @if (!shown.length) { <div class="empty">No income recorded for {{ year }}. Add your salary to see savings and budgets work together.</div> }
+    @if (!shown.length) { <div class="empty">No income recorded for {{ year }}. Add any income source to see savings and budgets work together.</div> }
     <ul class="list">@for (r of shown; track r.id) {
       <li class="item"><span class="ic-badge"><app-icon [name]="icon(r.source)" [size]="18" /></span>
         <div class="grow"><div class="t">{{ r.source }} <span class="pill">{{ months[r.month - 1] }}</span> @if (r.recurring) { <span class="badge ok">Recurring</span> }</div>
@@ -62,7 +62,8 @@ import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
 })
 export class IncomeComponent implements OnInit {
   private api = inject(Api);
-  fmt = fmt; months = MONTHS; icon = typeIcon; sources = ['Salary', 'Bonus', 'Freelance', 'Allowance', 'Commission', 'Other'];
+  fmt = fmt; months = MONTHS; icon = typeIcon;
+  sources = ['Salary', 'Side gig', 'Pension', 'Freelance', 'Business', 'Rental', 'Investment', 'Bonus', 'Allowance', 'Commission', 'Other'];
   now = new Date(); year = this.now.getFullYear(); years = [this.year]; showForm = false; error = ''; msg = '';
   rows: any[] = []; inc: any[] = []; exp: any[] = []; form: any = this.blank(); cfg: any; srcCfg: any;
   kIncome = 0; kAvg = 0; kSpent = 0; kNet = 0; kRate = 0;

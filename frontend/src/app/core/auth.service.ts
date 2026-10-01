@@ -13,11 +13,23 @@ export class Auth {
   login(email: string, password: string) {
     return this.http.post<any>('/api/auth/login', { email, password }).pipe(tap((r) => this.set(r)));
   }
-  signup(name: string, email: string, password: string) {
-    return this.http.post<any>('/api/auth/signup', { name, email, password }).pipe(tap((r) => this.set(r)));
+  signup(name: string, email: string, password: string, householdMode: 'create' | 'join', householdName: string, householdPassword: string) {
+    return this.http.post<any>('/api/auth/signup', { name, email, password, householdMode, householdName, householdPassword }).pipe(tap((r) => this.set(r)));
   }
   resetPassword(email: string, password: string) {
     return this.http.post<any>('/api/auth/reset-password', { email, password });
+  }
+  households() { return this.http.get<any[]>('/api/auth/households'); }
+  enterHousehold(name: string, password: string) {
+    return this.http.post<any>('/api/auth/households/enter', { name, password }).pipe(tap((household) => this.setHousehold(household)));
+  }
+  createHousehold(name: string, password: string) {
+    return this.http.post<any>('/api/auth/households', { name, password }).pipe(tap((household) => this.setHousehold(household)));
+  }
+  private setHousehold(household: any) {
+    const user = { ...this.user(), household };
+    localStorage.setItem('user', JSON.stringify(user));
+    this.user.set(user);
   }
   private set(r: any) {
     localStorage.setItem('token', r.token);
