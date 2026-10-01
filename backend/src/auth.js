@@ -119,6 +119,14 @@ router.get('/households', requireAuth, wrap(async (req, res) => {
   res.json(rows);
 }));
 
+router.get('/households/members', requireAuth, wrap(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT u.id,u.name FROM household_members m
+     JOIN users u ON u.id=m.user_id WHERE m.household_id=$1 ORDER BY lower(u.name),u.id`,
+    [req.household.id]);
+  res.json(rows);
+}));
+
 router.post('/households/enter', requireAuth, wrap(async (req, res) => {
   const { name, password } = req.body || {};
   const household = await findHousehold(pool, name);

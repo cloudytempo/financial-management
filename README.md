@@ -1,4 +1,4 @@
-# Home Ledger
+# Homint
 
 Angular 18 + Express + PostgreSQL, run with Docker Compose.
 

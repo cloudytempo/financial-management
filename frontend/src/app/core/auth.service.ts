@@ -20,6 +20,7 @@ export class Auth {
     return this.http.post<any>('/api/auth/reset-password', { email, password });
   }
   households() { return this.http.get<any[]>('/api/auth/households'); }
+  householdMembers() { return this.http.get<any[]>('/api/auth/households/members'); }
   enterHousehold(name: string, password: string) {
     return this.http.post<any>('/api/auth/households/enter', { name, password }).pipe(tap((household) => this.setHousehold(household)));
   }

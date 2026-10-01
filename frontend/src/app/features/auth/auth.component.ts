@@ -11,7 +11,7 @@ import { errMsg } from '../../shared/util';
   <div class="authwrap"><div class="auth card">
     <div class="logo"><app-icon name="wallet" [size]="24" /></div>
     <h1>{{ mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Reset your password' : 'Welcome back' }}</h1>
-    <p class="sub">{{ mode === 'signin' ? 'Sign in to Home Ledger' : mode === 'reset' ? 'Enter your username (email) and a new password' : 'Start tracking your money' }}</p>
+    <p class="sub">{{ mode === 'signin' ? 'Sign in to Homint' : mode === 'reset' ? 'Enter your username (email) and a new password' : 'Start tracking your money' }}</p>
     <form (ngSubmit)="submit()">
       @if (mode === 'signup') { <label>Name<input name="name" [(ngModel)]="name" autocomplete="name" required></label> }
       <label>{{ mode === 'reset' ? 'Username (email)' : 'Email' }}<input name="email" type="email" [(ngModel)]="email" autocomplete="username" required></label>

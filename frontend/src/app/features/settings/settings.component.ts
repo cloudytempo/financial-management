@@ -11,6 +11,18 @@ import { errMsg } from '../../shared/util';
   <section class="card settings-panel" aria-labelledby="household-title" style="margin-bottom:1rem">
     <h2 id="household-title">Household</h2>
     <p class="sub">Currently using <b>{{ auth.user()?.household?.name }}</b>. A household password is required each time you enter another household.</p>
+    <div class="row" style="margin-top:1rem"><h3 style="margin:0">Members</h3><span class="pill">{{ members.length }}</span></div>
+    @if (membersLoading) { <p class="muted small" style="margin-top:.5rem">Loading members...</p> }
+    @else if (memberError) { <p class="err small" style="margin-top:.5rem">{{ memberError }}</p> }
+    @else if (!members.length) { <p class="muted small" style="margin-top:.5rem">No members found.</p> }
+    @else {
+      <ul class="list" style="margin-top:.4rem">
+        @for (member of members; track member.id) {
+          <li class="item"><span class="ava">{{ member.name.charAt(0).toUpperCase() }}</span><span class="grow"><b>{{ member.name }}</b>
+            @if (member.id === auth.user()?.id) { <span class="pill">You</span> }</span></li>
+        }
+      </ul>
+    }
     @if (households.length) {
       <div class="seg" style="margin:1rem 0">
         @for (household of households; track household.id) {
@@ -46,9 +58,15 @@ import { errMsg } from '../../shared/util';
 })
 export class SettingsComponent implements OnInit {
   theme = inject(Theme); auth = inject(Auth);
-  households: any[] = []; householdMode: 'enter' | 'create' = 'enter';
+  households: any[] = []; members: any[] = []; membersLoading = true; memberError = ''; householdMode: 'enter' | 'create' = 'enter';
   householdName = ''; householdPassword = ''; householdError = '';
-  ngOnInit() { this.auth.households().subscribe((rows) => (this.households = rows)); }
+  ngOnInit() {
+    this.auth.households().subscribe((rows) => (this.households = rows));
+    this.auth.householdMembers().subscribe({
+      next: (rows) => { this.members = rows; this.membersLoading = false; },
+      error: () => { this.memberError = 'Could not load household members.'; this.membersLoading = false; },
+    });
+  }
   select(name: string) { this.householdMode = 'enter'; this.householdName = name; this.householdPassword = ''; }
   saveHousehold() {
     this.householdError = '';
