@@ -61,12 +61,24 @@ main:has(.dashboard-page){max-width:none}
 .admin-main{padding:1.5rem;min-width:0;max-width:1500px;width:100%;margin:0 auto}.admin-kicker{font-size:.68rem;font-weight:800;letter-spacing:.12em;color:#168678;margin-bottom:.2rem}
 .admin-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin-bottom:1rem}
 .admin-metric{display:flex;flex-direction:column;gap:.15rem}.admin-metric strong{font-size:1.65rem;line-height:1.15;font-variant-numeric:tabular-nums;color:#08766c}
-.admin-bento .chart-box{height:280px}.admin-report{padding:.6rem 0;border-bottom:1px solid var(--line)}.admin-report:last-child{border-bottom:0}
+.admin-layout:has(.admin-dashboard-page){height:100dvh;min-height:0;overflow:hidden}
+.admin-main:has(.admin-dashboard-page){height:100dvh;overflow:hidden}
+.admin-dashboard-page{height:100%;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:.75rem;overflow:hidden}
+.admin-dashboard-head{margin:0}.admin-period-card{padding:.65rem 1rem;overflow:hidden}
+.admin-period-grid{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,1fr));align-items:center;text-align:center}
+.admin-period-grid>*{padding:.27rem .4rem;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.admin-period-grid>b{border-top:0;color:var(--muted);font-size:.76rem}.admin-period-grid>strong{text-align:left}
+.admin-dashboard-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);grid-template-rows:minmax(0,.85fr) minmax(0,1.15fr);gap:.75rem;min-height:0;overflow:hidden}
+.admin-dashboard-grid>.card{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+.admin-activity-panel{grid-column:1/-1}.admin-chart-panel app-chart{display:block;flex:1;min-height:0}.admin-chart-panel .chart-box{height:100%;min-height:0}
+.admin-report-scroll,.admin-activity-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.admin-report{padding:.6rem 0;border-bottom:1px solid var(--line)}.admin-report:last-child{border-bottom:0}
 .admin-report .s{font-size:.78rem;color:var(--muted);margin:.15rem 0}.admin-report p{font-size:.84rem;white-space:pre-line;margin:.35rem 0;overflow-wrap:anywhere}
 .admin-report textarea{width:100%;border:1px solid var(--input-b);border-radius:8px;padding:.45rem;font:inherit;resize:vertical}
-.admin-activity{list-style:none;padding:0;margin:0}.admin-activity li{display:flex;align-items:flex-start;gap:.7rem;padding:.6rem 0;border-bottom:1px solid var(--line)}
-.admin-activity li:last-child{border-bottom:0}.admin-activity .grow{flex:1;min-width:0}.admin-activity .s{font-size:.8rem;color:var(--muted)}
-.activity-dot{width:9px;height:9px;margin-top:.42rem;border-radius:50%;background:#168678;flex:none}.activity-dot.warn{background:var(--warn)}
+.admin-timeline{list-style:none;padding:0 0 0 .65rem;margin:0}.admin-timeline li{position:relative;padding:.45rem 0 .45rem 1rem;border-left:1px solid #b9d4c9}
+.admin-timeline li:last-child{border-left-color:transparent}.timeline-marker{position:absolute;left:-5px;top:.82rem;width:9px;height:9px;border:2px solid var(--card);border-radius:50%;background:#168678;box-shadow:0 0 0 1px #168678}
+.timeline-marker.warn{background:var(--warn);box-shadow:0 0 0 1px var(--warn)}.timeline-entry{min-width:0}.timeline-entry .row{flex-wrap:nowrap;gap:.5rem}.timeline-entry .row b{min-width:0;overflow-wrap:anywhere}
+.timeline-entry time{white-space:nowrap;flex:none}.timeline-entry .s{font-size:.8rem;color:var(--muted);overflow-wrap:anywhere}
 .admin-search{max-width:480px;margin-bottom:.8rem}.admin-directory{padding-top:.4rem}.admin-directory-row{flex-wrap:wrap}.admin-status-off{background:var(--warn-bg);color:var(--warn)}
 .admin-authwrap{background:linear-gradient(145deg,#073d42,#08766c)}.admin-authwrap .auth{display:flex;flex-direction:column;gap:.65rem}.admin-authwrap .auth h1{font-size:1.35rem}
 .admin-authwrap .auth .homint-auth-logo{margin:0}.admin-authwrap .auth .admin-kicker{margin:0}
@@ -192,6 +204,8 @@ a.btn{text-decoration:none}
 @media(max-width:900px){
   .app{display:block}.side{display:none}
   .admin-layout{display:block}.admin-side{position:static;height:auto;padding:.55rem .8rem;display:flex;flex-direction:row;align-items:center;gap:.5rem;overflow-x:auto}
+  .admin-layout:has(.admin-dashboard-page){display:flex;flex-direction:column}
+  .admin-main:has(.admin-dashboard-page){height:auto;flex:1;min-height:0}
   .admin-brand{padding:.15rem .35rem;flex:none}.admin-brand img{width:34px;height:34px}.admin-brand small{display:none}
   .admin-nav{flex-direction:row;flex:1;justify-content:flex-end}.admin-nav a{padding:.55rem .6rem;white-space:nowrap}.admin-account{margin:0;padding:0;flex-direction:row;align-items:center}.admin-account .muted{display:none}.admin-main{padding:1rem}
   .topbar{display:flex;position:sticky;top:0;z-index:20;justify-content:space-between;align-items:center;padding:.55rem 1rem;padding-top:calc(.55rem + env(safe-area-inset-top));background:var(--c1);color:#fff}
@@ -213,7 +227,9 @@ a.btn{text-decoration:none}
   h1{font-size:1.3rem}.bento,.cards{gap:.75rem}.card{padding:.85rem .9rem;border-radius:16px}
   .admin-side{flex-wrap:wrap}.admin-brand{flex:1}.admin-nav{order:3;flex:1 0 100%;justify-content:space-around}.admin-nav a{flex:1;justify-content:center;font-size:.8rem}.admin-nav a app-icon{display:none}
   .admin-main{padding:.8rem}.admin-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem}.admin-metric{padding:.7rem}.admin-metric strong{font-size:1.35rem}
-  .admin-bento .chart-box{height:230px}.admin-directory-row{align-items:flex-start}.admin-directory-row .grow{flex-basis:calc(100% - 60px)}.admin-directory-row .btn.danger{margin-left:auto}
+  .admin-dashboard-page{gap:.55rem}.admin-period-card{padding:.6rem}.admin-period-grid>*{padding:.25rem .15rem;font-size:.85rem}.admin-period-grid>b{font-size:.68rem}
+  .admin-dashboard-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,.85fr) minmax(0,.85fr) minmax(0,1.3fr);gap:.55rem}
+  .admin-activity-panel{grid-column:1}.admin-directory-row{align-items:flex-start}.admin-directory-row .grow{flex-basis:calc(100% - 60px)}.admin-directory-row .btn.danger{margin-left:auto}
   .owner-transfer{align-items:stretch;flex-direction:column}.admin-activity time{max-width:88px;text-align:right}
   .kpi{padding:.75rem;gap:.6rem}.kpi .chip-ic{width:36px;height:36px}.kpi .val{font-size:1.05rem}
   .chart-box{height:220px}.hide-sm{display:none}

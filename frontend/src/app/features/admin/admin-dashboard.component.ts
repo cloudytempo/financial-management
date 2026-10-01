@@ -8,20 +8,21 @@ import { errMsg } from '../../shared/util';
 @Component({
   selector: 'app-admin-dashboard', standalone: true, imports: [FormsModule, ChartComponent, IconComponent],
   template: `
-  <div class="page-head"><div><p class="admin-kicker">HOMINT OPERATIONS</p><h1>Dashboard</h1><p class="sub">Account growth, household activity and reports</p></div>
+  <div class="admin-dashboard-page">
+  <div class="page-head admin-dashboard-head"><div><p class="admin-kicker">HOMINT OPERATIONS</p><h1>Dashboard</h1><p class="sub">Account growth, household activity and reports</p></div>
     <button class="icon-btn" (click)="load()" aria-label="Refresh dashboard" title="Refresh"><app-icon name="refresh" /></button></div>
   @if (error) { <div class="err" style="margin-bottom:1rem">{{ error }}</div> }
-  <div class="admin-metrics">
-    <section class="card admin-metric"><div class="lbl">New users today</div><strong>{{ data.users.today }}</strong><span class="muted small">{{ data.users.active }} active of {{ data.users.total }}</span></section>
-    <section class="card admin-metric"><div class="lbl">New users this week</div><strong>{{ data.users.this_week }}</strong><span class="muted small">Weekly registrations</span></section>
-    <section class="card admin-metric"><div class="lbl">New users this month</div><strong>{{ data.users.this_month }}</strong><span class="muted small">Monthly registrations</span></section>
-    <section class="card admin-metric"><div class="lbl">Households today</div><strong>{{ data.households.today }}</strong><span class="muted small">{{ data.households.active }} active of {{ data.households.total }}</span></section>
-    <section class="card admin-metric"><div class="lbl">Households this week</div><strong>{{ data.households.this_week }}</strong><span class="muted small">Weekly creations</span></section>
-    <section class="card admin-metric"><div class="lbl">Households this month</div><strong>{{ data.households.this_month }}</strong><span class="muted small">Monthly creations</span></section>
-  </div>
-  <div class="bento admin-bento">
-    <section class="card s8"><div class="card-h"><h2>New users and households</h2><span class="muted small">Last 30 days</span></div>@if (chart) { <app-chart [config]="chart" /> }</section>
-    <section class="card s4"><div class="card-h"><h2>Reports <span class="pill">{{ data.open_reports }} open</span></h2></div>
+  <section class="card admin-period-card"><div class="card-h"><h2>New entries</h2><span class="muted small">{{ data.users.active }} active users · {{ data.households.active }} active households</span></div>
+    <div class="admin-period-grid">
+      <b></b><b>Daily</b><b>Weekly</b><b>Monthly</b>
+      <strong>Users</strong><span>{{ data.users.today }}</span><span>{{ data.users.this_week }}</span><span>{{ data.users.this_month }}</span>
+      <strong>Households</strong><span>{{ data.households.today }}</span><span>{{ data.households.this_week }}</span><span>{{ data.households.this_month }}</span>
+    </div>
+  </section>
+  <div class="admin-dashboard-grid">
+    <section class="card admin-chart-panel"><div class="card-h"><h2>New users and households</h2><span class="muted small">Last 30 days</span></div>@if (chart) { <app-chart [config]="chart" /> }</section>
+    <section class="card admin-report-panel"><div class="card-h"><h2>Reports <span class="pill">{{ data.open_reports }} open</span></h2></div>
+      <div class="admin-report-scroll">
       @if (!reports.length) { <div class="empty">No user reports.</div> }
       @for (report of reports; track report.id) {
         <article class="admin-report"><div class="row between"><b>{{ report.reported_name }}</b><span class="pill">{{ report.status }}</span></div>
@@ -36,16 +37,20 @@ import { errMsg } from '../../shared/util';
           </div>
         </article>
       }
+      </div>
     </section>
-    <section class="card s12"><div class="card-h"><h2>{{ showAllActivity ? 'User and household activity' : 'Recent activity' }}</h2>
+    <section class="card admin-activity-panel"><div class="card-h"><h2>{{ showAllActivity ? 'User and household activity' : 'Recent activity' }}</h2>
       <button class="btn ghost sm" (click)="toggleActivity()">{{ showAllActivity ? 'Show recent' : 'View all activity' }}</button></div>
+      <div class="admin-activity-scroll">
       @if (!visibleActivity.length) { <div class="empty">Activity will appear as users join and leave households.</div> }
-      <ul class="admin-activity">@for (event of visibleActivity; track event.id) {
-        <li><span class="activity-dot" [class.warn]="event.activity_type.includes('deactivated')" aria-hidden="true"></span>
-          <div class="grow"><b>{{ activityLabel(event.activity_type) }}</b><div class="s">{{ event.actor_name }}@if (event.subject_name) { · {{ event.subject_name }}}@if (event.household_name) { · {{ event.household_name }}}</div></div>
-          <time class="muted small">{{ dateTime(event.created_at) }}</time></li>
-      }</ul>
+      <ol class="admin-timeline">@for (event of visibleActivity; track event.id) {
+        <li><span class="timeline-marker" [class.warn]="event.activity_type.includes('deactivated')" aria-hidden="true"></span>
+          <div class="timeline-entry"><div class="row between"><b>{{ activityLabel(event.activity_type) }}</b><time class="muted small">{{ dateTime(event.created_at) }}</time></div>
+            <div class="s">{{ event.actor_name }}@if (event.subject_name) { · {{ event.subject_name }}}@if (event.household_name) { · {{ event.household_name }}}</div></div></li>
+      }</ol>
+      </div>
     </section>
+  </div>
   </div>`,
 })
 export class AdminDashboardComponent implements OnInit {
