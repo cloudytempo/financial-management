@@ -54,7 +54,20 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
     </div></article>
 
     <article class="card dashboard-card"><div class="card-h"><h2><app-icon name="target" [size]="18" />{{ 'Goals' | tr }}</h2><a routerLink="/goals" class="small">{{ 'Manage' | tr }}</a></div><div class="dashboard-card-body dashboard-goal-body">
-      @if (goalsLoading) { <app-skeleton variant="chart" /> } @else if (goalCfg) { <app-chart [config]="goalCfg" /> } @else { <div class="empty">{{ 'Goal summary is unavailable.' | tr }}</div> }
+      <div class="dashboard-goal-split">
+        <div class="dashboard-goal-chart">@if (goalsLoading) { <app-skeleton variant="chart" /> } @else if (goalCfg) { <app-chart [config]="goalCfg" /> } @else { <div class="empty">{{ 'Goal summary is unavailable.' | tr }}</div> }</div>
+        <div class="dashboard-goal-accounts">
+          <h3><app-icon name="landmark" [size]="16" />{{ 'Accounts' | tr }}</h3>
+          @if (accountsLoading) { <app-skeleton [rows]="2" /> }
+          @else if (!accounts.accounts?.length) { <div class="muted small">{{ 'No accounts yet.' | tr }} <a routerLink="/accounts">{{ 'Add one' | tr }}</a>.</div> }
+          @else {
+            <div class="row between small"><span>{{ 'Net worth' | tr }}</span><b>{{ fmt(accounts.net_worth) }}</b></div>
+            <div class="row between small"><span>{{ 'Assets' | tr }}</span><span>{{ fmt(accounts.total_assets) }}</span></div>
+            <div class="row between small"><span>{{ 'Liabilities' | tr }}</span><span>{{ fmt(accounts.total_liabilities) }}</span></div>
+            <a routerLink="/accounts" class="small">{{ 'View accounts' | tr }}</a>
+          }
+        </div>
+      </div>
     </div></article>
 
     <article class="card dashboard-card"><div class="card-h"><h2><app-icon name="bell" [size]="18" />{{ 'Upcoming payments' | tr }}</h2></div><div class="dashboard-card-body">
@@ -113,7 +126,7 @@ export class DashboardComponent implements OnInit {
   hello = greeting(); firstName = (inject(Auth).user()?.name || '').split(' ')[0];
   get today() { return new Date().toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
   payments: any[] = []; anomalies: any[] = []; goalReminders: any[] = []; favs: any[] = [];
-  budget: any = { rows: [] }; typeHasData = false;
+  budget: any = { rows: [] }; typeHasData = false; accounts: any = { accounts: [], total_assets: 0, total_liabilities: 0, net_worth: 0 }; accountsLoading = true;
   expCfg: any; insCfg: any; goalCfg: any; typeCfg: any; incCfg: any;
   expensesLoading = true; cashflowLoading = true; installmentsLoading = true; goalsLoading = true;
   paymentsLoading = true; budgetLoading = true; anomaliesLoading = true; remindersLoading = true; favsLoading = true;
@@ -144,6 +157,8 @@ export class DashboardComponent implements OnInit {
     this.api.get<any[]>('/expenses/anomalies').subscribe({ next: (r) => { this.anomalies = r; this.anomaliesLoading = false; }, error: () => (this.anomaliesLoading = false) });
     this.favsLoading = true;
     this.api.get<any[]>('/contacts').subscribe({ next: (r) => { this.favs = r.filter((c) => c.favorite).slice(0, 5); this.favsLoading = false; }, error: () => (this.favsLoading = false) });
+    this.accountsLoading = true;
+    this.api.get<any>('/accounts').subscribe({ next: (r) => { this.accounts = r; this.accountsLoading = false; }, error: () => (this.accountsLoading = false) });
     this.installmentsLoading = true;
     this.api.get<any[]>('/installments/summary').subscribe({ next: (s) => {
       this.insCfg = { type: 'bar', data: { labels: s.map((x) => x.type), datasets: [

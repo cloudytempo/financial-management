@@ -46,6 +46,11 @@ main:has(.dashboard-page){max-width:none}
 .dashboard-goal-body{display:flex;flex-direction:column}
 .dashboard-goal-body app-chart{display:block;flex:1;min-height:0}
 .dashboard-card-body.dashboard-goal-body .chart-box{height:100%;min-height:0}
+.dashboard-goal-split{display:flex;gap:1rem;flex:1;min-height:0;align-items:stretch}
+.dashboard-goal-chart{flex:0 0 55%;min-width:0;min-height:0;max-width:220px}
+.dashboard-goal-chart .chart-box{height:100%;min-height:0}
+.dashboard-goal-accounts{flex:1;min-width:0;display:flex;flex-direction:column;gap:.35rem;padding-left:.8rem;border-left:1px solid var(--line)}
+.dashboard-goal-accounts h3{display:flex;align-items:center;gap:.4rem;font-size:.85rem;margin:0 0 .3rem;color:var(--muted)}
 .dashboard-card-body app-calendar-widget{display:block}
 .dashboard-card-body .chart-box{height:180px}
 .dashboard-section h3{display:flex;align-items:center;gap:.4rem;font-size:.85rem;margin:0 0 .4rem;color:var(--muted)}
@@ -173,6 +178,7 @@ input:focus,select:focus{border-color:var(--c2);outline:2px solid var(--g1);outl
 .list{list-style:none;margin:0;padding:0}
 .item{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--line)}
 .item:last-child{border-bottom:0}
+.item.unread{background:var(--warn-bg);border-radius:.5rem;padding-left:.5rem}
 .item .grow{flex:1;min-width:0}.item .t{font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis}
 .item .s{font-size:.8rem;color:var(--muted);white-space:pre-line}
 .item .amt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}

@@ -16,9 +16,26 @@ import { errMsg } from '../../shared/util';
   <div class="page-head"><div><h1>{{ 'Settings' | tr }}</h1><p class="sub">{{ 'Manage your household and workspace' | tr }}</p></div></div>
   <section class="card settings-panel" aria-labelledby="household-title" style="margin-bottom:1rem">
     <h2 id="household-title">{{ 'Household' | tr }}</h2>
-    <p class="sub">@if (auth.user()?.household?.name) { {{ 'Currently using' | tr }} <b>{{ auth.user()?.household?.name }}</b>. } @else { {{ 'No active household. Enter or create one to continue.' | tr }} }
-      {{ 'A household password is required each time you enter another household.' | tr }}</p>
-    <div class="row" style="margin-top:1rem"><h3 style="margin:0">{{ 'Members' | tr }}</h3><span class="pill">{{ members.length }}</span></div>
+    @if (auth.user()?.household?.name) {
+      <p class="sub">{{ 'Currently using' | tr }} <b>{{ auth.user()?.household?.name }}</b>.
+        {{ 'A household password is required each time you enter another household.' | tr }}</p>
+      <div class="row between" style="flex-wrap:wrap;gap:.6rem;margin-top:.6rem">
+        <span class="pill">{{ 'Household ID' | tr }}: <b>{{ auth.user()?.household?.public_id }}</b></span>
+        <button type="button" class="btn ghost sm" (click)="copyInviteId()"><app-icon name="copy" [size]="14" />{{ (copied ? 'Copied!' : 'Copy invite ID') | tr }}</button>
+      </div>
+      <p class="muted small" style="margin-top:.4rem">{{ 'Share this ID (and your household password) to invite others to join.' | tr }}</p>
+      <div style="margin-top:.8rem">
+        <label>{{ 'Household address' | tr }}
+          <div class="row" style="flex-wrap:nowrap">
+            <input name="householdAddress" [(ngModel)]="addressInput" [placeholder]="'Add an address' | tr" [disabled]="!isOwner">
+            @if (isOwner) { <button type="button" class="btn sm" (click)="saveAddress()">{{ 'Save' | tr }}</button> }
+          </div>
+        </label>
+        @if (auth.user()?.household?.address) { <a class="btn ghost sm" style="margin-top:.4rem" [href]="mapUrl(auth.user()?.household?.address)" target="_blank" rel="noopener"><app-icon name="map-pin" [size]="14" />{{ 'Open in map' | tr }}</a> }
+      </div>
+    } @else { <p class="sub">{{ 'No active household. Enter or create one to continue.' | tr }}</p> }
+
+    <div class="row" style="margin-top:1rem"><h3 style="margin:0">{{ 'Occupants' | tr }}</h3><span class="pill">{{ members.length }}</span></div>
     @if (membersLoading) { <app-skeleton [rows]="3" /> }
     @else if (memberError) { <p class="err small" style="margin-top:.5rem">{{ memberError | tr }}</p> }
     @else if (!members.length) { <p class="muted small" style="margin-top:.5rem">{{ 'No members found.' | tr }}</p> }
@@ -27,8 +44,10 @@ import { errMsg } from '../../shared/util';
         @for (member of members; track member.id) {
           <li class="item"><span class="ava">{{ member.name.charAt(0).toUpperCase() }}</span><span class="grow"><b>{{ member.name }}</b>
             @if (member.id === auth.user()?.id) { <span class="pill">{{ 'You' | tr }}</span> }
-            @if (member.is_owner) { <span class="pill">{{ 'Owner' | tr }}</span> }</span>
+            @if (member.is_owner) { <span class="pill">{{ 'Owner' | tr }}</span> }
+            <br><span class="muted small">{{ member.email }}@if (member.phone) { · {{ member.phone }} }@if (member.birthday) { · 🎂 {{ member.birthday }} }</span></span>
             @if (member.id !== auth.user()?.id) { <button class="icon-btn" (click)="openReport(member)" [attr.aria-label]="('Report member' | tr) + ' ' + member.name" [title]="'Report member' | tr"><app-icon name="alert" /></button> }
+            @if (isOwner && member.id !== auth.user()?.id) { <button class="icon-btn" (click)="openRemove(member)" [attr.aria-label]="('Remove member' | tr) + ' ' + member.name" [title]="'Remove or ban member' | tr"><app-icon name="shield" /></button> }
           </li>
         }
       </ul>
@@ -38,11 +57,18 @@ import { errMsg } from '../../shared/util';
         <option [ngValue]="null">{{ 'Choose a member' | tr }}</option>@for (member of otherMembers; track member.id) { <option [ngValue]="member.id">{{ member.name }}</option> }
       </select></label><button class="btn ghost" type="button" [disabled]="!nextOwnerId" (click)="transferOwnership()">{{ 'Transfer' | tr }}</button></div>
     }
+    @if (isOwner) {
+      <form (ngSubmit)="savePassword()" style="margin-top:1rem">
+        <label>{{ 'New household password' | tr }}<input name="newHouseholdPassword" type="password" [(ngModel)]="newHouseholdPassword" minlength="8" placeholder="••••••••"></label>
+        @if (passwordError) { <div class="err small" style="margin-top:.4rem">{{ passwordError | tr }}</div> }
+        <button class="btn ghost sm" type="submit" style="margin-top:.4rem">{{ 'Update household password' | tr }}</button>
+      </form>
+    }
     @if (memberActionError) { <div class="err small" style="margin-top:.5rem">{{ memberActionError | tr }}</div> }
     @if (households.length) {
       <div class="seg" style="margin:1rem 0">
         @for (household of households; track household.id) {
-          <button type="button" [class.on]="household.active" (click)="select(household.name)">{{ household.name }}</button>
+          <button type="button" [class.on]="household.active" (click)="select(household)">{{ household.name }}</button>
         }
       </div>
     }
@@ -52,13 +78,54 @@ import { errMsg } from '../../shared/util';
     </div>
     <form (ngSubmit)="saveHousehold()">
       <div class="fields">
-        <label>{{ 'Household name' | tr }}<input name="householdName" [(ngModel)]="householdName" required autocomplete="organization"></label>
+        @if (householdMode === 'create') {
+          <label>{{ 'Household name' | tr }}<input name="householdName" [(ngModel)]="householdName" required autocomplete="organization"></label>
+          <label>{{ 'Household address (optional)' | tr }}<input name="householdAddress2" [(ngModel)]="householdAddress"></label>
+        } @else {
+          <label>{{ 'Household ID' | tr }}<input name="householdId" [(ngModel)]="householdId" required [placeholder]="'Ask the owner for the household ID' | tr"></label>
+        }
         <label>{{ 'Household password' | tr }}<input name="householdPassword" type="password" [(ngModel)]="householdPassword" minlength="8" required autocomplete="current-password"></label>
       </div>
       @if (householdError) { <div class="err" style="margin-top:.6rem">{{ householdError | tr }}</div> }
       <div style="margin-top:1rem"><button class="btn" type="submit">{{ (householdMode === 'create' ? 'Create and enter' : 'Enter household') | tr }}</button></div>
     </form>
   </section>
+
+  <section class="card settings-panel" aria-labelledby="activity-title" style="margin-bottom:1rem">
+    <div class="row between"><h2 id="activity-title" style="margin:0">{{ 'Recent activity' | tr }}</h2><button class="icon-btn" (click)="loadActivity()" [attr.aria-label]="'Refresh' | tr"><app-icon name="refresh" /></button></div>
+    @if (activityLoading) { <app-skeleton [rows]="4" /> }
+    @else if (!activity.length) { <p class="muted small" style="margin-top:.5rem">{{ 'No activity yet.' | tr }}</p> }
+    @else {
+      <ol class="admin-timeline" style="margin-top:.5rem">@for (event of activity; track event.id) {
+        <li><span class="timeline-marker" aria-hidden="true"></span>
+          <div class="timeline-entry"><div class="row between"><b>{{ activityLabel(event) | tr }}</b><time class="muted small">{{ dateTime(event.created_at) }}</time></div>
+            <div class="s">{{ event.actor_name }}@if (event.subject_name) { · {{ event.subject_name }} }</div></div></li>
+      }</ol>
+    }
+  </section>
+
+  <section class="card settings-panel" aria-labelledby="profile-title" style="margin-bottom:1rem">
+    <h2 id="profile-title">{{ 'My profile' | tr }}</h2>
+    <form (ngSubmit)="saveProfile()">
+      <div class="fields">
+        <label>{{ 'Phone number' | tr }}<input name="profilePhone" [(ngModel)]="profile.phone" maxlength="30"></label>
+        <label>{{ 'Birthday' | tr }}<input name="profileBirthday" type="date" [(ngModel)]="profile.birthday"></label>
+        <label class="full">{{ 'About you' | tr }}<textarea name="profileBio" [(ngModel)]="profile.bio" rows="3" maxlength="500"></textarea></label>
+      </div>
+      <p class="muted small">{{ 'Your birthday is shown on the shared household calendar once saved.' | tr }}</p>
+      @if (profileError) { <div class="err" style="margin-top:.6rem">{{ profileError | tr }}</div> }
+      @if (profileSaved) { <div class="okmsg" style="margin-top:.6rem">{{ 'Profile saved.' | tr }}</div> }
+      <div style="margin-top:1rem"><button class="btn" type="submit">{{ 'Save profile' | tr }}</button></div>
+    </form>
+  </section>
+
+  <section class="card settings-panel" aria-labelledby="report-title" style="margin-bottom:1rem">
+    <h2 id="report-title">{{ 'Detailed report' | tr }}</h2>
+    <p class="sub">{{ 'Download a snapshot of expenses, income, budgets, bills, installments, goals, accounts, contacts and events for this household.' | tr }}</p>
+    @if (reportError) { <div class="err small" style="margin-top:.5rem">{{ reportError | tr }}</div> }
+    <button class="btn" type="button" style="margin-top:.6rem" [disabled]="reportLoading" (click)="downloadReport()">{{ (reportLoading ? 'Generating…' : 'Generate report') | tr }}</button>
+  </section>
+
   <section class="card settings-panel" aria-labelledby="appearance-title">
     <h2 id="appearance-title">{{ 'Appearance' | tr }}</h2>
     <p class="sub">{{ 'Choose a color theme' | tr }}</p>
@@ -79,28 +146,62 @@ import { errMsg } from '../../shared/util';
     </div>
   </section>
   <app-modal [open]="showReport" [title]="'Report ' + reportTarget?.name" (closed)="showReport = false">
-    <form (ngSubmit)="submitReport()"><label>{{ 'Why should an admin review this member?' | tr }}
-      <textarea name="reportReason" [(ngModel)]="reportReason" rows="4" minlength="10" maxlength="2000" required [placeholder]="'Describe why you think this person does not belong in the household' | tr"></textarea></label>
+    <form (ngSubmit)="submitReport()">
+      <label>{{ 'What is this about?' | tr }}<select name="reportCategory" [(ngModel)]="reportCategory">
+        @for (category of categories; track category) { <option [value]="category">{{ category | tr }}</option> }
+      </select></label>
+      <label>{{ 'Why should an admin review this member?' | tr }}
+        <textarea name="reportReason" [(ngModel)]="reportReason" rows="4" minlength="10" maxlength="2000" required [placeholder]="'Describe why you think this person does not belong in the household' | tr"></textarea></label>
       @if (memberActionError) { <div class="err" style="margin-top:.6rem">{{ memberActionError | tr }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="showReport = false">{{ 'Cancel' | tr }}</button><button class="btn" type="submit">{{ 'Send report' | tr }}</button></div>
+    </form>
+  </app-modal>
+  <app-modal [open]="showRemove" [title]="'Remove ' + removeTarget?.name" (closed)="showRemove = false">
+    <form (ngSubmit)="submitRemove()">
+      <label class="row" style="flex-wrap:nowrap"><input type="checkbox" name="banMember" [(ngModel)]="removeBan"> {{ 'Also ban this person from rejoining this household' | tr }}</label>
+      <label>{{ 'Reason (optional)' | tr }}<textarea name="removeReason" [(ngModel)]="removeReason" rows="3" maxlength="500"></textarea></label>
+      @if (memberActionError) { <div class="err" style="margin-top:.6rem">{{ memberActionError | tr }}</div> }
+      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showRemove = false">{{ 'Cancel' | tr }}</button><button class="btn danger" type="submit">{{ (removeBan ? 'Ban and remove' : 'Remove member') | tr }}</button></div>
     </form>
   </app-modal>`,
 })
 export class SettingsComponent implements OnInit {
   theme = inject(Theme); auth = inject(Auth); language = inject(Language); private api = inject(Api);
   households: any[] = []; members: any[] = []; membersLoading = true; memberError = ''; householdMode: 'enter' | 'create' = 'enter';
-  householdName = ''; householdPassword = ''; householdError = '';
+  householdName = ''; householdId = ''; householdAddress = ''; householdPassword = ''; householdError = ''; addressInput = '';
   nextOwnerId: number | null = null; memberActionError = ''; showReport = false; reportTarget: any = null; reportReason = '';
+  categories: string[] = ['Harassment', 'Inappropriate behavior', 'Financial dispute', 'Property damage', 'Rule violation', 'Other']; reportCategory = 'Other';
+  showRemove = false; removeTarget: any = null; removeBan = false; removeReason = '';
+  newHouseholdPassword = ''; passwordError = ''; copied = false;
+  activity: any[] = []; activityLoading = true;
+  profile: any = { phone: '', birthday: '', bio: '' }; profileError = ''; profileSaved = false;
+  reportLoading = false; reportError = '';
   get isOwner() { return this.members.some((member) => member.id === this.auth.user()?.id && member.is_owner); }
   get otherMembers() { return this.members.filter((member) => member.id !== this.auth.user()?.id); }
   ngOnInit() {
     this.auth.households().subscribe((rows) => (this.households = rows));
-    this.auth.householdMembers().subscribe({
-      next: (rows) => { this.members = rows; this.membersLoading = false; },
-      error: () => { this.memberError = 'Could not load household members.'; this.membersLoading = false; },
-    });
+    this.reloadMembers();
+    this.loadActivity();
+    this.auth.complaintCategories().subscribe({ next: (rows) => { if (rows.length) this.categories = rows; }, error: () => {} });
+    this.addressInput = this.auth.user()?.household?.address || '';
+    const me = this.auth.user();
+    this.profile = { phone: me?.phone || '', birthday: me?.birthday || '', bio: me?.bio || '' };
   }
-  select(name: string) { this.householdMode = 'enter'; this.householdName = name; this.householdPassword = ''; }
+  select(household: any) { this.householdMode = 'enter'; this.householdId = household.public_id; this.householdPassword = ''; }
+  mapUrl(address: string) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address); }
+  copyInviteId() {
+    const id = this.auth.user()?.household?.public_id;
+    if (!id) return;
+    navigator.clipboard?.writeText(id).then(() => { this.copied = true; setTimeout(() => (this.copied = false), 2000); });
+  }
+  saveAddress() {
+    this.auth.updateHouseholdAddress(this.addressInput).subscribe({ next: () => {}, error: (e) => (this.memberActionError = errMsg(e)) });
+  }
+  savePassword() {
+    this.passwordError = '';
+    if ((this.newHouseholdPassword || '').length < 8) { this.passwordError = 'Household password must be at least 8 characters.'; return; }
+    this.auth.updateHouseholdPassword(this.newHouseholdPassword).subscribe({ next: () => { this.newHouseholdPassword = ''; }, error: (e) => (this.passwordError = errMsg(e)) });
+  }
   transferOwnership() {
     if (!this.nextOwnerId || !confirm('Transfer household ownership? You will no longer be the owner.')) return;
     this.memberActionError = '';
@@ -108,23 +209,64 @@ export class SettingsComponent implements OnInit {
       next: () => { this.nextOwnerId = null; this.reloadMembers(); }, error: (e) => (this.memberActionError = errMsg(e)),
     });
   }
-  openReport(member: any) { this.reportTarget = member; this.reportReason = ''; this.memberActionError = ''; this.showReport = true; }
+  openReport(member: any) { this.reportTarget = member; this.reportReason = ''; this.reportCategory = 'Other'; this.memberActionError = ''; this.showReport = true; }
   submitReport() {
     if (!this.reportTarget) return;
     this.memberActionError = '';
-    this.api.post('/auth/households/members/' + this.reportTarget.id + '/report', { description: this.reportReason }).subscribe({
+    this.api.post('/auth/households/members/' + this.reportTarget.id + '/report', { description: this.reportReason, category: this.reportCategory }).subscribe({
       next: () => { this.showReport = false; this.reportTarget = null; this.reportReason = ''; },
       error: (e) => (this.memberActionError = errMsg(e)),
     });
   }
+  openRemove(member: any) { this.removeTarget = member; this.removeBan = false; this.removeReason = ''; this.memberActionError = ''; this.showRemove = true; }
+  submitRemove() {
+    if (!this.removeTarget) return;
+    this.memberActionError = '';
+    this.auth.removeMember(this.removeTarget.id, this.removeBan, this.removeReason).subscribe({
+      next: () => { this.showRemove = false; this.removeTarget = null; this.reloadMembers(); },
+      error: (e) => (this.memberActionError = errMsg(e)),
+    });
+  }
   reloadMembers() {
-    this.auth.householdMembers().subscribe({ next: (rows) => (this.members = rows), error: (e) => (this.memberActionError = errMsg(e)) });
+    this.membersLoading = true;
+    this.auth.householdMembers().subscribe({ next: (rows) => { this.members = rows; this.membersLoading = false; }, error: (e) => { this.memberError = errMsg(e); this.membersLoading = false; } });
+  }
+  loadActivity() {
+    this.activityLoading = true;
+    this.auth.householdActivity().subscribe({ next: (rows) => { this.activity = rows; this.activityLoading = false; }, error: () => { this.activityLoading = false; } });
+  }
+  activityLabel(event: any) {
+    if (event.activity_type === 'module_action') return `${event.details?.module || 'Module'} ${(event.details?.method || '').toLowerCase()} update`;
+    return String(event.activity_type).replaceAll('_', ' ').replace(/^./, (letter: string) => letter.toUpperCase());
+  }
+  dateTime(value: string) { return new Date(value).toLocaleString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY'); }
+  saveProfile() {
+    this.profileError = ''; this.profileSaved = false;
+    this.auth.updateProfile(this.profile).subscribe({
+      next: () => { this.profileSaved = true; setTimeout(() => (this.profileSaved = false), 2500); },
+      error: (e) => (this.profileError = errMsg(e)),
+    });
   }
   saveHousehold() {
     this.householdError = '';
     const request = this.householdMode === 'create'
-      ? this.auth.createHousehold(this.householdName, this.householdPassword)
-      : this.auth.enterHousehold(this.householdName, this.householdPassword);
+      ? this.auth.createHousehold(this.householdName, this.householdPassword, this.householdAddress)
+      : this.auth.enterHousehold(this.householdId, this.householdPassword);
     request.subscribe({ next: () => window.location.reload(), error: (error) => (this.householdError = errMsg(error)) });
+  }
+  downloadReport() {
+    this.reportError = ''; this.reportLoading = true;
+    this.api.get<any>('/reports/full').subscribe({
+      next: (report) => {
+        this.reportLoading = false;
+        const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.download = `${report.household_name || 'household'}-report-${new Date().toISOString().slice(0, 10)}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (e) => { this.reportError = errMsg(e); this.reportLoading = false; },
+    });
   }
 }

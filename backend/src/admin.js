@@ -72,7 +72,7 @@ adminRouter.get('/dashboard', wrap(async (_req, res) => {
 }));
 
 adminRouter.get('/users', wrap(async (_req, res) => {
-  const { rows } = await pool.query(`SELECT u.id,u.name,u.email,u.is_active,u.created_at,h.name AS household_name,
+  const { rows } = await pool.query(`SELECT u.id,u.name,u.email,u.is_active,u.is_banned,u.created_at,h.name AS household_name,
     (SELECT count(*)::int FROM household_members m JOIN households mh ON mh.id=m.household_id
     JOIN users linked_user ON linked_user.id=m.user_id
     WHERE m.user_id=u.id AND mh.is_active=true AND linked_user.is_active=true AND linked_user.active_household_id=mh.id) AS household_count
@@ -118,11 +118,45 @@ adminRouter.post('/users/:id/deactivate', wrap(async (req, res) => {
   res.json({ ok: true, require_password_change: true });
 }));
 
+// Ban is separate from deactivate: a banned account cannot sign in at all until unbanned.
+adminRouter.post('/users/:id/ban', wrap(async (req, res) => {
+  const reason = String(req.body && req.body.reason || '').trim().slice(0, 500);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const user = (await client.query('SELECT id,name,is_banned,active_household_id FROM users WHERE id=$1 FOR UPDATE', [req.params.id])).rows[0];
+    if (!user) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'User not found.' }); }
+    if (user.active_household_id) {
+      await client.query('DELETE FROM household_members WHERE household_id=$1 AND user_id=$2', [user.active_household_id, user.id]);
+      await client.query(`INSERT INTO household_activity(activity_type,actor_user_id,household_id,subject_user_id,details)
+        VALUES('member_left',NULL,$1,$2,$3)`, [user.active_household_id, user.id, { actor_name: 'System admin', subject_name: user.name, reason: 'account_banned' }]);
+    }
+    await client.query('UPDATE users SET is_banned=true,active_household_id=NULL WHERE id=$1', [user.id]);
+    await client.query(`INSERT INTO household_activity(activity_type,actor_user_id,subject_user_id,details)
+      VALUES('user_banned',NULL,$1,$2)`, [user.id, { actor_name: 'System admin', subject_name: user.name, reason }]);
+    await client.query('COMMIT');
+  } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+  res.json({ ok: true });
+}));
+adminRouter.post('/users/:id/unban', wrap(async (req, res) => {
+  const result = await pool.query('UPDATE users SET is_banned=false WHERE id=$1 RETURNING id,name', [req.params.id]);
+  if (!result.rowCount) return res.status(404).json({ error: 'User not found.' });
+  await pool.query(`INSERT INTO household_activity(activity_type,actor_user_id,subject_user_id,details)
+    VALUES('user_unbanned',NULL,$1,$2)`, [result.rows[0].id, { actor_name: 'System admin', subject_name: result.rows[0].name }]);
+  res.json({ ok: true });
+}));
+
 adminRouter.get('/households', wrap(async (_req, res) => {
-  const { rows } = await pool.query(`SELECT h.id,h.name,h.is_active,h.created_at,h.created_by AS owner_id,u.name AS owner_name,
+  const { rows } = await pool.query(`SELECT h.id,h.name,h.public_id,h.address,h.is_active,h.created_at,h.created_by AS owner_id,u.name AS owner_name,
     (SELECT count(*)::int FROM household_members m JOIN users mu ON mu.id=m.user_id
      WHERE m.household_id=h.id AND mu.is_active=true AND mu.active_household_id=h.id) AS member_count
     FROM households h LEFT JOIN users u ON u.id=h.created_by ORDER BY h.created_at DESC,h.id DESC`);
+  res.json(rows);
+}));
+adminRouter.get('/households/:id/members', wrap(async (req, res) => {
+  const { rows } = await pool.query(`SELECT u.id,u.name,u.email,u.is_active,m.joined_at,(h.created_by=u.id) AS is_owner
+    FROM household_members m JOIN users u ON u.id=m.user_id JOIN households h ON h.id=m.household_id
+    WHERE m.household_id=$1 AND u.active_household_id=$1 AND u.is_active=true ORDER BY m.joined_at,u.id`, [req.params.id]);
   res.json(rows);
 }));
 adminRouter.put('/households/:id', wrap(async (req, res) => {

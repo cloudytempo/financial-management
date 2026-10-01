@@ -21,12 +21,16 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
     @else { <ul class="list">@for (user of shown; track user.id) {
       <li class="item admin-directory-row">
         <span class="ava">{{ user.name.charAt(0).toUpperCase() }}</span>
-        <div class="grow"><div class="t">{{ user.name }} <span class="pill" [class.admin-status-off]="!user.is_active">{{ (user.is_active ? 'Active' : 'Deactivated') | tr }}</span></div>
+        <div class="grow"><div class="t">{{ user.name }} <span class="pill" [class.admin-status-off]="!user.is_active || user.is_banned">{{ (user.is_banned ? 'Banned' : user.is_active ? 'Active' : 'Deactivated') | tr }}</span></div>
           <div class="s">{{ user.email }} · {{ user.household_name || ('No active household' | tr) }} · {{ user.household_count }} {{ 'linked' | tr }}</div>
           <div class="s">{{ 'Joined' | tr }} {{ date(user.created_at) }}</div></div>
         <button class="icon-btn" (click)="edit(user)" [attr.aria-label]="('Edit user' | tr) + ' ' + user.name" [title]="'Edit user' | tr"><app-icon name="pencil" /></button>
-        @if (user.is_active) { <button class="btn danger sm" (click)="deactivate(user)">{{ 'Deactivate' | tr }}</button> }
-        @else { <span class="muted small">{{ 'Password reset required on next sign in' | tr }}</span> }
+        @if (user.is_banned) { <button class="btn green sm" (click)="unban(user)">{{ 'Unban' | tr }}</button> }
+        @else {
+          @if (user.is_active) { <button class="btn danger sm" (click)="deactivate(user)">{{ 'Deactivate' | tr }}</button> }
+          @else { <span class="muted small">{{ 'Password reset required on next sign in' | tr }}</span> }
+          <button class="btn danger sm" (click)="ban(user)">{{ 'Ban' | tr }}</button>
+        }
       </li>
     }</ul> }
   </section>
@@ -57,6 +61,13 @@ export class AdminUsersComponent implements OnInit {
   deactivate(user: any) {
     if (confirm(`${this.language.text('Deactivate')} ${user.name}? ${this.language.text('Their active household access will be removed. They must sign in and set a new password to reactivate.')}`))
       this.api.post('/admin/users/' + user.id + '/deactivate', {}).subscribe({ next: () => this.load(), error: (e) => (this.error = errMsg(e)) });
+  }
+  ban(user: any) {
+    if (confirm(`${this.language.text('Ban')} ${user.name}? ${this.language.text('They will not be able to sign in until unbanned.')}`))
+      this.api.post('/admin/users/' + user.id + '/ban', {}).subscribe({ next: () => this.load(), error: (e) => (this.error = errMsg(e)) });
+  }
+  unban(user: any) {
+    this.api.post('/admin/users/' + user.id + '/unban', {}).subscribe({ next: () => this.load(), error: (e) => (this.error = errMsg(e)) });
   }
   date(value: string) { return new Date(value).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY'); }
 }

@@ -22,7 +22,12 @@ import { TranslatePipe } from '../../shared/translate.pipe';
           <button type="button" [class.on]="householdMode === 'create'" (click)="householdMode = 'create'">{{ 'Create household' | tr }}</button>
           <button type="button" [class.on]="householdMode === 'join'" (click)="householdMode = 'join'">{{ 'Join household' | tr }}</button>
         </div>
-        <label>{{ 'Household name' | tr }}<input name="householdName" [(ngModel)]="householdName" autocomplete="organization" required></label>
+        @if (householdMode === 'create') {
+          <label>{{ 'Household name' | tr }}<input name="householdName" [(ngModel)]="householdName" autocomplete="organization" required></label>
+          <label>{{ 'Household address (optional)' | tr }}<input name="householdAddress" [(ngModel)]="householdAddress" autocomplete="street-address"></label>
+        } @else {
+          <label>{{ 'Household ID' | tr }}<input name="householdId" [(ngModel)]="householdId" [placeholder]="'Ask the owner for the household ID' | tr" required></label>
+        }
         <label>{{ 'Household password' | tr }}<input name="householdPassword" type="password" [(ngModel)]="householdPassword" minlength="8" autocomplete="new-password" required></label>
       }
       @if (mode === 'reset' || mode === 'reactivate') { <label>{{ 'Confirm new password' | tr }}<input name="confirm" type="password" [(ngModel)]="confirm" minlength="8" autocomplete="new-password" required></label> }
@@ -41,7 +46,7 @@ export class AuthComponent {
   mode: 'signin' | 'signup' | 'reset' | 'reactivate' = 'signin';
   name = ''; email = ''; password = ''; confirm = ''; error = ''; info = '';
   reactivationToken = '';
-  householdMode: 'create' | 'join' = 'create'; householdName = ''; householdPassword = '';
+  householdMode: 'create' | 'join' = 'create'; householdName = ''; householdId = ''; householdPassword = ''; householdAddress = '';
   go(e: Event, m: 'signin' | 'signup' | 'reset') { e.preventDefault(); this.mode = m; this.error = ''; this.info = ''; this.password = ''; this.confirm = ''; }
   submit() {
     this.error = ''; this.info = '';
@@ -60,7 +65,7 @@ export class AuthComponent {
       return;
     }
     const obs = this.mode === 'signup'
-      ? this.auth.signup(this.name, this.email, this.password, this.householdMode, this.householdName, this.householdPassword)
+      ? this.auth.signup(this.name, this.email, this.password, this.householdMode, this.householdName, this.householdPassword, this.householdId, this.householdAddress)
       : this.auth.login(this.email, this.password);
     obs.subscribe({ next: (r) => {
       if (r.reactivationRequired) { this.reactivationToken = r.token; this.mode = 'reactivate'; this.password = ''; return; }

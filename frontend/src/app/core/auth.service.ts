@@ -21,19 +21,30 @@ export class Auth {
   adminLogin(email: string, password: string) {
     return this.http.post<any>('/api/admin-auth/login', { email, password }).pipe(tap((r) => this.setAdmin(r)));
   }
-  signup(name: string, email: string, password: string, householdMode: 'create' | 'join', householdName: string, householdPassword: string) {
-    return this.http.post<any>('/api/auth/signup', { name, email, password, householdMode, householdName, householdPassword }).pipe(tap((r) => this.set(r)));
+  signup(name: string, email: string, password: string, householdMode: 'create' | 'join', householdName: string, householdPassword: string, householdId?: string, householdAddress?: string) {
+    return this.http.post<any>('/api/auth/signup', { name, email, password, householdMode, householdName, householdId, householdPassword, householdAddress }).pipe(tap((r) => this.set(r)));
   }
   resetPassword(email: string, password: string) {
     return this.http.post<any>('/api/auth/reset-password', { email, password });
   }
   households() { return this.http.get<any[]>('/api/auth/households'); }
   householdMembers() { return this.http.get<any[]>('/api/auth/households/members'); }
-  enterHousehold(name: string, password: string) {
-    return this.http.post<any>('/api/auth/households/enter', { name, password }).pipe(tap((household) => this.setHousehold(household)));
+  householdActivity() { return this.http.get<any[]>('/api/auth/households/activity'); }
+  complaintCategories() { return this.http.get<string[]>('/api/auth/households/members/complaint-categories'); }
+  removeMember(id: number, ban: boolean, reason: string) { return this.http.post('/api/auth/households/members/' + id + '/remove', { ban, reason }); }
+  updateHouseholdPassword(password: string) { return this.http.put('/api/auth/households/password', { password }); }
+  updateHouseholdAddress(address: string) {
+    return this.http.put<any>('/api/auth/households/address', { address }).pipe(tap((r) => this.setHousehold({ ...this.user()?.household, address: r.address })));
   }
-  createHousehold(name: string, password: string) {
-    return this.http.post<any>('/api/auth/households', { name, password }).pipe(tap((household) => this.setHousehold(household)));
+  updateProfile(profile: { phone: string; bio: string; birthday: string | null }) { return this.http.put('/api/auth/profile', profile); }
+  notifications() { return this.http.get<any[]>('/api/auth/notifications'); }
+  markNotificationRead(id: number) { return this.http.post('/api/auth/notifications/' + id + '/read', {}); }
+  markAllNotificationsRead() { return this.http.post('/api/auth/notifications/read-all', {}); }
+  enterHousehold(householdId: string, password: string) {
+    return this.http.post<any>('/api/auth/households/enter', { householdId, password }).pipe(tap((household) => this.setHousehold(household)));
+  }
+  createHousehold(name: string, password: string, address?: string) {
+    return this.http.post<any>('/api/auth/households', { name, password, address }).pipe(tap((household) => this.setHousehold(household)));
   }
   private setHousehold(household: any) {
     const user = { ...this.user(), household };
