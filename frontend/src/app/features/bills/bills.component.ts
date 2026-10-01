@@ -60,7 +60,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   <div class="card split-card">
     <div class="card-h"><h2><app-icon name="users" [size]="18" />{{ 'Split bills' | tr }} <span class="pill">{{ splits.length }}</span></h2>
       <button class="btn sm" (click)="openSplitForm()"><app-icon name="plus" [size]="16" />{{ 'Split a bill' | tr }}</button></div>
-    @if (!splits.length) { <div class="empty">{{ 'No split bills yet. Add a shared bill and track each person\'s share.' | tr }}</div> }
+    @if (!splits.length) { <div class="empty">{{ 'No split bills yet.' | tr }} {{ 'Add a shared bill to track shares by participant.' | tr }}</div> }
     <ul class="split-list">@for (split of splits; track split.id) {
       <li class="split-entry">
         <div class="row between split-heading"><div class="grow"><div class="t">{{ split.name }} <span class="pill">{{ paidCount(split) }}/{{ split.shares.length }} {{ 'paid' | tr }}</span></div>
@@ -121,7 +121,7 @@ export class BillsComponent implements OnInit {
     this.api.get<any[]>('/bills').subscribe((r) => (this.items = r));
     this.api.get<any>('/bills/summary').subscribe((s) => {
       this.sum = s;
-      this.cfg = { type: 'doughnut', data: { labels: s.by.map((x: any) => x.category), datasets: [{ data: s.by.map((x: any) => Number(Number(x.monthly).toFixed(2))), backgroundColor: s.by.map((_: any, i: number) => COLORS[i % COLORS.length]) }] } };
+      this.cfg = { type: 'doughnut', data: { labels: s.by.map((x: any) => this.language.text(x.category)), datasets: [{ data: s.by.map((x: any) => Number(Number(x.monthly).toFixed(2))), backgroundColor: s.by.map((_: any, i: number) => COLORS[i % COLORS.length]) }] } };
     });
   }
   blankSplit() { return { name: '', total_amount: null, due_date: iso(new Date()) }; }
