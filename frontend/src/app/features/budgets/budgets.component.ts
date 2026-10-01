@@ -52,7 +52,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
             <div class="amt small">{{ fmt(r.spent) }} / {{ fmt(r.limit) }}</div></div>
           <div class="bar" style="margin:.4rem 0 .2rem" [class.warn]="r.status === 'warn'" [class.over]="r.status === 'over'"><i [style.width.%]="r.pct > 100 ? 100 : r.pct"></i></div>
           <div class="s">{{ r.pct }}% {{ 'used' | tr }} ·
-            @if (r.remaining >= 0) { {{ fmt(r.remaining) }} {{ 'left' | tr }} } @else { {{ fmt(-r.remaining) }} {{ 'over' | tr }} }
+            @if (r.remaining >= 0) { {{ fmt(r.remaining) }} {{ remainingLabel }} } @else { {{ fmt(-r.remaining) }} {{ 'over' | tr }} }
             @if (r.projected != null && r.projected > r.limit && r.status !== 'over') { · {{ 'on pace for' | tr }} {{ fmt(r.projected) }} }</div>
         </div>
         <button class="icon-btn" (click)="openForm(r.category, r.limit)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
@@ -76,6 +76,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
 })
 export class BudgetsComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
+  get remainingLabel() { return this.language.text('left'); }
   fmt = fmt; get months() { return MONTHS.map((_, i) => new Date(2024, i, 1).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { month: 'short' })); } icon = typeIcon; showForm = false; error = '';
   now = new Date(); year = this.now.getFullYear(); month = this.now.getMonth() + 1;
   st: any = { rows: [], unbudgeted: [], totalLimit: 0, totalSpent: 0, safePerDay: null }; cfg: any; catOptions: string[] = [];

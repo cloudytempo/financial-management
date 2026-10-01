@@ -26,7 +26,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
 
   @if (items.length) {
   <div class="bento">
-    <div class="card s4"><div class="card-h"><h2><app-icon name="check" [size]="18" />{{ 'Completion status' | tr }}</h2></div>@if (statusCfg) { <app-chart [config]="statusCfg" /> }</div>
+    <div class="card s4 goals-status-card"><div class="card-h"><h2><app-icon name="check" [size]="18" />{{ 'Completion status' | tr }}</h2></div>@if (statusCfg) { <app-chart [config]="statusCfg" /> }</div>
     <div class="card s8"><div class="card-h"><h2><app-icon name="target" [size]="18" />{{ 'Progress by goal (%)' | tr }}</h2></div>@if (progressCfg) { <app-chart [config]="progressCfg" /> }</div>
   </div> } @else { <div class="card empty">{{ 'No goals yet. Add one to start tracking.' | tr }}</div> }
 

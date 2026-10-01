@@ -25,7 +25,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
 
   <div class="bento dashboard-kpis">
     <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="wallet" /></span>
-      <div><div class="lbl">{{ curLabel | tr }} {{ 'spending' | tr }}</div><div class="val">{{ fmt(curTotal) }}</div>
+      <div><div class="lbl">{{ spendingPeriodLabel }}</div><div class="val">{{ fmt(curTotal) }}</div>
         @if (prevTotal) { <div class="foot"><span [class.up]="delta > 0" [class.down]="delta <= 0"><app-icon [name]="delta > 0 ? 'arrow-up' : 'arrow-down'" [size]="12" /> {{ abs(delta) }}%</span> {{ 'vs previous month' | tr }}</div> }</div></div>
     <div class="card kpi s3"><span class="chip-ic"><app-icon name="banknote" /></span>
       <div><div class="lbl">{{ 'Left after spending' | tr }}</div>
@@ -108,6 +108,7 @@ export class DashboardComponent implements OnInit {
   expCfg: any; insCfg: any; goalCfg: any; typeCfg: any; incCfg: any;
   curLabel = 'This month'; curTotal = 0; prevTotal = 0; delta = 0; curIncome = 0;
   get dueTotal() { return this.payments.reduce((a, u) => a + u.amount, 0); }
+  get spendingPeriodLabel() { return `${this.curLabel} ${this.language.text('spending')}`; }
   get overBudget() { return (this.budget.rows || []).filter((r: any) => r.status === 'over'); }
   get attentionCount() { return this.anomalies.length + this.goalReminders.length + this.overBudget.length; }
   tel(p: string) { return 'tel:' + p.replace(/[^\d+]/g, ''); }

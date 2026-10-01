@@ -71,6 +71,7 @@ const MALAY: Record<string, string> = {
   'Mark paid': 'Tandakan dibayar', 'Undo payment': 'Buat asal bayaran', 'Split bills': 'Bahagikan bil', 'Split a bill': 'Bahagikan bil',
   'No split bills yet.': 'Belum ada bil yang dibahagikan.',
   'Add a shared bill to track shares by participant.': 'Tambah bil kongsi untuk menjejak bahagian setiap peserta.',
+  'Bill due': 'Bil perlu dibayar', 'Installment due': 'Ansuran perlu dibayar',
   'Edit bill': 'Edit bil', 'Category': 'Kategori',
   'Amount (MYR)': 'Jumlah (MYR)', 'Repeats': 'Ulangan', 'Every 3 months': 'Setiap 3 bulan', 'Yearly': 'Tahunan',
   'Next due date': 'Tarikh perlu dibayar seterusnya', 'Paused': 'Dijeda', 'Cancelled': 'Dibatalkan',
