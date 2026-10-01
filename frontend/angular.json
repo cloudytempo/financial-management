@@ -25,7 +25,8 @@
       ],
       "assets": [
        "src/favicon.svg",
-       "src/manifest.webmanifest"
+        "src/manifest.webmanifest",
+        "src/auth-wallpaper.svg"
       ]
      },
      "configurations": {
