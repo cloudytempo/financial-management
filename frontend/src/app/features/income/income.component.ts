@@ -38,7 +38,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     @if (!shown.length) { <div class="empty">{{ 'No income recorded for' | tr }} {{ year }}. {{ 'Add any income source to see savings and budgets work together.' | tr }}</div> }
     <ul class="list">@for (r of shown; track r.id) {
       <li class="item"><span class="ic-badge"><app-icon [name]="icon(r.source)" [size]="18" /></span>
-        <div class="grow"><div class="t">{{ r.source }} <span class="pill">{{ months[r.month - 1] }}</span> @if (r.recurring) { <span class="badge ok">{{ 'Recurring' | tr }}</span> }</div>
+        <div class="grow"><div class="t">{{ r.source | tr }} <span class="pill">{{ months[r.month - 1] }}</span> @if (r.recurring) { <span class="badge ok">{{ 'Recurring' | tr }}</span> }</div>
           @if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
         <div class="amt">{{ fmt(r.amount) }}</div>
         <button class="icon-btn" (click)="edit(r)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
@@ -85,7 +85,7 @@ export class IncomeComponent implements OnInit {
     const mE = this.months.map((_, i) => sum(this.exp, (s) => Number(s.year) === y && Number(s.month) === i + 1));
     this.cfg = { type: 'bar', data: { labels: this.months, datasets: [{ label: this.language.text('Income'), data: mI, backgroundColor: COLORS[1] }, { label: this.language.text('Expenses'), data: mE, backgroundColor: COLORS[0] }] } };
     const srcs = [...new Set(this.inc.filter((s) => Number(s.year) === y).map((s) => s.source).filter(Boolean))];
-    this.srcCfg = { type: 'doughnut', data: { labels: srcs, datasets: [{ data: srcs.map((n) => sum(this.inc, (s) => Number(s.year) === y && s.source === n)), backgroundColor: srcs.map((_, i) => COLORS[i % COLORS.length]) }] } };
+    this.srcCfg = { type: 'doughnut', data: { labels: srcs.map((source) => this.language.text(source)), datasets: [{ data: srcs.map((n) => sum(this.inc, (s) => Number(s.year) === y && s.source === n)), backgroundColor: srcs.map((_, i) => COLORS[i % COLORS.length]) }] } };
     this.kIncome = mI.reduce((a, b) => a + b, 0); this.kSpent = mE.reduce((a, b) => a + b, 0);
     const active = mI.filter((v) => v > 0).length; this.kAvg = active ? this.kIncome / active : 0;
     this.kNet = this.kIncome - this.kSpent; this.kRate = this.kIncome ? Math.round((this.kNet / this.kIncome) * 100) : 0;

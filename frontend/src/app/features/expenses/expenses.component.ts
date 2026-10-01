@@ -27,7 +27,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   <div class="bento">
     <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="wallet" /></span><div><div class="lbl">{{ year }} {{ 'total' | tr }}</div><div class="val">{{ fmt(kTotal) }}</div></div></div>
     <div class="card kpi s3"><span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Average per month' | tr }}</div><div class="val">{{ fmt(kAvg) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="trend" /></span><div><div class="lbl">{{ 'Biggest category' | tr }}</div><div class="val">{{ kTop || '-' }}</div><div class="foot">{{ fmt(kTopAmt) }}</div></div></div>
+    <div class="card kpi s3"><span class="chip-ic"><app-icon name="trend" /></span><div><div class="lbl">{{ 'Biggest category' | tr }}</div><div class="val">{{ (kTop || '-') | tr }}</div><div class="foot">{{ fmt(kTopAmt) }}</div></div></div>
     <div class="card kpi s3"><span class="chip-ic"><app-icon name="alert" /></span><div><div class="lbl">{{ 'Unusual' | tr }}</div><div class="val">{{ anomalies.length }}</div><div class="foot">{{ 'flagged expenses' | tr }}</div></div></div>
   </div>
 
@@ -53,7 +53,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     <ul class="list">@for (r of shown; track r.id) {
       <li class="item" [class.flag]="flagged.has(r.id)">
         <span class="ic-badge" [class.warn]="flagged.has(r.id)"><app-icon [name]="icon(r.type)" [size]="18" /></span>
-          <div class="grow"><div class="t">{{ r.type }} <span class="pill">{{ months[r.month - 1] }}</span> @if (flagged.has(r.id)) { <span class="badge">{{ 'Unusual' | tr }}</span> }</div>
+          <div class="grow"><div class="t">{{ r.type | tr }} <span class="pill">{{ months[r.month - 1] }}</span> @if (flagged.has(r.id)) { <span class="badge">{{ 'Unusual' | tr }}</span> }</div>
           @if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
         <div class="amt">{{ fmt(r.amount) }}</div>
         <button class="icon-btn" (click)="edit(r)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
@@ -65,7 +65,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     <form (ngSubmit)="save()">
       <div class="fields">
         <label class="full">{{ 'Type' | tr }}<input name="type" list="types" [(ngModel)]="form.type" required autocomplete="off">
-          <datalist id="types">@for (t of typeOptions; track t) { <option [value]="t"></option> }</datalist></label>
+          <datalist id="types">@for (t of typeOptions; track t) { <option [value]="t" [label]="t | tr"></option> }</datalist></label>
         <label>{{ 'Amount (MYR)' | tr }}<input name="amount" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.amount" required></label>
         <label>{{ 'Year' | tr }}<input name="year" type="number" inputmode="numeric" [(ngModel)]="form.year" required></label>
         <label class="full">{{ 'Month' | tr }}<select name="month" [(ngModel)]="form.month">@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></label>
@@ -132,10 +132,10 @@ export class ExpensesComponent implements OnInit {
     this.hasTypeData = totals.some((total) => total > 0);
     this.hasShareData = this.hasTypeData;
     this.typeCfg = { type: 'bar', data: { labels: this.months, datasets: types.map((t, i) => ({
-      label: t, backgroundColor: COLORS[i % COLORS.length],
+      label: this.language.text(t), backgroundColor: COLORS[i % COLORS.length],
       data: MONTHS.map((_, m) => sum((s) => Number(s.year) === y && Number(s.month) === m + 1 && s.type === t)) })) },
       options: { scales: { x: { stacked: true }, y: { stacked: true } } } };
-    this.shareCfg = { type: 'doughnut', data: { labels: types, datasets: [{ data: totals, backgroundColor: types.map((_, i) => COLORS[i % COLORS.length]) }] } };
+    this.shareCfg = { type: 'doughnut', data: { labels: types.map((type) => this.language.text(type)), datasets: [{ data: totals, backgroundColor: types.map((_, i) => COLORS[i % COLORS.length]) }] } };
     this.annualCfg = { type: 'bar', data: { labels: ys.map(String), datasets: [
       { label: this.language.text('Total (RM)'), data: ys.map((yr) => sum((s) => Number(s.year) === yr)), backgroundColor: ys.map((yr) => (yr === y ? COLORS[0] : '#D7CCC8')) }] },
       options: { plugins: { legend: { display: false } } } };

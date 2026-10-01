@@ -63,8 +63,8 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     @if (!splits.length) { <div class="empty">{{ 'No split bills yet. Add a shared bill and track each person\'s share.' | tr }}</div> }
     <ul class="split-list">@for (split of splits; track split.id) {
       <li class="split-entry">
-        <div class="row between split-heading"><div class="grow"><div class="t">{{ split.name }} <span class="pill">{{ paidCount(split) }}/{{ split.shares.length }} paid</span></div>
-          <div class="s">Due {{ split.due_date }} · {{ fmt(split.total_amount) }} total</div></div>
+        <div class="row between split-heading"><div class="grow"><div class="t">{{ split.name }} <span class="pill">{{ paidCount(split) }}/{{ split.shares.length }} {{ 'paid' | tr }}</span></div>
+          <div class="s">{{ 'Due' | tr }} {{ split.due_date }} · {{ fmt(split.total_amount) }} {{ 'total' | tr }}</div></div>
           <button class="icon-btn del" (click)="removeSplit(split)" [attr.aria-label]="'Delete ' + split.name"><app-icon name="trash" [size]="18" /></button></div>
         <ul class="split-shares">@for (share of split.shares; track share.id) {
           <li><span class="share-name">{{ share.name }}</span><span class="amt">{{ fmt(share.amount) }}</span>
@@ -78,7 +78,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     <form (ngSubmit)="save()">
       <div class="fields">
         <label class="full">{{ 'Name' | tr }}<input name="name" [(ngModel)]="form.name" [placeholder]="'e.g. Unifi, Netflix, Car insurance' | tr" required></label>
-        <label>{{ 'Category' | tr }}<input name="cat" list="bcats" [(ngModel)]="form.category" [placeholder]="'e.g. Internet' | tr"><datalist id="bcats">@for (c of cats; track c) { <option [value]="c"></option> }</datalist></label>
+        <label>{{ 'Category' | tr }}<input name="cat" list="bcats" [(ngModel)]="form.category" [placeholder]="'e.g. Internet' | tr"><datalist id="bcats">@for (c of cats; track c) { <option [value]="c" [label]="c | tr"></option> }</datalist></label>
         <label>{{ 'Amount (MYR)' | tr }}<input name="amount" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.amount" required></label>
         <label>{{ 'Repeats' | tr }}<select name="freq" [(ngModel)]="form.frequency"><option value="monthly">{{ 'Monthly' | tr }}</option><option value="quarterly">{{ 'Every 3 months' | tr }}</option><option value="yearly">{{ 'Yearly' | tr }}</option></select></label>
         <label>{{ 'Next due date' | tr }}<input name="due" type="date" [(ngModel)]="form.first_due" required></label>

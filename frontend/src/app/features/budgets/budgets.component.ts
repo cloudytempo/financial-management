@@ -35,7 +35,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       @if (!st.unbudgeted.length) { <div class="empty">{{ 'Every category you spent on has a budget.' | tr }}</div> }
       <ul class="list">@for (u of st.unbudgeted; track u.category) {
         <li class="item"><span class="ic-badge brown"><app-icon [name]="icon(u.category)" [size]="18" /></span>
-          <div class="grow"><div class="t">{{ u.category }}</div><div class="s">{{ fmt(u.spent) }} {{ 'this month' | tr }}</div></div>
+          <div class="grow"><div class="t">{{ u.category | tr }}</div><div class="s">{{ fmt(u.spent) }} {{ 'this month' | tr }}</div></div>
           <button class="btn ghost sm" (click)="openForm(u.category, u.spent)">{{ 'Set limit' | tr }}</button></li>
       }</ul></div>
   </div>
@@ -47,7 +47,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       <li class="item" style="align-items:flex-start">
         <span class="ic-badge" [class.warn]="r.status === 'over'"><app-icon [name]="icon(r.category)" [size]="18" /></span>
         <div class="grow">
-          <div class="row between" style="flex-wrap:nowrap"><div class="t">{{ r.category }}
+          <div class="row between" style="flex-wrap:nowrap"><div class="t">{{ r.category | tr }}
               <span class="badge" [class.ok]="r.status === 'ok'">{{ (r.status === 'over' ? 'Over budget' : r.status === 'warn' ? 'Almost there' : 'On track') | tr }}</span></div>
             <div class="amt small">{{ fmt(r.spent) }} / {{ fmt(r.limit) }}</div></div>
           <div class="bar" style="margin:.4rem 0 .2rem" [class.warn]="r.status === 'warn'" [class.over]="r.status === 'over'"><i [style.width.%]="r.pct > 100 ? 100 : r.pct"></i></div>
@@ -65,7 +65,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     <form (ngSubmit)="save()">
       <div class="fields">
         <label class="full">{{ 'Category (same name as the expense type)' | tr }}<input name="cat" list="bud-cats" [(ngModel)]="form.category" required autocomplete="off">
-          <datalist id="bud-cats">@for (c of catOptions; track c) { <option [value]="c"></option> }</datalist></label>
+          <datalist id="bud-cats">@for (c of catOptions; track c) { <option [value]="c" [label]="c | tr"></option> }</datalist></label>
         <label class="full">{{ 'Monthly limit (MYR)' | tr }}<input name="amt" type="number" inputmode="decimal" step="0.01" min="0.01" [(ngModel)]="form.amount" required></label>
       </div>
       <p class="muted small" style="margin-top:.5rem">{{ 'Applies from' | tr }} {{ months[month - 1] }} {{ year }} {{ 'onwards. Earlier months keep their old limit.' | tr }}</p>
@@ -86,7 +86,7 @@ export class BudgetsComponent implements OnInit {
   load() {
     this.api.get<any>(`/budgets/status?year=${this.year}&month=${this.month}`).subscribe((s) => {
       this.st = s;
-      this.cfg = s.rows.length ? { type: 'bar', data: { labels: s.rows.map((r: any) => r.category), datasets: [
+      this.cfg = s.rows.length ? { type: 'bar', data: { labels: s.rows.map((r: any) => this.language.text(r.category)), datasets: [
         { label: this.language.text('Budget'), data: s.rows.map((r: any) => Number(r.limit)), backgroundColor: COLORS[8] },
         { label: this.language.text('Spent'), data: s.rows.map((r: any) => Number(r.spent)), backgroundColor: COLORS[0] }] } } : null;
     });

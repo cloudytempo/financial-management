@@ -65,7 +65,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     <article class="card dashboard-card"><div class="card-h"><h2><app-icon name="pie" [size]="18" />{{ 'Budget' | tr }}, {{ curLabel | tr }}</h2><a routerLink="/budgets" class="small">{{ 'Manage' | tr }}</a></div><div class="dashboard-card-body">
       @if (!budget.rows.length) { <div class="empty">{{ 'No budgets yet.' | tr }} <a routerLink="/budgets">{{ 'Set one' | tr }}</a> {{ 'to track limits.' | tr }}</div> }
       <ul class="list">@for (r of budget.rows.slice(0, 4); track r.category) {
-        <li class="item" style="display:block"><div class="row between small" style="flex-wrap:nowrap"><b>{{ r.category }}</b><span>{{ fmt(r.spent) }} / {{ fmt(r.limit) }}</span></div>
+        <li class="item" style="display:block"><div class="row between small" style="flex-wrap:nowrap"><b>{{ r.category | tr }}</b><span>{{ fmt(r.spent) }} / {{ fmt(r.limit) }}</span></div>
           <div class="bar" style="margin-top:.3rem" [class.warn]="r.status === 'warn'" [class.over]="r.status === 'over'"><i [style.width.%]="r.pct > 100 ? 100 : r.pct"></i></div></li>
       }</ul>
     </div></article>
@@ -82,7 +82,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       @for (a of anomalies.slice(0, 5); track a.id) {
         <li class="item"><span class="ic-badge warn"><app-icon [name]="icon(a.type)" [size]="18" /></span><div class="grow"><div class="t">{{ a.type }} {{ 'looks high' | tr }}</div><div class="s">{{ months[a.month - 1] }} {{ a.year }}</div></div><div class="amt">{{ fmt(a.amount) }}<div><span class="badge">+{{ a.percentAbove }}%</span></div></div></li> }
       @for (r of overBudget; track r.category) {
-        <li class="item"><span class="ic-badge warn"><app-icon name="pie" [size]="18" /></span><div class="grow"><div class="t">{{ r.category }} {{ 'over budget' | tr }}</div><div class="s">{{ fmt(r.spent) }} {{ 'of' | tr }} {{ fmt(r.limit) }}</div></div><span class="badge">{{ r.pct }}%</span></li> }
+        <li class="item"><span class="ic-badge warn"><app-icon name="pie" [size]="18" /></span><div class="grow"><div class="t">{{ r.category | tr }} {{ 'over budget' | tr }}</div><div class="s">{{ fmt(r.spent) }} {{ 'of' | tr }} {{ fmt(r.limit) }}</div></div><span class="badge">{{ r.pct }}%</span></li> }
       @for (g of goalReminders; track g.id) {
         <li class="item"><span class="ic-badge brown"><app-icon name="target" [size]="18" /></span><div class="grow"><div class="t">{{ g.name }}</div><div class="s">{{ g.stale ? ('No progress for' | tr) + ' ' + g.months_since_update + ' ' + ('months' | tr) : ('Past target date' | tr) }}</div></div><span class="badge">{{ 'Goal' | tr }}</span></li> }
     </ul>
@@ -158,7 +158,7 @@ export class DashboardComponent implements OnInit {
     this.delta = this.prevTotal ? Math.round(((this.curTotal - this.prevTotal) / this.prevTotal) * 100) : 0;
     const cur = inMonth(S, latest).filter((s) => Number(s.total) > 0);
     this.typeHasData = cur.length > 0;
-    this.typeCfg = { type: 'doughnut', data: { labels: cur.map((s) => s.type), datasets: [{ data: cur.map((s) => Number(s.total)), backgroundColor: cur.map((_, i) => COLORS[i % COLORS.length]) }] } };
+    this.typeCfg = { type: 'doughnut', data: { labels: cur.map((s) => this.language.text(s.type)), datasets: [{ data: cur.map((s) => Number(s.total)), backgroundColor: cur.map((_, i) => COLORS[i % COLORS.length]) }] } };
     this.api.get<any>(`/budgets/status?year=${ly}&month=${lm}`).subscribe((b) => (this.budget = b));
   }
 }

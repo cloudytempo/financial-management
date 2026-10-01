@@ -28,7 +28,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       @if (!upcoming.length) { <div class="empty">{{ 'Nothing due in the next 30 days.' | tr }}</div> }
       <ul class="list">@for (u of upcoming; track u.installment_id + '-' + u.period) {
         <li class="item"><span class="ic-badge" [class.warn]="u.days_left <= 3"><app-icon [name]="icon(u.type)" [size]="18" /></span>
-          <div class="grow"><div class="t">{{ u.name || u.type }}</div><div class="s">{{ u.due_date }} · {{ 'payment' | tr }} {{ u.period }} {{ 'of' | tr }} {{ u.of }}</div></div>
+          <div class="grow"><div class="t">{{ u.name || (u.type | tr) }}</div><div class="s">{{ u.due_date }} · {{ 'payment' | tr }} {{ u.period }} {{ 'of' | tr }} {{ u.of }}</div></div>
           <div class="amt">{{ fmt(u.amount) }}<div><span class="badge" [class.ok]="u.days_left > 3">{{ u.days_left < 0 ? -u.days_left + ' ' + ('days overdue' | tr) : u.days_left === 0 ? ('Today' | tr) : ('in' | tr) + ' ' + u.days_left + ' ' + ('days' | tr) }}</span></div></div></li>
       }</ul></div>
   </div>
@@ -39,7 +39,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     <div class="card">
       <div class="row between" style="flex-wrap:nowrap">
         <div class="row" style="flex-wrap:nowrap;min-width:0"><span class="ic-badge"><app-icon [name]="icon(i.type)" [size]="18" /></span>
-          <div style="min-width:0"><div style="font-weight:700">{{ i.name || i.type }} @if (i.completed) { <span class="badge ok">{{ 'Completed' | tr }}</span> }</div><div class="s muted small">{{ i.type }} · {{ fmt(i.amount) }}/{{ 'month' | tr }} · {{ 'due day' | tr }} {{ i.due_day }}</div></div></div>
+          <div style="min-width:0"><div style="font-weight:700">{{ i.name || (i.type | tr) }} @if (i.completed) { <span class="badge ok">{{ 'Completed' | tr }}</span> }</div><div class="s muted small">{{ i.type | tr }} · {{ fmt(i.amount) }}/{{ 'month' | tr }} · {{ 'due day' | tr }} {{ i.due_day }}</div></div></div>
         <div class="row" style="flex-wrap:nowrap;gap:0"><button class="icon-btn" (click)="edit(i)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
           <button class="icon-btn del" (click)="remove(i)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button></div>
       </div>
@@ -88,7 +88,7 @@ export class InstallmentsComponent implements OnInit {
     this.api.get<any[]>('/installments/upcoming?days=30').subscribe((r) => { this.upcoming = r; this.kDue = r.reduce((a, u) => a + u.amount, 0); });
     this.api.get<any[]>('/installments/summary').subscribe((s) => {
       this.kMonthly = s.reduce((a, x) => a + Number(x.monthly), 0); this.kRemaining = s.reduce((a, x) => a + Number(x.remaining), 0);
-      this.chartCfg = { type: 'bar', data: { labels: s.map((x) => x.type), datasets: [
+      this.chartCfg = { type: 'bar', data: { labels: s.map((x) => this.language.text(x.type)), datasets: [
         { label: this.language.text('Paid'), data: s.map((x) => Number(x.paid)), backgroundColor: COLORS[0] },
         { label: this.language.text('Remaining'), data: s.map((x) => Number(x.remaining)), backgroundColor: COLORS[1] }] },
         options: { scales: { x: { stacked: true }, y: { stacked: true } } } };
