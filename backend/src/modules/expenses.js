@@ -1,12 +1,18 @@
 const router = require('express').Router();
 const pool = require('../db');
 const { wrap } = require('../util');
-const COLS = 'id,type,amount::float8 AS amount,month,year,remarks';
+const COLS = 'id,type,amount::float8 AS amount,month,year,remarks,account_id';
+async function validAccount(householdId, value) {
+  if (value == null || value === '') return true;
+  const id = Number(value);
+  return Number.isInteger(id) && (await pool.query('SELECT 1 FROM accounts WHERE id=$1 AND household_id=$2 AND is_active=true', [id, householdId])).rowCount > 0;
+}
 const ok = (b) => b.type && b.amount !== '' && b.amount != null && Number(b.amount) >= 0 &&
   b.month >= 1 && b.month <= 12 && b.year >= 2000 && b.year <= 2100;
 
 router.get('/', wrap(async (req, res) => {
-  const { rows } = await pool.query(`SELECT ${COLS} FROM expenses WHERE household_id=$1 ORDER BY year DESC, month DESC, type`, [req.household.id]);
+  const { rows } = await pool.query(`SELECT e.${COLS.split(',').join(',e.')},a.name AS account_name FROM expenses e
+    LEFT JOIN accounts a ON a.id=e.account_id WHERE e.household_id=$1 ORDER BY e.year DESC,e.month DESC,e.type`, [req.household.id]);
   res.json(rows);
 }));
 
@@ -78,16 +84,18 @@ router.post('/import', wrap(async (req, res) => {
 router.post('/', wrap(async (req, res) => {
   if (!ok(req.body)) return res.status(400).json({ error: 'Invalid expense.' });
   const b = req.body;
-  const { rows } = await pool.query(`INSERT INTO expenses(household_id,type,amount,month,year,remarks) VALUES($1,$2,$3,$4,$5,$6) RETURNING ${COLS}`,
-    [req.household.id, b.type.trim(), b.amount, b.month, b.year, b.remarks || '']);
+  if (!(await validAccount(req.household.id, b.account_id))) return res.status(400).json({ error: 'Choose an active account in this household.' });
+  const { rows } = await pool.query(`INSERT INTO expenses(household_id,type,amount,month,year,remarks,account_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING ${COLS}`,
+    [req.household.id, b.type.trim(), b.amount, b.month, b.year, b.remarks || '', b.account_id || null]);
   res.status(201).json(rows[0]);
 }));
 
 router.put('/:id', wrap(async (req, res) => {
   if (!ok(req.body)) return res.status(400).json({ error: 'Invalid expense.' });
   const b = req.body;
-  const { rows } = await pool.query(`UPDATE expenses SET type=$1,amount=$2,month=$3,year=$4,remarks=$5 WHERE id=$6 AND household_id=$7 RETURNING ${COLS}`,
-    [b.type.trim(), b.amount, b.month, b.year, b.remarks || '', req.params.id, req.household.id]);
+  if (!(await validAccount(req.household.id, b.account_id))) return res.status(400).json({ error: 'Choose an active account in this household.' });
+  const { rows } = await pool.query(`UPDATE expenses SET type=$1,amount=$2,month=$3,year=$4,remarks=$5,account_id=$6 WHERE id=$7 AND household_id=$8 RETURNING ${COLS}`,
+    [b.type.trim(), b.amount, b.month, b.year, b.remarks || '', b.account_id || null, req.params.id, req.household.id]);
   rows[0] ? res.json(rows[0]) : res.status(404).json({ error: 'Not found' });
 }));
 

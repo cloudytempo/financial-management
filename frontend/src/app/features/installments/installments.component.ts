@@ -13,7 +13,10 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   template: `
   <div class="page-head">
     <div><h1>{{ 'Installments' | tr }}</h1><p class="sub">{{ 'Track every monthly payment until it is cleared' | tr }}</p></div>
-    <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />{{ 'Add installment' | tr }}</button>
+    <div class="actions">
+      @if (accounts.length) { <label class="account-payment-selector">{{ 'Payment account' | tr }}<select name="installmentAccount" [(ngModel)]="paymentAccountId"><option [ngValue]="null">{{ 'No account' | tr }}</option>@for (account of accounts; track account.id) { <option [ngValue]="account.id">{{ account.name }}</option> }</select></label> }
+      <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />{{ 'Add installment' | tr }}</button>
+    </div>
   </div>
 
   <div class="bento">
@@ -76,11 +79,11 @@ export class InstallmentsComponent implements OnInit {
   fmt = fmt; get months() { return MONTHS.map((_, i) => new Date(2024, i, 1).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { month: 'short' })); } icon = typeIcon;
   types = ['House', 'Phone', 'Shopee PayLater', 'Car', 'Other'];
   now = new Date(); showForm = false;
-  items: any[] = []; upcoming: any[] = []; chartCfg: any; form: any = this.blank(); error = '';
+  items: any[] = []; upcoming: any[] = []; accounts: any[] = []; paymentAccountId: number | null = null; chartCfg: any; form: any = this.blank(); error = '';
   kMonthly = 0; kRemaining = 0; kDue = 0;
 
   blank() { return { id: null, type: 'House', name: '', amount: null, duration_months: 12, due_day: 1, start_month: this.now.getMonth() + 1, start_year: this.now.getFullYear() }; }
-  ngOnInit() { this.load(); }
+  ngOnInit() { this.load(); this.api.get<any[]>('/accounts/options').subscribe((rows) => (this.accounts = rows)); }
   label(d: string) { return this.months[+d.slice(5, 7) - 1] + " '" + d.slice(2, 4); }
 
   load() {
@@ -104,5 +107,5 @@ export class InstallmentsComponent implements OnInit {
     req.subscribe({ next: () => { this.closeForm(); this.load(); }, error: (e) => (this.error = errMsg(e)) });
   }
   remove(i: any) { if (confirm(`${this.language.text('Delete')} ${i.name || i.type} ${this.language.text('and its payment history?')}`)) this.api.del('/installments/' + i.id).subscribe(() => this.load()); }
-  toggle(i: any, s: any) { this.api.post(`/installments/${i.id}/payments`, { period: s.period, paid: !s.paid }).subscribe(() => this.load()); }
+  toggle(i: any, s: any) { this.api.post(`/installments/${i.id}/payments`, { period: s.period, paid: !s.paid, account_id: this.paymentAccountId }).subscribe(() => this.load()); }
 }

@@ -232,6 +232,23 @@ const MALAY: Record<string, string> = {
   'Title and date are required.': 'Tajuk dan tarikh diperlukan.', 'Send between 1 and 5000 rows.': 'Hantar antara 1 hingga 5000 baris.',
   'Invalid expense.': 'Perbelanjaan tidak sah.', 'Invalid goal.': 'Matlamat tidak sah.', 'Invalid month.': 'Bulan tidak sah.',
   'Invalid income.': 'Pendapatan tidak sah.', 'Invalid installment.': 'Ansuran tidak sah.', 'Server error': 'Ralat pelayan.',
+  'Accounts': 'Akaun', 'Track balances, assets, liabilities and transfers': 'Jejak baki, aset, liabiliti dan pindahan',
+  'cash': 'Tunai', 'bank': 'Bank', 'savings': 'Simpanan', 'credit_card': 'Kad kredit', 'investment': 'Pelaburan', 'loan': 'Pinjaman', 'other': 'Lain-lain',
+  'Add account': 'Tambah akaun', 'Assets': 'Aset', 'Liabilities': 'Liabiliti', 'Net worth': 'Nilai bersih',
+  'Account balances': 'Baki akaun', 'Balances by account': 'Baki mengikut akaun',
+  'No accounts yet. Add cash, bank, savings or credit accounts to track your money.': 'Belum ada akaun. Tambah akaun tunai, bank, simpanan atau kredit untuk menjejak wang anda.',
+  'Liability': 'Liabiliti', 'Opening balance': 'Baki awal', 'Edit account': 'Edit akaun', 'Inactive': 'Tidak aktif',
+  'Account activity': 'Aktiviti akaun', 'All accounts': 'Semua akaun', 'Transactions linked to accounts will appear here.': 'Transaksi yang dipautkan kepada akaun akan dipaparkan di sini.',
+  'Add an account to see balances.': 'Tambah akaun untuk melihat baki.', 'Account name': 'Nama akaun', 'Account type': 'Jenis akaun',
+  'Opening balance (MYR)': 'Baki awal (MYR)', 'e.g. Main bank account': 'cth. Akaun bank utama',
+  'Transfer between accounts': 'Pindahan antara akaun', 'From account': 'Daripada akaun', 'To account': 'Kepada akaun',
+  'Transfer date': 'Tarikh pindahan', 'Note': 'Nota', 'Payment account': 'Akaun pembayaran', 'No account': 'Tiada akaun',
+  'Balance': 'Baki', 'expense': 'perbelanjaan', 'bill_payment': 'bayaran bil', 'installment_payment': 'bayaran ansuran',
+  'transfer_in': 'pindahan masuk', 'transfer_out': 'pindahan keluar', 'Existing transaction history will be kept.': 'Sejarah transaksi sedia ada akan dikekalkan.',
+  'Choose an active account in this household.': 'Pilih akaun aktif dalam isi rumah ini.', 'Account not found.': 'Akaun tidak ditemukan.',
+  'Enter an account name, valid type and opening balance.': 'Masukkan nama akaun, jenis yang sah dan baki awal.',
+  'Choose two different accounts, a valid amount and transfer date.': 'Pilih dua akaun berbeza, jumlah yang sah dan tarikh pindahan.',
+  'Both accounts must be active accounts in this household.': 'Kedua-dua akaun mestilah akaun aktif dalam isi rumah ini.',
 };
 
 @Injectable({ providedIn: 'root' })

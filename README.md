@@ -56,11 +56,11 @@ Frontend: create `features/<name>/<name>.component.ts`, add one entry to `core/m
 4. Open the Render URL, sign up, then import `data/belanjawanku.csv`.
 
 ## Modules
-Expenses, Income, Budget, Bills & subscriptions, Installments, Goals, Calendar, Contacts.
-New tables (income, budgets, bills, bill_payments, contacts, events.type/time) are created automatically when the backend starts,
+Expenses, Income, Accounts, Budget, Bills & subscriptions, Installments, Goals, Calendar, Contacts.
+New tables (income, accounts, account_transfers, budgets, bills, bill_payments, contacts, events.type/time) are created automatically when the backend starts,
 so existing databases upgrade in place (also on Supabase, where row-level security is switched on for them too).
 How they work together: Budget compares limits with Expenses; Bills can add an Expense when marked paid (optional, per bill);
-Income vs Expenses gives "left after spending" on the dashboard; bill and installment due dates appear on the Calendar and dashboard.
+Income vs Expenses gives "left after spending" on the dashboard; linked Income, Expenses, bill payments and Installments update account balances; transfers move value between accounts; bill and installment due dates appear on the Calendar and dashboard.
 
 ## Themes
 Palette icon (sidebar, top bar, or More on phones) switches between Earth (browns and greens) and Summer Sky (blues and yellows).

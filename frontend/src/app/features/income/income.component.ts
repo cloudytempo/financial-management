@@ -39,7 +39,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     <ul class="list">@for (r of shown; track r.id) {
       <li class="item"><span class="ic-badge"><app-icon [name]="icon(r.source)" [size]="18" /></span>
         <div class="grow"><div class="t">{{ r.source | tr }} <span class="pill">{{ months[r.month - 1] }}</span> @if (r.recurring) { <span class="badge ok">{{ 'Recurring' | tr }}</span> }</div>
-          @if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
+          @if (r.account_name) { <div class="s">{{ r.account_name }}</div> }@if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
         <div class="amt">{{ fmt(r.amount) }}</div>
         <button class="icon-btn" (click)="edit(r)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
         <button class="icon-btn del" (click)="remove(r)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button></li>
@@ -51,6 +51,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       <div class="fields">
         <label class="full">{{ 'Source' | tr }}<input name="source" list="sources" [(ngModel)]="form.source" required autocomplete="off">
           <datalist id="sources">@for (s of sources; track s) { <option [value]="s" [label]="s | tr"></option> }</datalist></label>
+        <label class="full">{{ 'Account' | tr }}<select name="account" [(ngModel)]="form.account_id"><option [ngValue]="null">{{ 'No account' | tr }}</option>@for (account of accounts; track account.id) { <option [ngValue]="account.id">{{ account.name }}</option> }</select></label>
         <label>{{ 'Amount (MYR)' | tr }}<input name="amount" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.amount" required></label>
         <label>{{ 'Year' | tr }}<input name="year" type="number" inputmode="numeric" [(ngModel)]="form.year" required></label>
         <label class="full">{{ 'Month' | tr }}<select name="month" [(ngModel)]="form.month">@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></label>
@@ -67,12 +68,12 @@ export class IncomeComponent implements OnInit {
   fmt = fmt; get months() { return MONTHS.map((_, i) => new Date(2024, i, 1).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { month: 'short' })); } icon = typeIcon;
   sources = ['Salary', 'Side gig', 'Pension', 'Freelance', 'Business', 'Rental', 'Investment', 'Bonus', 'Allowance', 'Commission', 'Other'];
   now = new Date(); year = this.now.getFullYear(); years = [this.year]; showForm = false; error = ''; msg = '';
-  rows: any[] = []; inc: any[] = []; exp: any[] = []; form: any = this.blank(); cfg: any; srcCfg: any;
+  rows: any[] = []; inc: any[] = []; exp: any[] = []; accounts: any[] = []; form: any = this.blank(); cfg: any; srcCfg: any;
   kIncome = 0; kAvg = 0; kSpent = 0; kNet = 0; kRate = 0;
 
   get shown() { return this.rows.filter((r) => Number(r.year) === this.year); }
-  blank() { return { id: null, source: 'Salary', amount: null, month: this.now.getMonth() + 1, year: this.now.getFullYear(), remarks: '', recurring: true }; }
-  ngOnInit() { this.load(); }
+  blank() { return { id: null, source: 'Salary', amount: null, month: this.now.getMonth() + 1, year: this.now.getFullYear(), remarks: '', recurring: true, account_id: null }; }
+  ngOnInit() { this.load(); this.api.get<any[]>('/accounts/options').subscribe((rows) => (this.accounts = rows)); }
   setYear(y: number) { this.year = y; this.build(); }
   load() {
     this.api.get<any[]>('/income').subscribe((r) => (this.rows = r));

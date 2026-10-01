@@ -54,7 +54,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       <li class="item" [class.flag]="flagged.has(r.id)">
         <span class="ic-badge" [class.warn]="flagged.has(r.id)"><app-icon [name]="icon(r.type)" [size]="18" /></span>
           <div class="grow"><div class="t">{{ r.type | tr }} <span class="pill">{{ months[r.month - 1] }}</span> @if (flagged.has(r.id)) { <span class="badge">{{ 'Unusual' | tr }}</span> }</div>
-          @if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
+          @if (r.account_name) { <div class="s">{{ r.account_name }}</div> }@if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
         <div class="amt">{{ fmt(r.amount) }}</div>
         <button class="icon-btn" (click)="edit(r)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
         <button class="icon-btn del" (click)="remove(r)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button>
@@ -66,6 +66,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       <div class="fields">
         <label class="full">{{ 'Type' | tr }}<input name="type" list="types" [(ngModel)]="form.type" required autocomplete="off">
           <datalist id="types">@for (t of typeOptions; track t) { <option [value]="t" [label]="t | tr"></option> }</datalist></label>
+        <label class="full">{{ 'Account' | tr }}<select name="account" [(ngModel)]="form.account_id"><option [ngValue]="null">{{ 'No account' | tr }}</option>@for (account of accounts; track account.id) { <option [ngValue]="account.id">{{ account.name }}</option> }</select></label>
         <label>{{ 'Amount (MYR)' | tr }}<input name="amount" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.amount" required></label>
         <label>{{ 'Year' | tr }}<input name="year" type="number" inputmode="numeric" [(ngModel)]="form.year" required></label>
         <label class="full">{{ 'Month' | tr }}<select name="month" [(ngModel)]="form.month">@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></label>
@@ -95,7 +96,7 @@ export class ExpensesComponent implements OnInit {
   private language = inject(Language);
   fmt = fmt; get months() { return MONTHS.map((_, i) => new Date(2024, i, 1).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { month: 'short' })); } icon = typeIcon;
   now = new Date(); year = this.now.getFullYear(); years: number[] = [this.year]; monthFilter = this.now.getMonth() + 1;
-  rows: any[] = []; summary: any[] = []; anomalies: any[] = []; flagged = new Set<number>();
+  rows: any[] = []; summary: any[] = []; anomalies: any[] = []; flagged = new Set<number>(); accounts: any[] = [];
   form: any = this.blank(); error = ''; showForm = false; showImport = false;
   parsed: { records: any[]; blank: number } | null = null; skipFuture = true; importMsg = '';
   monthlyCfg: any; typeCfg: any; annualCfg: any; shareCfg: any; hasTypeData = false; hasShareData = false;
@@ -108,8 +109,8 @@ export class ExpensesComponent implements OnInit {
     const cur = this.now.getFullYear() * 12 + this.now.getMonth() + 1;
     return this.parsed.records.filter((r) => !this.skipFuture || r.year * 12 + r.month <= cur);
   }
-  blank() { return { id: null, type: '', amount: null, month: this.now.getMonth() + 1, year: this.now.getFullYear(), remarks: '' }; }
-  ngOnInit() { this.load(); }
+  blank() { return { id: null, type: '', amount: null, month: this.now.getMonth() + 1, year: this.now.getFullYear(), remarks: '', account_id: null }; }
+  ngOnInit() { this.load(); this.api.get<any[]>('/accounts/options').subscribe((rows) => (this.accounts = rows)); }
   setYear(y: number) { this.year = y; this.build(); }
 
   load() {

@@ -26,7 +26,9 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   <div class="bento">
     <div class="card s4"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ 'Monthly cost by category' | tr }}</h2></div>@if (cfg) { <app-chart [config]="cfg" /> }</div>
     <div class="card s8">
-      <div class="card-h"><h2>{{ 'All bills' | tr }} <span class="pill">{{ items.length }}</span></h2></div>
+      <div class="card-h"><h2>{{ 'All bills' | tr }} <span class="pill">{{ items.length }}</span></h2>
+        @if (accounts.length) { <label class="account-payment-selector">{{ 'Payment account' | tr }}<select name="paymentAccount" [(ngModel)]="paymentAccountId"><option [ngValue]="null">{{ 'No account' | tr }}</option>@for (account of accounts; track account.id) { <option [ngValue]="account.id">{{ account.name }}</option> }</select></label> }
+      </div>
       @if (!items.length) { <div class="empty">{{ 'No bills yet. Add Unifi, Netflix, insurance or road tax to get reminders.' | tr }}</div> }
       <ul class="list">@for (b of items; track b.id) {
         <li class="item bill-item" [class.flag]="b.overdue" [style.opacity]="b.status === 'active' ? 1 : .6">
@@ -109,14 +111,14 @@ export class BillsComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
   fmt = fmt; icon = typeIcon; showForm = false; error = '';
   cats = ['Internet', 'Electrical', 'Water', 'Insurance', 'Subscription', 'Phone', 'Road tax', 'Assessment tax', 'Other'];
-  items: any[] = []; splits: any[] = []; showSplitForm = false; splitError = ''; splitPeopleText = '';
+  items: any[] = []; splits: any[] = []; accounts: any[] = []; paymentAccountId: number | null = null; showSplitForm = false; splitError = ''; splitPeopleText = '';
   splitForm: any = this.blankSplit(); sum: any = { count: 0, monthly: 0, yearly: 0, by: [] }; cfg: any; form: any = this.blank();
   get due() { return this.items.filter((b) => b.status === 'active' && b.days_left <= 30); }
   get dueTotal() { return this.due.reduce((a, b) => a + b.amount, 0); }
   get overdue() { return this.items.filter((b) => b.overdue).length; }
 
   blank() { const d = new Date(); return { id: null, name: '', category: '', amount: null, frequency: 'monthly', first_due: iso(new Date(d.getFullYear(), d.getMonth() + 1, 1)), status: 'active', autopay: false, add_expense: false }; }
-  ngOnInit() { this.load(); this.loadSplits(); }
+  ngOnInit() { this.load(); this.loadSplits(); this.api.get<any[]>('/accounts/options').subscribe((rows) => (this.accounts = rows)); }
   load() {
     this.api.get<any[]>('/bills').subscribe((r) => (this.items = r));
     this.api.get<any>('/bills/summary').subscribe((s) => {
@@ -149,7 +151,7 @@ export class BillsComponent implements OnInit {
   pay(b: any) {
     const a = prompt(`${this.language.text('Amount paid for')} ${b.name} (MYR)`, String(b.amount));
     if (a === null) return;
-    this.api.post(`/bills/${b.id}/pay`, { amount: a }).subscribe({ next: () => this.load(), error: (e) => alert(errMsg(e)) });
+    this.api.post(`/bills/${b.id}/pay`, { amount: a, account_id: this.paymentAccountId }).subscribe({ next: () => this.load(), error: (e) => alert(errMsg(e)) });
   }
   undo(b: any) { if (confirm(`${this.language.text('Undo the last payment for')} ${b.name}?`)) this.api.post(`/bills/${b.id}/undo`, {}).subscribe(() => this.load()); }
   remove(b: any) { if (confirm(`${this.language.text('Delete')} ${b.name} ${this.language.text('and its payment history?')}`)) this.api.del('/bills/' + b.id).subscribe(() => this.load()); }

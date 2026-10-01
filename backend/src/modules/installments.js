@@ -76,10 +76,18 @@ router.delete('/:id', wrap(async (req, res) => {
 
 // Mark / unmark a month's payment: { period, paid }
 router.post('/:id/payments', wrap(async (req, res) => {
-  const own = await pool.query('SELECT 1 FROM installments WHERE id=$1 AND household_id=$2', [req.params.id, req.household.id]);
+  const own = await pool.query('SELECT amount FROM installments WHERE id=$1 AND household_id=$2', [req.params.id, req.household.id]);
   if (!own.rowCount) return res.status(404).json({ error: 'Not found' });
-  const { period, paid } = req.body;
-  if (paid) await pool.query('INSERT INTO installment_payments(installment_id,period) VALUES($1,$2) ON CONFLICT DO NOTHING', [req.params.id, period]);
+  const { period, paid } = req.body || {};
+  if (!Number.isInteger(Number(period)) || Number(period) < 1) return res.status(400).json({ error: 'Invalid installment period.' });
+  if (paid) {
+    const accountId = req.body.account_id != null && req.body.account_id !== '' ? Number(req.body.account_id) : null;
+    if (accountId != null && (!Number.isInteger(accountId) || !(await pool.query('SELECT 1 FROM accounts WHERE id=$1 AND household_id=$2 AND is_active=true', [accountId, req.household.id])).rowCount))
+      return res.status(400).json({ error: 'Choose an active account in this household.' });
+    await pool.query(`INSERT INTO installment_payments(installment_id,period,account_id,payment_amount)
+      VALUES($1,$2,$3,$4) ON CONFLICT(installment_id,period) DO UPDATE SET account_id=EXCLUDED.account_id,payment_amount=EXCLUDED.payment_amount`,
+      [req.params.id, Number(period), accountId, own.rows[0].amount]);
+  }
   else await pool.query('DELETE FROM installment_payments WHERE installment_id=$1 AND period=$2', [req.params.id, period]);
   res.json({ ok: true });
 }));

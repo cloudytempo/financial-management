@@ -124,16 +124,19 @@ router.post('/:id/pay', wrap(async (req, res) => {
   const bill = (await loadAll(req.household.id)).find((b) => b.id === +req.params.id);
   if (!bill) return res.status(404).json({ error: 'Not found' });
   const amount = req.body && req.body.amount !== '' && req.body.amount != null ? Number(req.body.amount) : bill.amount;
+  const accountId = req.body && req.body.account_id != null && req.body.account_id !== '' ? Number(req.body.account_id) : null;
+  if (accountId != null && (!Number.isInteger(accountId) || !(await pool.query('SELECT 1 FROM accounts WHERE id=$1 AND household_id=$2 AND is_active=true', [accountId, req.household.id])).rowCount))
+    return res.status(400).json({ error: 'Choose an active account in this household.' });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     let expId = null;
     if (bill.add_expense) {
       const [y, m] = bill.next_due.split('-').map(Number);
-      expId = (await client.query('INSERT INTO expenses(household_id,type,amount,month,year,remarks) VALUES($1,$2,$3,$4,$5,$6) RETURNING id',
-        [req.household.id, bill.category || bill.name, amount, m, y, 'Bill: ' + bill.name])).rows[0].id;
+      expId = (await client.query('INSERT INTO expenses(household_id,type,amount,month,year,remarks,account_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id',
+        [req.household.id, bill.category || bill.name, amount, m, y, 'Bill: ' + bill.name, accountId])).rows[0].id;
     }
-    await client.query('INSERT INTO bill_payments(bill_id,due_date,paid_on,amount,expense_id) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING', [bill.id, bill.next_due, todayStr(), amount, expId]);
+    await client.query('INSERT INTO bill_payments(bill_id,due_date,paid_on,amount,expense_id,account_id) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING', [bill.id, bill.next_due, todayStr(), amount, expId, accountId]);
     await client.query('COMMIT');
   } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
   res.json({ ok: true });

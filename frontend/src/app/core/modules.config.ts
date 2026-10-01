@@ -9,6 +9,7 @@ export const MODULES: AppModule[] = [
   { path: 'budgets', label: 'Budget', icon: 'pie', load: () => import('../features/budgets/budgets.component').then((m) => m.BudgetsComponent) },
   { path: 'bills', label: 'Bills', icon: 'receipt', primary: true, load: () => import('../features/bills/bills.component').then((m) => m.BillsComponent) },
   { path: 'installments', label: 'Installments', icon: 'credit-card', load: () => import('../features/installments/installments.component').then((m) => m.InstallmentsComponent) },
+  { path: 'accounts', label: 'Accounts', icon: 'landmark', primary: true, load: () => import('../features/accounts/accounts.component').then((m) => m.AccountsComponent) },
   { path: 'goals', label: 'Goals', icon: 'target', load: () => import('../features/goals/goals.component').then((m) => m.GoalsComponent) },
   { path: 'calendar', label: 'Calendar', icon: 'calendar', primary: true, load: () => import('../features/calendar/calendar.component').then((m) => m.CalendarComponent) },
   { path: 'contacts', label: 'Contacts', icon: 'contact', load: () => import('../features/contacts/contacts.component').then((m) => m.ContactsComponent) },

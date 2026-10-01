@@ -53,6 +53,7 @@ main:has(.dashboard-page){max-width:none}
 .dashboard-card-body .prayer-widget:not(.card){margin-bottom:.8rem}
 .settings-panel{max-width:680px}
 .owner-transfer{display:flex;align-items:flex-end;gap:.6rem;margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--line)}.owner-transfer label{flex:1}
+.account-payment-selector{width:205px;min-width:150px;font-size:.7rem}
 .settings-panel textarea{width:100%;padding:.55rem .7rem;border:1px solid var(--input-b);border-radius:12px;font:inherit;resize:vertical}
 .admin-layout{--admin-purple:#A05AFF;--admin-teal:#1BCFB4;--admin-coral:#FE9496;--admin-violet:#9E58FF;--admin-aqua:#4CCBE8;--admin-deep:#29183f;display:grid;grid-template-columns:238px minmax(0,1fr);min-height:100vh;background:#f8f5fc;color:#30223f}
 .admin-side{position:sticky;top:0;height:100vh;padding:1.2rem .85rem;background:var(--admin-deep);color:#f3eaff;display:flex;flex-direction:column;gap:1rem}
@@ -272,6 +273,7 @@ a.btn{text-decoration:none}
   .admin-directory-row{align-items:flex-start}.admin-directory-row .grow{flex-basis:calc(100% - 60px)}.admin-directory-row .btn.danger{margin-left:auto}
   .admin-report-toolbar{align-items:stretch;flex-direction:column}.admin-report-toolbar>label{max-width:none}.admin-report-summary{gap:.4rem .8rem}
   .owner-transfer{align-items:stretch;flex-direction:column}.admin-activity time{max-width:88px;text-align:right}
+  .account-payment-selector{width:100%;min-width:0}
   .kpi{padding:.75rem;gap:.6rem}.kpi .chip-ic{width:36px;height:36px}.kpi .val{font-size:1.05rem}
   .chart-box{height:220px}.hide-sm{display:none}
   .goals-status-card .chart-box{height:280px}
