@@ -20,6 +20,8 @@ services:
     environment:
       DATABASE_URL: postgres://finance:${DB_PASSWORD}@db:5432/finance
       JWT_SECRET: ${JWT_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@homint.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       TZ: Asia/Kuala_Lumpur
     depends_on:
       db:

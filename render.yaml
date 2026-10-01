@@ -13,5 +13,9 @@ services:
         value: "true"
       - key: JWT_SECRET
         generateValue: true
+      - key: ADMIN_EMAIL
+        value: admin@homint.com
+      - key: ADMIN_PASSWORD
+        sync: false
       - key: TZ
         value: Asia/Kuala_Lumpur

@@ -10,12 +10,12 @@ import { errMsg } from '../../shared/util';
   template: `
   <div class="authwrap"><div class="auth card">
     <img class="logo homint-auth-logo" src="/favicon.svg" alt="Homint">
-    <h1>{{ mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Reset your password' : 'Welcome back' }}</h1>
-    <p class="sub">{{ mode === 'signin' ? 'Sign in to Homint' : mode === 'reset' ? 'Enter your username (email) and a new password' : 'Start tracking your money' }}</p>
+    <h1>{{ mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Reset your password' : mode === 'reactivate' ? 'Reactivate account' : 'Welcome back' }}</h1>
+    <p class="sub">{{ mode === 'signin' ? 'Sign in to Homint' : mode === 'reset' ? 'Enter your username (email) and a new password' : mode === 'reactivate' ? 'Set a new password to restore account access' : 'Start tracking your money' }}</p>
     <form (ngSubmit)="submit()">
       @if (mode === 'signup') { <label>Name<input name="name" [(ngModel)]="name" autocomplete="name" required></label> }
-      <label>{{ mode === 'reset' ? 'Username (email)' : 'Email' }}<input name="email" type="email" [(ngModel)]="email" autocomplete="username" required></label>
-      <label>{{ mode === 'reset' ? 'New password' : 'Password' }}<input name="password" type="password" [(ngModel)]="password" minlength="8" [attr.autocomplete]="mode === 'signin' ? 'current-password' : 'new-password'" required></label>
+      @if (mode !== 'reactivate') { <label>{{ mode === 'reset' ? 'Username (email)' : 'Email' }}<input name="email" type="email" [(ngModel)]="email" autocomplete="username" required></label> }
+      <label>{{ mode === 'reset' || mode === 'reactivate' ? 'New password' : 'Password' }}<input name="password" type="password" [(ngModel)]="password" minlength="8" [attr.autocomplete]="mode === 'signin' ? 'current-password' : 'new-password'" required></label>
       @if (mode === 'signup') {
         <div class="seg" style="margin-bottom:1rem">
           <button type="button" [class.on]="householdMode === 'create'" (click)="householdMode = 'create'">Create household</button>
@@ -24,21 +24,22 @@ import { errMsg } from '../../shared/util';
         <label>Household name<input name="householdName" [(ngModel)]="householdName" autocomplete="organization" required></label>
         <label>Household password<input name="householdPassword" type="password" [(ngModel)]="householdPassword" minlength="8" autocomplete="new-password" required></label>
       }
-      @if (mode === 'reset') { <label>Confirm new password<input name="confirm" type="password" [(ngModel)]="confirm" minlength="8" autocomplete="new-password" required></label> }
+      @if (mode === 'reset' || mode === 'reactivate') { <label>Confirm new password<input name="confirm" type="password" [(ngModel)]="confirm" minlength="8" autocomplete="new-password" required></label> }
       @if (error) { <div class="err">{{ error }}</div> }
       @if (info) { <div class="okmsg">{{ info }}</div> }
-      <button class="btn" type="submit">{{ mode === 'signup' ? 'Sign up' : mode === 'reset' ? 'Reset password' : 'Sign in' }}</button>
+      <button class="btn" type="submit">{{ mode === 'signup' ? 'Sign up' : mode === 'reset' ? 'Reset password' : mode === 'reactivate' ? 'Set new password' : 'Sign in' }}</button>
     </form>
     <p class="muted small" style="margin-top:1rem;text-align:center">
-      @if (mode === 'signin') { <a href="#" (click)="go($event, 'reset')">Forgot password?</a> · <a href="#" (click)="go($event, 'signup')">Create an account</a> }
-      @else { <a href="#" (click)="go($event, 'signin')">Back to sign in</a> }
+      @if (mode === 'signin') { <a href="#" (click)="go($event, 'reset')">Forgot password?</a> · <a href="#" (click)="go($event, 'signup')">Create an account</a><br><a href="/admin/login">System admin</a> }
+      @else if (mode !== 'reactivate') { <a href="#" (click)="go($event, 'signin')">Back to sign in</a> }
     </p>
   </div></div>`,
 })
 export class AuthComponent {
   private auth = inject(Auth); private router = inject(Router);
-  mode: 'signin' | 'signup' | 'reset' = 'signin';
+  mode: 'signin' | 'signup' | 'reset' | 'reactivate' = 'signin';
   name = ''; email = ''; password = ''; confirm = ''; error = ''; info = '';
+  reactivationToken = '';
   householdMode: 'create' | 'join' = 'create'; householdName = ''; householdPassword = '';
   go(e: Event, m: 'signin' | 'signup' | 'reset') { e.preventDefault(); this.mode = m; this.error = ''; this.info = ''; this.password = ''; this.confirm = ''; }
   submit() {
@@ -50,9 +51,19 @@ export class AuthComponent {
         next: () => { this.mode = 'signin'; this.password = ''; this.confirm = ''; this.info = 'Password updated. Sign in with your new password.'; }, error: fail });
       return;
     }
+    if (this.mode === 'reactivate') {
+      if (this.password !== this.confirm) { this.error = 'The two passwords do not match.'; return; }
+      this.auth.reactivate(this.reactivationToken, this.password).subscribe({
+        next: (r) => this.router.navigate([r.user.household ? '/dashboard' : '/settings']), error: fail,
+      });
+      return;
+    }
     const obs = this.mode === 'signup'
       ? this.auth.signup(this.name, this.email, this.password, this.householdMode, this.householdName, this.householdPassword)
       : this.auth.login(this.email, this.password);
-    obs.subscribe({ next: () => this.router.navigate(['/dashboard']), error: fail });
+    obs.subscribe({ next: (r) => {
+      if (r.reactivationRequired) { this.reactivationToken = r.token; this.mode = 'reactivate'; this.password = ''; return; }
+      this.router.navigate([r.user.household ? '/dashboard' : '/settings']);
+    }, error: fail });
   }
 }

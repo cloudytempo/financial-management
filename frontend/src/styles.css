@@ -49,6 +49,27 @@ main:has(.dashboard-page){max-width:none}
 .dashboard-section+.dashboard-section{margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--line)}
 .dashboard-card-body .prayer-widget:not(.card){margin-bottom:.8rem}
 .settings-panel{max-width:680px}
+.owner-transfer{display:flex;align-items:flex-end;gap:.6rem;margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--line)}.owner-transfer label{flex:1}
+.settings-panel textarea{width:100%;padding:.55rem .7rem;border:1px solid var(--input-b);border-radius:12px;font:inherit;resize:vertical}
+.admin-layout{display:grid;grid-template-columns:238px minmax(0,1fr);min-height:100vh;background:var(--bg)}
+.admin-side{position:sticky;top:0;height:100vh;padding:1.2rem .85rem;background:#073d42;color:#e2f0ea;display:flex;flex-direction:column;gap:1rem}
+.admin-brand{display:flex;align-items:center;gap:.65rem;padding:.35rem .5rem 1rem;color:#fff;text-decoration:none}
+.admin-brand img{width:42px;height:42px;object-fit:contain;flex:none}.admin-brand b,.admin-brand small{display:block}.admin-brand b{font-size:1.05rem}.admin-brand small{color:#a7c9bd;font-size:.72rem}
+.admin-nav{display:flex;flex-direction:column;gap:.2rem}.admin-nav a{display:flex;align-items:center;gap:.7rem;padding:.7rem .75rem;border-radius:9px;color:#c2ddd2;text-decoration:none;font-weight:600}
+.admin-nav a:hover{background:rgba(255,255,255,.08);color:#fff}.admin-nav a.active{background:#b8ed5c;color:#143a35}
+.admin-account{margin-top:auto;display:flex;flex-direction:column;gap:.6rem;padding:.65rem}.admin-account .btn{align-self:flex-start}
+.admin-main{padding:1.5rem;min-width:0;max-width:1500px;width:100%;margin:0 auto}.admin-kicker{font-size:.68rem;font-weight:800;letter-spacing:.12em;color:#168678;margin-bottom:.2rem}
+.admin-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin-bottom:1rem}
+.admin-metric{display:flex;flex-direction:column;gap:.15rem}.admin-metric strong{font-size:1.65rem;line-height:1.15;font-variant-numeric:tabular-nums;color:#08766c}
+.admin-bento .chart-box{height:280px}.admin-report{padding:.6rem 0;border-bottom:1px solid var(--line)}.admin-report:last-child{border-bottom:0}
+.admin-report .s{font-size:.78rem;color:var(--muted);margin:.15rem 0}.admin-report p{font-size:.84rem;white-space:pre-line;margin:.35rem 0;overflow-wrap:anywhere}
+.admin-report textarea{width:100%;border:1px solid var(--input-b);border-radius:8px;padding:.45rem;font:inherit;resize:vertical}
+.admin-activity{list-style:none;padding:0;margin:0}.admin-activity li{display:flex;align-items:flex-start;gap:.7rem;padding:.6rem 0;border-bottom:1px solid var(--line)}
+.admin-activity li:last-child{border-bottom:0}.admin-activity .grow{flex:1;min-width:0}.admin-activity .s{font-size:.8rem;color:var(--muted)}
+.activity-dot{width:9px;height:9px;margin-top:.42rem;border-radius:50%;background:#168678;flex:none}.activity-dot.warn{background:var(--warn)}
+.admin-search{max-width:480px;margin-bottom:.8rem}.admin-directory{padding-top:.4rem}.admin-directory-row{flex-wrap:wrap}.admin-status-off{background:var(--warn-bg);color:var(--warn)}
+.admin-authwrap{background:linear-gradient(145deg,#073d42,#08766c)}.admin-authwrap .auth{display:flex;flex-direction:column;gap:.65rem}.admin-authwrap .auth h1{font-size:1.35rem}
+.admin-authwrap .auth .homint-auth-logo{margin:0}.admin-authwrap .auth .admin-kicker{margin:0}
 .theme-options{display:flex;gap:.75rem;margin-top:1rem}
 .theme-option{display:flex;align-items:center;gap:.75rem;flex:1;text-align:left;padding:.85rem;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
 .theme-option[aria-pressed="true"]{border-color:var(--c2);box-shadow:0 0 0 2px var(--g2)}
@@ -170,6 +191,9 @@ a.btn{text-decoration:none}
 @media(max-width:1100px){.s3{grid-column:span 6}.s4,.s5,.s6,.s7,.s8{grid-column:span 12}.dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr))}}
 @media(max-width:900px){
   .app{display:block}.side{display:none}
+  .admin-layout{display:block}.admin-side{position:static;height:auto;padding:.55rem .8rem;display:flex;flex-direction:row;align-items:center;gap:.5rem;overflow-x:auto}
+  .admin-brand{padding:.15rem .35rem;flex:none}.admin-brand img{width:34px;height:34px}.admin-brand small{display:none}
+  .admin-nav{flex-direction:row;flex:1;justify-content:flex-end}.admin-nav a{padding:.55rem .6rem;white-space:nowrap}.admin-account{margin:0;padding:0;flex-direction:row;align-items:center}.admin-account .muted{display:none}.admin-main{padding:1rem}
   .topbar{display:flex;position:sticky;top:0;z-index:20;justify-content:space-between;align-items:center;padding:.55rem 1rem;padding-top:calc(.55rem + env(safe-area-inset-top));background:var(--c1);color:#fff}
   .topbar .brand{padding:0}.topbar .icon-btn{color:var(--side-text)}
   .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);overflow-x:auto}
@@ -187,6 +211,10 @@ a.btn{text-decoration:none}
 }
 @media(max-width:600px){
   h1{font-size:1.3rem}.bento,.cards{gap:.75rem}.card{padding:.85rem .9rem;border-radius:16px}
+  .admin-side{flex-wrap:wrap}.admin-brand{flex:1}.admin-nav{order:3;flex:1 0 100%;justify-content:space-around}.admin-nav a{flex:1;justify-content:center;font-size:.8rem}.admin-nav a app-icon{display:none}
+  .admin-main{padding:.8rem}.admin-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem}.admin-metric{padding:.7rem}.admin-metric strong{font-size:1.35rem}
+  .admin-bento .chart-box{height:230px}.admin-directory-row{align-items:flex-start}.admin-directory-row .grow{flex-basis:calc(100% - 60px)}.admin-directory-row .btn.danger{margin-left:auto}
+  .owner-transfer{align-items:stretch;flex-direction:column}.admin-activity time{max-width:88px;text-align:right}
   .kpi{padding:.75rem;gap:.6rem}.kpi .chip-ic{width:36px;height:36px}.kpi .val{font-size:1.05rem}
   .chart-box{height:220px}.hide-sm{display:none}
   .bill-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:.5rem}

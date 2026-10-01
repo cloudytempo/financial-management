@@ -7,6 +7,9 @@ Angular 18 + Express + PostgreSQL, run with Docker Compose.
     docker compose up -d --build
 Open http://localhost:8080 and sign up (new users get full access).
 
+Set `ADMIN_PASSWORD` in `.env` before starting the backend to bootstrap the separate admin login at `/admin/login`.
+The admin credential is stored separately from finance users; the initial password is only applied when the admin account is first created.
+
 Data lives in the `pgdata` Docker volume. `db/init.sql` runs only on first start;
 to reset the database: `docker compose down -v`.
 
