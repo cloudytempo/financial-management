@@ -11,7 +11,7 @@ import { ModalComponent } from '../shared/modal.component';
   template: `
   <div class="app">
     <aside class="side">
-      <div class="brand"><span class="logo"><app-icon name="wallet" /></span>Homint</div>
+      <div class="brand"><img class="homint-mark" src="/favicon.svg" alt="">Homint</div>
       <nav class="nav">
         @for (n of sidebarNav; track n.path) { <a [routerLink]="'/' + n.path" routerLinkActive="active"><app-icon [name]="n.icon" />{{ n.label }}</a> }
       </nav>
@@ -23,7 +23,7 @@ import { ModalComponent } from '../shared/modal.component';
     </aside>
     <div style="min-width:0">
       <header class="topbar">
-        <div class="brand"><span class="logo"><app-icon name="wallet" [size]="18" /></span>Homint</div>
+        <div class="brand"><img class="homint-mark" src="/favicon.svg" alt="">Homint</div>
         <div><button class="icon-btn" (click)="auth.logout()" aria-label="Sign out"><app-icon name="logout" /></button></div>
       </header>
       <main><router-outlet /></main>

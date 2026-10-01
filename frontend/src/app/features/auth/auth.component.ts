@@ -9,7 +9,7 @@ import { errMsg } from '../../shared/util';
   selector: 'app-auth', standalone: true, imports: [FormsModule, IconComponent],
   template: `
   <div class="authwrap"><div class="auth card">
-    <div class="logo"><app-icon name="wallet" [size]="24" /></div>
+    <img class="logo homint-auth-logo" src="/favicon.svg" alt="Homint">
     <h1>{{ mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Reset your password' : 'Welcome back' }}</h1>
     <p class="sub">{{ mode === 'signin' ? 'Sign in to Homint' : mode === 'reset' ? 'Enter your username (email) and a new password' : 'Start tracking your money' }}</p>
     <form (ngSubmit)="submit()">
