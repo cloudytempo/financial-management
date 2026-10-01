@@ -103,7 +103,7 @@ const MALAY: Record<string, string> = {
   'Records': 'Rekod', 'Filter by month': 'Tapis mengikut bulan', 'All months': 'Semua bulan',
   'No expenses here yet. Use “Add expense” or import your CSV.': 'Belum ada perbelanjaan. Gunakan “Tambah perbelanjaan” atau import fail CSV.',
   'Type': 'Jenis', 'Year': 'Tahun', 'Month': 'Bulan', 'Remarks': 'Catatan', 'Edit expense': 'Edit perbelanjaan',
-  'Import expenses': 'Import perbelanjaan', 'Choose a CSV with columns Type, Amount, Month, Year, Remarks. Your Belanjawanku export works too. Rows already in the app are skipped, so importing twice is safe.': 'Pilih CSV dengan lajur Jenis, Jumlah, Bulan, Tahun dan Catatan. Eksport Belanjawanku juga boleh digunakan. Rekod sedia ada akan dilangkau.',
+  'Import expenses': 'Import perbelanjaan', 'Download CSV template': 'Muat turun templat CSV', 'Choose a CSV with columns Type, Amount, Month, Year, Remarks. Your Belanjawanku export works too. Rows already in the app are skipped, so importing twice is safe.': 'Pilih CSV dengan lajur Jenis, Jumlah, Bulan, Tahun dan Catatan. Eksport Belanjawanku juga boleh digunakan. Rekod sedia ada akan dilangkau.',
   'CSV file': 'Fail CSV', 'records ready to import': 'rekod sedia diimport', 'blank-amount rows ignored': 'baris tanpa jumlah diabaikan',
   'Skip months after this month': 'Langkau bulan selepas bulan ini', 'Close': 'Tutup', 'Import': 'Import', 'records': 'rekod',
   'Salary, side gigs, pension, and other money coming in': 'Gaji, kerja sampingan, pencen dan sumber pendapatan lain',

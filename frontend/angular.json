@@ -25,6 +25,7 @@
       ],
       "assets": [
        "src/favicon.svg",
+        "src/assets",
         "src/manifest.webmanifest",
         "src/auth-wallpaper.svg"
       ]
