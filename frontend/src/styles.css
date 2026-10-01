@@ -43,6 +43,9 @@ main:has(.dashboard-page){max-width:none}
 .dashboard-card{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
 .dashboard-card>.card-h{flex:none}
 .dashboard-card-body{flex:1;min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.dashboard-goal-body{display:flex;flex-direction:column}
+.dashboard-goal-body app-chart{display:block;flex:1;min-height:0}
+.dashboard-card-body.dashboard-goal-body .chart-box{height:100%;min-height:0}
 .dashboard-card-body app-calendar-widget{display:block}
 .dashboard-card-body .chart-box{height:180px}
 .dashboard-section h3{display:flex;align-items:center;gap:.4rem;font-size:.85rem;margin:0 0 .4rem;color:var(--muted)}

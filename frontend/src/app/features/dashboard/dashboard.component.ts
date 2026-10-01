@@ -48,7 +48,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       <section class="dashboard-section"><h3><app-icon name="credit-card" [size]="16" />{{ 'Installments by type' | tr }}</h3>@if (insCfg) { <app-chart [config]="insCfg" /> }</section>
     </div></article>
 
-    <article class="card dashboard-card"><div class="card-h"><h2><app-icon name="target" [size]="18" />{{ 'Goals' | tr }}</h2><a routerLink="/goals" class="small">{{ 'Manage' | tr }}</a></div><div class="dashboard-card-body">
+    <article class="card dashboard-card"><div class="card-h"><h2><app-icon name="target" [size]="18" />{{ 'Goals' | tr }}</h2><a routerLink="/goals" class="small">{{ 'Manage' | tr }}</a></div><div class="dashboard-card-body dashboard-goal-body">
       @if (goalCfg) { <app-chart [config]="goalCfg" /> } @else { <div class="empty">{{ 'Goal summary is unavailable.' | tr }}</div> }
     </div></article>
 
