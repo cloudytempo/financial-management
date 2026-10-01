@@ -1,67 +1,88 @@
 # Homint
 
-Angular 18 + Express + PostgreSQL, run with Docker Compose.
+Homint is a household finance tracker built with Angular 18, Express, and PostgreSQL. It runs as a Docker Compose stack and can also be deployed as a single service on Render with Supabase Postgres.
 
-## Run
-    cp .env.example .env      # then edit DB_PASSWORD and JWT_SECRET
-    docker compose up -d --build
-Open http://localhost:8080 and sign up (new users get full access).
+## Features
 
-Set `ADMIN_PASSWORD` in `.env` before starting the backend to bootstrap the separate admin login at `/admin/login`.
-The admin credential is stored separately from finance users; the initial password is only applied when the admin account is first created.
+- Track expenses, income, accounts, budgets, bills, installments, savings goals, calendar events, and contacts.
+- See spending, income, and account balances together on the dashboard.
+- Import expenses from CSV or Excel.
+- Use the responsive interface on desktop and mobile, with Earth and Summer Sky themes.
+- View prayer times using browser location and the Aladhan API.
 
-Data lives in the `pgdata` Docker volume. `db/init.sql` runs only on first start;
-to reset the database: `docker compose down -v`.
+## Run with Docker Compose
 
-## Upgrading an existing install
-The Goals table is created automatically on backend start, so existing data is kept:
-    docker compose up -d --build
+Requirements: Docker Desktop or Docker Engine with the Compose plugin.
 
-## Importing expenses
-Expenses page, Import CSV. `data/belanjawanku.csv` is your Belanjawanku sheet converted (158 rows with an amount;
-blank cells are skipped). "Skip months after this month" is ticked by default, so pre-filled future months are not imported.
-Re-importing is safe: rows already in the database are skipped.
+1. Copy `.env.example` to `.env`.
+2. Set `DB_PASSWORD` and replace `JWT_SECRET` with a long, unique secret. Optionally set `ADMIN_PASSWORD` to create the separate admin login.
+3. Start the stack:
 
-## Using it on your phone
-The UI is responsive: bottom tab bar and bottom-sheet forms on phones, sidebar on desktop.
-For access from outside your home network, put the stack behind HTTPS (e.g. a reverse proxy such as Caddy or Cloudflare Tunnel).
-HTTPS is also required for browser location, which prayer times use.
+   ```sh
+   docker compose up -d --build
+   ```
 
-## Password reset
-"Forgot password?" on the sign-in page: enter the account email (the username) and a new password.
-No email verification is performed, so anyone who knows an email can reset that account.
+4. Open [http://localhost:8080](http://localhost:8080) and create a user account.
 
-## Goals
-Goals track saved amount vs target. An ongoing goal is flagged when its saved amount/status hasn't changed for
-2 months (`STALE_MONTHS` in `backend/src/modules/goals.js`) or when its target date has passed.
+The optional admin account uses `ADMIN_EMAIL` (default `admin@homint.com`) and `ADMIN_PASSWORD`; sign in at `/admin/login`. Its initial password is applied only when the admin account is first created. Admin credentials are separate from finance-user accounts.
 
-## Add a new module
-Backend: create `backend/src/modules/<name>.js` exporting `{ name, router }`, add it to `modules/index.js`
-(mounted at `/api/<name>`, auth applied automatically). Add tables to `db/init.sql`.
-Frontend: create `features/<name>/<name>.component.ts`, add one entry to `core/modules.config.ts`
-(sidebar link and route are generated). Dashboard widgets are standalone components in `features/dashboard/`.
+### Configuration
 
-## Notes
-- Abnormal expense rule (`backend/src/modules/expenses.js`): flagged when above the average of the same type's other
-  months + max(2 standard deviations, 30%), with at least 3 other records.
-- Prayer times use the free Aladhan API (JAKIM method) and browser geolocation, which needs `localhost` or HTTPS;
-  otherwise it falls back to Kuala Lumpur.
-- Behind HTTPS/public access, put a reverse proxy in front and keep a strong JWT_SECRET.
+| Variable | Purpose |
+| --- | --- |
+| `DB_PASSWORD` | Password for the PostgreSQL container. Required. |
+| `JWT_SECRET` | Secret used to sign authentication tokens. Required; use a long random value. |
+| `ADMIN_EMAIL` | Admin login email. Defaults to `admin@homint.com`. |
+| `ADMIN_PASSWORD` | Optional initial admin password. |
 
-## Deploy on Render + Supabase
-1. Supabase: create a project (region Singapore), open SQL Editor and run `db/supabase.sql`.
-2. Supabase: click Connect, choose **Session pooler**, copy the URI (port 5432, host `*.pooler.supabase.com`) and put your DB password in it.
-   Render is IPv4-only, so do not use the direct `db.<ref>.supabase.co` string.
-3. Push this folder to GitHub. In Render choose New, Blueprint, pick the repo (it reads `render.yaml`), and set `DATABASE_URL` when asked.
-4. Open the Render URL, sign up, then import `data/belanjawanku.csv`.
+PostgreSQL data is stored in the `pgdata` Docker volume. `db/init.sql` is applied only when the database volume is first initialized; backend startup also creates/upgrades module tables for existing databases.
 
-## Modules
-Expenses, Income, Accounts, Budget, Bills & subscriptions, Installments, Goals, Calendar, Contacts.
-New tables (income, accounts, account_transfers, budgets, bills, bill_payments, contacts, events.type/time) are created automatically when the backend starts,
-so existing databases upgrade in place (also on Supabase, where row-level security is switched on for them too).
-How they work together: Budget compares limits with Expenses; Bills can add an Expense when marked paid (optional, per bill);
-Income vs Expenses gives "left after spending" on the dashboard; linked Income, Expenses, bill payments and Installments update account balances; transfers move value between accounts; bill and installment due dates appear on the Calendar and dashboard.
+To apply code changes or rebuild the containers, run `docker compose up -d --build`. To stop the stack without deleting data, run `docker compose down`. To permanently delete the local database and start fresh, run `docker compose down -v`.
 
-## Themes
-Palette icon (sidebar, top bar, or More on phones) switches between Earth (browns and greens) and Summer Sky (blues and yellows).
-The choice is remembered per device. Theme variables live at the top of `frontend/src/styles.css`.
+## Local development
+
+Start PostgreSQL and configure `DATABASE_URL` for the backend. Then, in separate terminals:
+
+```sh
+cd backend
+npm install
+npm start
+```
+
+```sh
+cd frontend
+npm install
+npm start -- --proxy-config proxy.conf.json
+```
+
+The API listens on port `3000`; the Angular development server proxies `/api` requests there. The frontend and backend use separate package manifests, so install dependencies in each directory.
+
+## Import expenses
+
+In the Expenses page, choose **Import CSV**. The included `data/belanjawanku.csv` contains 158 rows with amounts; blank cells are skipped. **Skip months after this month** is enabled by default to avoid importing pre-filled future months. Re-importing skips rows already in the database.
+
+## Deploy on Render and Supabase
+
+1. Create a Supabase project, preferably in the Singapore region. Run `db/supabase.sql` in the project's SQL Editor.
+2. In Supabase, open **Connect** and select the **Session pooler**. Use its connection URI with port `5432` and replace the password placeholder. Render is IPv4-only, so use the pooler URI rather than the direct `db.<ref>.supabase.co` hostname.
+3. Push the project to GitHub. In Render, create a new Blueprint from the repository; Render reads `render.yaml`.
+4. Set `DATABASE_URL` to the Supabase session-pooler URI and set `ADMIN_PASSWORD` in the Render dashboard. `JWT_SECRET` is generated by the Blueprint, and database TLS is enabled.
+5. Open the Render URL, create a user account, and optionally import `data/belanjawanku.csv`.
+
+## Behavior and security notes
+
+- Password reset is available through **Forgot password?** on the sign-in page. It accepts an account email (username) and a new password without email verification; anyone who knows an account email can reset that account.
+- An ongoing goal is flagged when its saved amount/status has not changed for two months (`STALE_MONTHS` in `backend/src/modules/goals.js`) or its target date has passed.
+- An expense is flagged as abnormal when it exceeds the average of other months for the same type by more than the greater of two standard deviations or 30%, with at least three other records.
+- Prayer times use the free Aladhan API with the JAKIM method and browser geolocation. Geolocation requires `localhost` or HTTPS; otherwise the app falls back to Kuala Lumpur.
+- For access outside your home network, place the app behind HTTPS (for example, with Caddy or Cloudflare Tunnel) and keep `JWT_SECRET` private and strong. HTTPS is also needed for browser geolocation.
+
+## Modules and extending Homint
+
+Current modules: Expenses, Income, Accounts, Budgets, Bills & subscriptions, Installments, Goals, Calendar, and Contacts.
+
+Budgets compare limits with expenses. A bill can optionally create an expense when marked paid. The dashboard shows income versus expenses and the amount left after spending. Linked income, expenses, bill payments, and installments update account balances; transfers move value between accounts. Bill and installment due dates appear on the Calendar and dashboard.
+
+To add a module, create `backend/src/modules/<name>.js` exporting `{ name, router }` and register it in `backend/src/modules/index.js`. Modules mount at `/api/<name>` with authentication applied automatically. Add initial schema to `db/init.sql`; the backend's module initializer can create or upgrade tables for existing databases. On the frontend, add `features/<name>/<name>.component.ts` and an entry in `core/modules.config.ts` to generate its route and navigation link. Dashboard widgets are standalone components in `features/dashboard/`.
+
+Theme variables are defined near the top of `frontend/src/styles.css`. The selected theme is remembered per device.
