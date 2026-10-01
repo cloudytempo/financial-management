@@ -6,7 +6,7 @@ import { ChartComponent } from '../../shared/chart.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { TranslatePipe } from '../../shared/translate.pipe';
-import { errMsg, fmt, iso } from '../../shared/util';
+import { errMsg, fmt, iso, typeIcon } from '../../shared/util';
 
 const ACCOUNT_TYPES = ['cash', 'bank', 'savings', 'credit_card', 'investment', 'loan', 'other'];
 
@@ -87,7 +87,7 @@ const ACCOUNT_TYPES = ['cash', 'bank', 'savings', 'credit_card', 'investment', '
 })
 export class AccountsComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
-  accountTypes = ACCOUNT_TYPES; accounts: any[] = []; transactions: any[] = []; summary: any = { total_assets: 0, total_liabilities: 0, net_worth: 0 };
+  accountTypes = ACCOUNT_TYPES; typeIcon = typeIcon; accounts: any[] = []; transactions: any[] = []; summary: any = { total_assets: 0, total_liabilities: 0, net_worth: 0 };
   chart: any; error = ''; accountError = ''; transferError = ''; showAccountForm = false; showTransferForm = false;
   historyAccountId: number | null = null;
   accountForm: any = this.blankAccount(); transferForm: any = this.blankTransfer();
