@@ -4,13 +4,14 @@ import { Api } from '../../core/api.service';
 import { IconComponent } from '../../shared/icon.component';
 import { errMsg } from '../../shared/util';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { Language } from '../../core/language.service';
 
 @Component({
   selector: 'app-admin-reports', standalone: true, imports: [FormsModule, IconComponent, TranslatePipe],
   template: `
   <div class="page-head"><div><p class="admin-kicker">{{ 'CASE MANAGEMENT' | tr }}</p><h1>{{ 'Reports' | tr }}</h1><p class="sub">{{ 'Review household membership concerns and track outcomes' | tr }}</p></div>
     <button class="icon-btn" (click)="load()" [attr.aria-label]="'Refresh' | tr" [title]="'Refresh' | tr"><app-icon name="refresh" /></button></div>
-  @if (error) { <div class="err" style="margin-bottom:.7rem">{{ error }}</div> }
+  @if (error) { <div class="err" style="margin-bottom:.7rem">{{ error | tr }}</div> }
   <div class="admin-report-summary" [attr.aria-label]="'Report totals' | tr">
     <span><b>{{ reports.length }}</b> {{ 'total' | tr }}</span><span><b>{{ count('open') }}</b> {{ 'open' | tr }}</span>
     <span><b>{{ count('reviewing') }}</b> {{ 'reviewing' | tr }}</span><span><b>{{ count('resolved') }}</b> {{ 'resolved' | tr }}</span>
@@ -53,7 +54,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   </section>`,
 })
 export class AdminReportsComponent implements OnInit {
-  private api = inject(Api);
+  private api = inject(Api); private language = inject(Language);
   reports: any[] = []; query = ''; status = 'all'; error = '';
   filters = [
     { label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Reviewing', value: 'reviewing' },
@@ -73,5 +74,5 @@ export class AdminReportsComponent implements OnInit {
       error: (e) => (this.error = errMsg(e)),
     });
   }
-  dateTime(value: string) { return value ? new Date(value).toLocaleString() : '—'; }
+  dateTime(value: string) { return value ? new Date(value).toLocaleString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY') : '—'; }
 }

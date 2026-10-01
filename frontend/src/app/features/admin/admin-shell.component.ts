@@ -9,7 +9,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   template: `
   <div class="admin-layout">
     <aside class="admin-side">
-      <a class="admin-brand" routerLink="/admin/dashboard"><img src="/favicon.svg" alt=""><span><b>Homint</b><small>System admin</small></span></a>
+      <a class="admin-brand" routerLink="/admin/dashboard"><img src="/favicon.svg" alt=""><span><b>Homint</b><small>{{ 'System admin' | tr }}</small></span></a>
       <nav class="admin-nav">
         <a routerLink="/admin/dashboard" routerLinkActive="active"><app-icon name="grid" />{{ 'Dashboard' | tr }}</a>
         <a routerLink="/admin/reports" routerLinkActive="active"><app-icon name="alert" />{{ 'Reports' | tr }}</a>

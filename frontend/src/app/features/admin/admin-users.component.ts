@@ -5,6 +5,7 @@ import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { errMsg } from '../../shared/util';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { Language } from '../../core/language.service';
 
 @Component({
   selector: 'app-admin-users', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe],
@@ -12,7 +13,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   <div class="page-head"><div><p class="admin-kicker">{{ 'DIRECTORY' | tr }}</p><h1>{{ 'Users' | tr }}</h1><p class="sub">{{ 'Manage finance accounts and access' | tr }}</p></div>
     <button class="icon-btn" (click)="load()" [attr.aria-label]="'Refresh' | tr" [title]="'Refresh' | tr"><app-icon name="refresh" /></button></div>
   <label class="admin-search">{{ 'Search users' | tr }}<input type="search" [(ngModel)]="query" [placeholder]="'Name, email or household' | tr"></label>
-  @if (error) { <div class="err" style="margin:.7rem 0">{{ error }}</div> }
+  @if (error) { <div class="err" style="margin:.7rem 0">{{ error | tr }}</div> }
   <section class="card admin-directory">
     @if (!shown.length) { <div class="empty">{{ (users.length ? 'No users match.' : 'No users found.') | tr }}</div> }
     <ul class="list">@for (user of shown; track user.id) {
@@ -32,12 +33,12 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       <label class="full">{{ 'Name' | tr }}<input name="name" [(ngModel)]="form.name" required maxlength="100"></label>
       <label class="full">{{ 'Email' | tr }}<input name="email" type="email" [(ngModel)]="form.email" required maxlength="254"></label>
     </div>
-    @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
+    @if (error) { <div class="err" style="margin-top:.6rem">{{ error | tr }}</div> }
     <div class="sheet-f"><button type="button" class="btn ghost" (click)="showEdit = false">{{ 'Cancel' | tr }}</button><button class="btn" type="submit">{{ 'Save changes' | tr }}</button></div></form>
   </app-modal>`,
 })
 export class AdminUsersComponent implements OnInit {
-  private api = inject(Api);
+  private api = inject(Api); private language = inject(Language);
   users: any[] = []; query = ''; error = ''; showEdit = false; form: any = {};
   get shown() {
     const q = this.query.trim().toLowerCase();
@@ -52,8 +53,8 @@ export class AdminUsersComponent implements OnInit {
     });
   }
   deactivate(user: any) {
-    if (confirm(`Deactivate ${user.name}? Their active household access will be removed. They must sign in and set a new password to reactivate.`))
+    if (confirm(`${this.language.text('Deactivate')} ${user.name}? ${this.language.text('Their active household access will be removed. They must sign in and set a new password to reactivate.')}`))
       this.api.post('/admin/users/' + user.id + '/deactivate', {}).subscribe({ next: () => this.load(), error: (e) => (this.error = errMsg(e)) });
   }
-  date(value: string) { return new Date(value).toLocaleDateString(); }
+  date(value: string) { return new Date(value).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY'); }
 }

@@ -35,7 +35,7 @@ import { TranslatePipe } from '../shared/translate.pipe';
       <button class="tab" (click)="moreOpen = true"><span class="ic"><app-icon name="more" [size]="22" /></span>{{ 'More' | tr }}</button>
     </nav>
   </div>
-  @if (loading.isLoading()) { <div class="loading-overlay" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Loading</span></div> }
+  @if (loading.isLoading()) { <div class="loading-overlay" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>{{ 'Loading' | tr }}</span></div> }
   <app-modal [open]="moreOpen" [title]="'More' | tr" (closed)="moreOpen = false">
     <div class="morelist">
       @for (n of more; track n.path) { <a [routerLink]="'/' + n.path" (click)="moreOpen = false"><span class="ic-badge"><app-icon [name]="n.icon" [size]="18" /></span>{{ n.label | tr }}</a> }

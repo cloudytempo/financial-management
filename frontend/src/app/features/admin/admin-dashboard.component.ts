@@ -6,6 +6,7 @@ import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { errMsg } from '../../shared/util';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { Language } from '../../core/language.service';
 
 @Component({
   selector: 'app-admin-dashboard', standalone: true, imports: [RouterLink, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
@@ -16,7 +17,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       <button class="admin-report-trigger" (click)="openReports()" [attr.aria-label]="'Open reports' | tr" [title]="'Open reports' | tr"><app-icon name="alert" /><span>{{ data.open_reports }}</span></button>
       <button class="icon-btn" (click)="load()" [attr.aria-label]="'Refresh' | tr" [title]="'Refresh' | tr"><app-icon name="refresh" /></button>
     </div></div>
-  @if (error) { <div class="err" style="margin-bottom:1rem">{{ error }}</div> }
+  @if (error) { <div class="err" style="margin-bottom:1rem">{{ error | tr }}</div> }
   <section class="card admin-period-card"><div class="card-h"><h2>{{ 'New entries' | tr }}</h2><span class="muted small">{{ data.users.active }} {{ 'active users' | tr }} · {{ data.households.active }} {{ 'active households' | tr }}</span></div>
     <div class="admin-period-grid">
       <b></b><b>{{ 'Daily' | tr }}</b><b>{{ 'Weekly' | tr }}</b><b>{{ 'Monthly' | tr }}</b>
@@ -32,7 +33,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       @if (!visibleActivity.length) { <div class="empty">{{ 'Activity will appear as users join and leave households.' | tr }}</div> }
       <ol class="admin-timeline">@for (event of visibleActivity; track event.id) {
         <li><span class="timeline-marker" [class.warn]="event.activity_type.includes('deactivated')" aria-hidden="true"></span>
-          <div class="timeline-entry"><div class="row between"><b>{{ activityLabel(event.activity_type) }}</b><time class="muted small">{{ dateTime(event.created_at) }}</time></div>
+          <div class="timeline-entry"><div class="row between"><b>{{ activityLabel(event.activity_type) | tr }}</b><time class="muted small">{{ dateTime(event.created_at) }}</time></div>
             <div class="s">{{ event.actor_name }}@if (event.subject_name) { · {{ event.subject_name }}}@if (event.household_name) { · {{ event.household_name }}}</div></div></li>
       }</ol>
       </div>
@@ -55,6 +56,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
 })
 export class AdminDashboardComponent implements OnInit {
   private api = inject(Api);
+  private language = inject(Language);
   data: any = { users: { total: 0, active: 0, today: 0, this_week: 0, this_month: 0 }, households: { total: 0, active: 0, today: 0, this_week: 0, this_month: 0 }, trend: [], activity: [], open_reports: 0 };
   reports: any[] = []; reportsOpen = false; reportsLoading = false; allActivity: any[] = []; showAllActivity = false; chart: any; error = '';
   get visibleActivity() { return this.showAllActivity ? this.allActivity : this.data.activity; }
@@ -64,8 +66,8 @@ export class AdminDashboardComponent implements OnInit {
     this.api.get<any>('/admin/dashboard').subscribe({ next: (r) => {
       this.data = r;
       this.chart = { type: 'line', data: { labels: r.trend.map((x: any) => String(x.date).slice(5)), datasets: [
-        { label: 'New users', data: r.trend.map((x: any) => x.users), borderColor: '#A05AFF', backgroundColor: 'rgba(160,90,255,.12)', tension: .3, fill: true },
-        { label: 'Households', data: r.trend.map((x: any) => x.households), borderColor: '#1BCFB4', backgroundColor: 'rgba(27,207,180,.12)', tension: .3, fill: true },
+        { label: this.language.text('New users'), data: r.trend.map((x: any) => x.users), borderColor: '#A05AFF', backgroundColor: 'rgba(160,90,255,.12)', tension: .3, fill: true },
+        { label: this.language.text('Households'), data: r.trend.map((x: any) => x.households), borderColor: '#1BCFB4', backgroundColor: 'rgba(27,207,180,.12)', tension: .3, fill: true },
       ] }, options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } };
     }, error: (e) => (this.error = errMsg(e)) });
   }
@@ -81,5 +83,5 @@ export class AdminDashboardComponent implements OnInit {
     this.api.get<any[]>('/admin/activity').subscribe({ next: (rows) => { this.allActivity = rows; this.showAllActivity = true; }, error: (e) => (this.error = errMsg(e)) });
   }
   activityLabel(type: string) { return type.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase()); }
-  dateTime(value: string) { return new Date(value).toLocaleString(); }
+  dateTime(value: string) { return new Date(value).toLocaleString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY'); }
 }

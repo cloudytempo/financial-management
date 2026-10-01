@@ -5,6 +5,7 @@ import { ChartComponent } from '../../shared/chart.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { errMsg, fmt } from '../../shared/util';
+import { Language } from '../../core/language.service';
 import { TranslatePipe } from '../../shared/translate.pipe';
 
 @Component({
@@ -36,8 +37,8 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <div class="row" style="flex-wrap:nowrap;min-width:0"><span class="ic-badge" [class.brown]="g.status === 'Ongoing'"><app-icon [name]="g.status === 'Complete' ? 'check' : 'target'" [size]="18" /></span>
           <div style="min-width:0"><div style="font-weight:700">{{ g.name }} <span class="badge" [class.ok]="g.status === 'Complete'">{{ g.status | tr }}</span></div>
             <div class="muted small">{{ 'Target' | tr }} {{ fmt(g.target_amount) }} {{ 'by' | tr }} {{ g.target_date }} @if (g.overdue) { <span class="badge">{{ 'Past date' | tr }}</span> }</div></div></div>
-        <div class="row" style="flex-wrap:nowrap;gap:0"><button class="icon-btn" (click)="edit(g)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
-          <button class="icon-btn del" (click)="remove(g)" aria-label="Delete"><app-icon name="trash" [size]="18" /></button></div>
+        <div class="row" style="flex-wrap:nowrap;gap:0"><button class="icon-btn" (click)="edit(g)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
+          <button class="icon-btn del" (click)="remove(g)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button></div>
       </div>
       <div class="row between small" style="margin:.7rem 0 .3rem"><span>{{ fmt(g.saved_amount) }} {{ 'saved' | tr }}</span><b>{{ g.progress }}%</b></div>
       <div class="bar" [class.ok]="g.status === 'Complete'"><i [style.width.%]="g.progress"></i></div>
@@ -63,13 +64,13 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <label>{{ 'Target date' | tr }}<input name="date" type="date" [(ngModel)]="form.target_date" required></label>
         <label>{{ 'Status' | tr }}<select name="status" [(ngModel)]="form.status">@for (s of statuses; track s) { <option>{{ s | tr }}</option> }</select></label>
       </div>
-      @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
+      @if (error) { <div class="err" style="margin-top:.6rem">{{ error | tr }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="closeForm()">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add goal') | tr }}</button></div>
     </form>
   </app-modal>`,
 })
 export class GoalsComponent implements OnInit {
-  private api = inject(Api);
+  private api = inject(Api); private language = inject(Language);
   fmt = fmt; statuses = ['Ongoing', 'Complete']; showForm = false;
   items: any[] = []; reminders: any[] = []; inputs: Record<number, number> = {};
   form: any = this.blank(); error = ''; statusCfg: any; progressCfg: any;
@@ -83,8 +84,8 @@ export class GoalsComponent implements OnInit {
     this.api.get<any[]>('/goals').subscribe((r) => {
       this.items = r;
       const c = r.filter((g) => g.status === 'Complete').length;
-      this.statusCfg = { type: 'doughnut', data: { labels: ['Complete', 'Ongoing'], datasets: [{ data: [c, r.length - c], backgroundColor: ['#66BB6A', '#5D4037'] }] } };
-      this.progressCfg = { type: 'bar', data: { labels: r.map((g) => g.name), datasets: [{ label: 'Progress %', data: r.map((g) => Number(g.progress)), backgroundColor: r.map((g) => (g.status === 'Complete' ? '#66BB6A' : '#8D6E63')) }] },
+      this.statusCfg = { type: 'doughnut', data: { labels: [this.language.text('Complete'), this.language.text('Ongoing')], datasets: [{ data: [c, r.length - c], backgroundColor: ['#66BB6A', '#5D4037'] }] } };
+      this.progressCfg = { type: 'bar', data: { labels: r.map((g) => g.name), datasets: [{ label: this.language.text('Progress %'), data: r.map((g) => Number(g.progress)), backgroundColor: r.map((g) => (g.status === 'Complete' ? '#66BB6A' : '#8D6E63')) }] },
         options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { min: 0, max: 100 } } } };
     });
     this.api.get<any[]>('/goals/reminders').subscribe((r) => (this.reminders = r));
@@ -105,5 +106,5 @@ export class GoalsComponent implements OnInit {
     this.put({ ...g, saved_amount: +v }).subscribe(() => { delete this.inputs[g.id]; this.load(); });
   }
   complete(g: any) { this.put({ ...g, status: 'Complete' }).subscribe(() => this.load()); }
-  remove(g: any) { if (confirm(`Delete goal "${g.name}"?`)) this.api.del('/goals/' + g.id).subscribe(() => this.load()); }
+  remove(g: any) { if (confirm(`${this.language.text('Delete goal')} "${g.name}"?`)) this.api.del('/goals/' + g.id).subscribe(() => this.load()); }
 }

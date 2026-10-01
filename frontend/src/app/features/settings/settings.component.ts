@@ -19,7 +19,7 @@ import { errMsg } from '../../shared/util';
       {{ 'A household password is required each time you enter another household.' | tr }}</p>
     <div class="row" style="margin-top:1rem"><h3 style="margin:0">{{ 'Members' | tr }}</h3><span class="pill">{{ members.length }}</span></div>
     @if (membersLoading) { <p class="muted small" style="margin-top:.5rem">{{ 'Loading members...' | tr }}</p> }
-    @else if (memberError) { <p class="err small" style="margin-top:.5rem">{{ memberError }}</p> }
+    @else if (memberError) { <p class="err small" style="margin-top:.5rem">{{ memberError | tr }}</p> }
     @else if (!members.length) { <p class="muted small" style="margin-top:.5rem">{{ 'No members found.' | tr }}</p> }
     @else {
       <ul class="list" style="margin-top:.4rem">
@@ -37,7 +37,7 @@ import { errMsg } from '../../shared/util';
         <option [ngValue]="null">{{ 'Choose a member' | tr }}</option>@for (member of otherMembers; track member.id) { <option [ngValue]="member.id">{{ member.name }}</option> }
       </select></label><button class="btn ghost" type="button" [disabled]="!nextOwnerId" (click)="transferOwnership()">{{ 'Transfer' | tr }}</button></div>
     }
-    @if (memberActionError) { <div class="err small" style="margin-top:.5rem">{{ memberActionError }}</div> }
+    @if (memberActionError) { <div class="err small" style="margin-top:.5rem">{{ memberActionError | tr }}</div> }
     @if (households.length) {
       <div class="seg" style="margin:1rem 0">
         @for (household of households; track household.id) {
@@ -54,14 +54,14 @@ import { errMsg } from '../../shared/util';
         <label>{{ 'Household name' | tr }}<input name="householdName" [(ngModel)]="householdName" required autocomplete="organization"></label>
         <label>{{ 'Household password' | tr }}<input name="householdPassword" type="password" [(ngModel)]="householdPassword" minlength="8" required autocomplete="current-password"></label>
       </div>
-      @if (householdError) { <div class="err" style="margin-top:.6rem">{{ householdError }}</div> }
+      @if (householdError) { <div class="err" style="margin-top:.6rem">{{ householdError | tr }}</div> }
       <div style="margin-top:1rem"><button class="btn" type="submit">{{ (householdMode === 'create' ? 'Create and enter' : 'Enter household') | tr }}</button></div>
     </form>
   </section>
   <section class="card settings-panel" aria-labelledby="appearance-title">
     <h2 id="appearance-title">{{ 'Appearance' | tr }}</h2>
     <p class="sub">{{ 'Choose a color theme' | tr }}</p>
-    <div class="theme-options" role="group" aria-label="Color theme">
+    <div class="theme-options" role="group" [attr.aria-label]="'Color theme' | tr">
       <button class="theme-option" [attr.aria-pressed]="theme.name() === 'earth'" (click)="theme.set('earth')">
         <span class="theme-swatch earth" aria-hidden="true"></span><span><b>Earth</b><br><span class="muted small">{{ 'Warm brown and green' | tr }}</span></span>
       </button>
@@ -80,7 +80,7 @@ import { errMsg } from '../../shared/util';
   <app-modal [open]="showReport" [title]="'Report ' + reportTarget?.name" (closed)="showReport = false">
     <form (ngSubmit)="submitReport()"><label>{{ 'Why should an admin review this member?' | tr }}
       <textarea name="reportReason" [(ngModel)]="reportReason" rows="4" minlength="10" maxlength="2000" required [placeholder]="'Describe why you think this person does not belong in the household' | tr"></textarea></label>
-      @if (memberActionError) { <div class="err" style="margin-top:.6rem">{{ memberActionError }}</div> }
+      @if (memberActionError) { <div class="err" style="margin-top:.6rem">{{ memberActionError | tr }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="showReport = false">{{ 'Cancel' | tr }}</button><button class="btn" type="submit">{{ 'Send report' | tr }}</button></div>
     </form>
   </app-modal>`,

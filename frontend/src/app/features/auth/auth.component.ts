@@ -26,8 +26,8 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <label>{{ 'Household password' | tr }}<input name="householdPassword" type="password" [(ngModel)]="householdPassword" minlength="8" autocomplete="new-password" required></label>
       }
       @if (mode === 'reset' || mode === 'reactivate') { <label>{{ 'Confirm new password' | tr }}<input name="confirm" type="password" [(ngModel)]="confirm" minlength="8" autocomplete="new-password" required></label> }
-      @if (error) { <div class="err">{{ error }}</div> }
-      @if (info) { <div class="okmsg">{{ info }}</div> }
+      @if (error) { <div class="err">{{ error | tr }}</div> }
+      @if (info) { <div class="okmsg">{{ info | tr }}</div> }
       <button class="btn" type="submit">{{ (mode === 'signup' ? 'Sign up' : mode === 'reset' ? 'Reset password' : mode === 'reactivate' ? 'Set new password' : 'Sign in') | tr }}</button>
     </form>
     <p class="muted small" style="margin-top:1rem;text-align:center">

@@ -55,8 +55,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
           <div class="typepick" style="margin:.5rem 0">@for (t of types; track t.name) {
             <button type="button" class="lg" [class.on]="form.type === t.name" [style.--tc]="t.color" (click)="form.type = t.name"><i></i>{{ t.name | tr }}</button>
           }</div>
-          <div class="row" style="flex-wrap:nowrap"><input name="date" type="date" [(ngModel)]="form.event_date" required aria-label="Date"><input name="time" type="time" [(ngModel)]="form.event_time" aria-label="Time (optional)"></div>
-          @if (error) { <div class="err">{{ error }}</div> }
+          <div class="row" style="flex-wrap:nowrap"><input name="date" type="date" [(ngModel)]="form.event_date" required [attr.aria-label]="'Date' | tr"><input name="time" type="time" [(ngModel)]="form.event_time" [attr.aria-label]="'Time (optional)' | tr"></div>
+          @if (error) { <div class="err">{{ error | tr }}</div> }
           <div class="row" style="margin-top:.55rem"><button type="submit" class="btn"><app-icon [name]="form.id ? 'check' : 'plus'" [size]="18" />{{ (form.id ? 'Save event' : 'Add event') | tr }}</button>
             @if (form.id) { <button type="button" class="btn ghost" (click)="resetForm()">{{ 'Cancel' | tr }}</button> }</div>
         </form>
@@ -147,5 +147,5 @@ export class CalendarWidget implements OnInit {
       error: (e) => (this.error = errMsg(e)),
     });
   }
-  remove(e: any) { if (confirm(`Delete "${e.title}"?`)) this.api.del('/events/' + e.id).subscribe(() => { this.loadMonth(); this.loadUpcoming(); }); }
+  remove(e: any) { if (confirm(`${this.language.text('Delete')} "${e.title}"?`)) this.api.del('/events/' + e.id).subscribe(() => { this.loadMonth(); this.loadUpcoming(); }); }
 }

@@ -55,8 +55,8 @@ import { TranslatePipe } from '../../shared/translate.pipe';
             @if (r.remaining >= 0) { {{ fmt(r.remaining) }} {{ 'left' | tr }} } @else { {{ fmt(-r.remaining) }} {{ 'over' | tr }} }
             @if (r.projected != null && r.projected > r.limit && r.status !== 'over') { · {{ 'on pace for' | tr }} {{ fmt(r.projected) }} }</div>
         </div>
-        <button class="icon-btn" (click)="openForm(r.category, r.limit)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
-        <button class="icon-btn del" (click)="remove(r)" aria-label="Delete"><app-icon name="trash" [size]="18" /></button>
+        <button class="icon-btn" (click)="openForm(r.category, r.limit)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
+        <button class="icon-btn del" (click)="remove(r)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button>
       </li>
     }</ul>
   </div>
@@ -69,7 +69,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <label class="full">{{ 'Monthly limit (MYR)' | tr }}<input name="amt" type="number" inputmode="decimal" step="0.01" min="0.01" [(ngModel)]="form.amount" required></label>
       </div>
       <p class="muted small" style="margin-top:.5rem">{{ 'Applies from' | tr }} {{ months[month - 1] }} {{ year }} {{ 'onwards. Earlier months keep their old limit.' | tr }}</p>
-      @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
+      @if (error) { <div class="err" style="margin-top:.6rem">{{ error | tr }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ 'Save budget' | tr }}</button></div>
     </form>
   </app-modal>`,
@@ -87,13 +87,13 @@ export class BudgetsComponent implements OnInit {
     this.api.get<any>(`/budgets/status?year=${this.year}&month=${this.month}`).subscribe((s) => {
       this.st = s;
       this.cfg = s.rows.length ? { type: 'bar', data: { labels: s.rows.map((r: any) => r.category), datasets: [
-        { label: 'Budget', data: s.rows.map((r: any) => Number(r.limit)), backgroundColor: COLORS[8] },
-        { label: 'Spent', data: s.rows.map((r: any) => Number(r.spent)), backgroundColor: COLORS[0] }] } } : null;
+        { label: this.language.text('Budget'), data: s.rows.map((r: any) => Number(r.limit)), backgroundColor: COLORS[8] },
+        { label: this.language.text('Spent'), data: s.rows.map((r: any) => Number(r.spent)), backgroundColor: COLORS[0] }] } } : null;
     });
   }
   openForm(category = '', amount: number | null = null) { this.form = { category, amount: amount ? Math.ceil(amount / 10) * 10 : null }; this.error = ''; this.showForm = true; }
   save() {
     this.api.post('/budgets', { ...this.form, year: this.year, month: this.month }).subscribe({ next: () => { this.showForm = false; this.load(); }, error: (e) => (this.error = errMsg(e)) });
   }
-  remove(r: any) { if (confirm(`Remove the budget for ${r.category}?`)) this.api.del('/budgets/' + encodeURIComponent(r.category)).subscribe(() => this.load()); }
+  remove(r: any) { if (confirm(`${this.language.text('Remove the budget for')} ${r.category}?`)) this.api.del('/budgets/' + encodeURIComponent(r.category)).subscribe(() => this.load()); }
 }

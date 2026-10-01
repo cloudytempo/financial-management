@@ -5,6 +5,7 @@ import { ChartComponent } from '../../shared/chart.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { COLORS, errMsg, fmt, iso, typeIcon } from '../../shared/util';
+import { Language } from '../../core/language.service';
 import { TranslatePipe } from '../../shared/translate.pipe';
 
 @Component({
@@ -16,10 +17,10 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   </div>
 
   <div class="bento">
-    <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="repeat" /></span><div><div class="lbl">Monthly cost</div><div class="val">{{ fmt(sum.monthly) }}</div><div class="foot">{{ sum.count }} active</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">Yearly cost</div><div class="val">{{ fmt(sum.yearly) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="clock" /></span><div><div class="lbl">Due in 30 days</div><div class="val">{{ due.length }}</div><div class="foot">{{ fmt(dueTotal) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="alert" /></span><div><div class="lbl">Overdue</div><div class="val" [class.up]="overdue">{{ overdue }}</div></div></div>
+    <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="repeat" /></span><div><div class="lbl">{{ 'Monthly cost' | tr }}</div><div class="val">{{ fmt(sum.monthly) }}</div><div class="foot">{{ sum.count }} {{ 'active' | tr }}</div></div></div>
+    <div class="card kpi s3"><span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Yearly cost' | tr }}</div><div class="val">{{ fmt(sum.yearly) }}</div></div></div>
+    <div class="card kpi s3"><span class="chip-ic"><app-icon name="clock" /></span><div><div class="lbl">{{ 'Due in 30 days' | tr }}</div><div class="val">{{ due.length }}</div><div class="foot">{{ fmt(dueTotal) }}</div></div></div>
+    <div class="card kpi s3"><span class="chip-ic"><app-icon name="alert" /></span><div><div class="lbl">{{ 'Overdue' | tr }}</div><div class="val" [class.up]="overdue">{{ overdue }}</div></div></div>
   </div>
 
   <div class="bento">
@@ -31,10 +32,10 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <li class="item bill-item" [class.flag]="b.overdue" [style.opacity]="b.status === 'active' ? 1 : .6">
           <span class="ic-badge" [class.warn]="b.overdue"><app-icon [name]="icon(b.category || b.name)" [size]="18" /></span>
           <div class="grow"><div class="t">{{ b.name }}
-              @if (b.status !== 'active') { <span class="pill">{{ b.status }}</span> }
-              @if (b.autopay) { <span class="pill">Auto-pay</span> }</div>
-            <div class="s">{{ b.category || 'Bill' }} · {{ b.frequency }} · next {{ b.next_due }}
-              @if (b.status === 'active') { · <span class="badge" [class.ok]="b.days_left > 3">{{ b.days_left < 0 ? -b.days_left + 'd overdue' : b.days_left === 0 ? 'Today' : 'in ' + b.days_left + 'd' }}</span> }</div></div>
+              @if (b.status !== 'active') { <span class="pill">{{ b.status | tr }}</span> }
+              @if (b.autopay) { <span class="pill">{{ 'Auto-pay' | tr }}</span> }</div>
+            <div class="s">{{ (b.category || 'Bill') | tr }} · {{ b.frequency | tr }} · {{ 'Next' | tr }} {{ b.next_due }}
+              @if (b.status === 'active') { · <span class="badge" [class.ok]="b.days_left > 3">{{ b.days_left < 0 ? ('Overdue' | tr) : b.days_left === 0 ? ('Today' | tr) : ('in' | tr) + ' ' + b.days_left + ' ' + ('days' | tr) }}</span> }</div></div>
           <div class="amt">{{ fmt(b.amount) }}</div>
           <div class="bill-desktop-actions">
             @if (b.status === 'active') { <button class="btn green sm" (click)="pay(b)" [title]="'Mark this cycle as paid' | tr"><app-icon name="check" [size]="16" /><span class="hide-sm">{{ 'Paid' | tr }}</span></button> }
@@ -43,7 +44,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
             <button class="icon-btn del" (click)="remove(b)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button>
           </div>
           <details class="bill-mobile-actions">
-            <summary class="icon-btn" aria-label="Bill actions"><app-icon name="more" [size]="18" /></summary>
+            <summary class="icon-btn" [attr.aria-label]="'Bill actions' | tr"><app-icon name="more" [size]="18" /></summary>
             <div class="bill-menu">
               @if (b.status === 'active') { <button (click)="pay(b)"><app-icon name="check" [size]="16" />{{ 'Mark paid' | tr }}</button> }
               @if (b.paid_count) { <button (click)="undo(b)"><app-icon name="undo" [size]="18" />{{ 'Undo payment' | tr }}</button> }
@@ -85,27 +86,27 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <label class="check full"><input type="checkbox" name="auto" [(ngModel)]="form.autopay"> {{ 'Paid automatically (auto-debit)' | tr }}</label>
         <label class="check full"><input type="checkbox" name="exp" [(ngModel)]="form.add_expense"> {{ 'Add an expense automatically when I mark it paid' | tr }}</label>
       </div>
-      <p class="muted small" style="margin-top:.5rem">Turn on the last option only if you do not also enter this bill by hand under Expenses, otherwise it is counted twice. It uses the category above as the expense type.</p>
-      @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
+      <p class="muted small" style="margin-top:.5rem">{{ 'Turn on the last option only if you do not also enter this bill by hand under Expenses, otherwise it is counted twice. It uses the category above as the expense type.' | tr }}</p>
+      @if (error) { <div class="err" style="margin-top:.6rem">{{ error | tr }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add bill') | tr }}</button></div>
     </form>
   </app-modal>
-  <app-modal [open]="showSplitForm" title="Split a bill" (closed)="showSplitForm = false">
+  <app-modal [open]="showSplitForm" [title]="'Split a bill' | tr" (closed)="showSplitForm = false">
     <form class="split-form" (ngSubmit)="saveSplit()">
       <div class="fields">
-        <label class="full">Bill name<input name="splitName" [(ngModel)]="splitForm.name" placeholder="e.g. Dinner, utilities" required maxlength="100"></label>
-        <label>Total amount (MYR)<input name="splitAmount" type="number" inputmode="decimal" step="0.01" min="0.01" [(ngModel)]="splitForm.total_amount" required></label>
-        <label>Due date<input name="splitDue" type="date" [(ngModel)]="splitForm.due_date" required></label>
-        <label class="full">Participants<textarea name="people" [(ngModel)]="splitPeopleText" rows="4" placeholder="One name per line" required></textarea></label>
+        <label class="full">{{ 'Bill name' | tr }}<input name="splitName" [(ngModel)]="splitForm.name" [placeholder]="'e.g. Dinner, utilities' | tr" required maxlength="100"></label>
+        <label>{{ 'Total amount (MYR)' | tr }}<input name="splitAmount" type="number" inputmode="decimal" step="0.01" min="0.01" [(ngModel)]="splitForm.total_amount" required></label>
+        <label>{{ 'Due date' | tr }}<input name="splitDue" type="date" [(ngModel)]="splitForm.due_date" required></label>
+        <label class="full">{{ 'Participants' | tr }}<textarea name="people" [(ngModel)]="splitPeopleText" rows="4" [placeholder]="'One name per line' | tr" required></textarea></label>
       </div>
-      <p class="muted small" style="margin-top:.5rem">The total is split evenly. Any extra cents are assigned one at a time from the top of the list.</p>
-      @if (splitError) { <div class="err" style="margin-top:.6rem">{{ splitError }}</div> }
-      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showSplitForm = false">Cancel</button><button type="submit" class="btn">Create split</button></div>
+      <p class="muted small" style="margin-top:.5rem">{{ 'The total is split evenly. Any extra cents are assigned one at a time from the top of the list.' | tr }}</p>
+      @if (splitError) { <div class="err" style="margin-top:.6rem">{{ splitError | tr }}</div> }
+      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showSplitForm = false">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ 'Create split' | tr }}</button></div>
     </form>
   </app-modal>`,
 })
 export class BillsComponent implements OnInit {
-  private api = inject(Api);
+  private api = inject(Api); private language = inject(Language);
   fmt = fmt; icon = typeIcon; showForm = false; error = '';
   cats = ['Internet', 'Electrical', 'Water', 'Insurance', 'Subscription', 'Phone', 'Road tax', 'Assessment tax', 'Other'];
   items: any[] = []; splits: any[] = []; showSplitForm = false; splitError = ''; splitPeopleText = '';
@@ -137,7 +138,7 @@ export class BillsComponent implements OnInit {
     this.api.post(`/bills/splits/${split.id}/shares/${share.id}/toggle`, { paid: !share.paid }).subscribe(() => this.loadSplits());
   }
   removeSplit(split: any) {
-    if (confirm(`Delete split bill ${split.name}?`)) this.api.del('/bills/splits/' + split.id).subscribe(() => this.loadSplits());
+    if (confirm(`${this.language.text('Delete split bill')} ${split.name}?`)) this.api.del('/bills/splits/' + split.id).subscribe(() => this.loadSplits());
   }
   openForm() { this.form = this.blank(); this.error = ''; this.showForm = true; }
   edit(b: any) { this.form = { ...b, first_due: b.next_due }; this.error = ''; this.showForm = true; }
@@ -146,10 +147,10 @@ export class BillsComponent implements OnInit {
     req.subscribe({ next: () => { this.showForm = false; this.load(); }, error: (e) => (this.error = errMsg(e)) });
   }
   pay(b: any) {
-    const a = prompt(`Amount paid for ${b.name} (MYR)`, String(b.amount));
+    const a = prompt(`${this.language.text('Amount paid for')} ${b.name} (MYR)`, String(b.amount));
     if (a === null) return;
     this.api.post(`/bills/${b.id}/pay`, { amount: a }).subscribe({ next: () => this.load(), error: (e) => alert(errMsg(e)) });
   }
-  undo(b: any) { if (confirm(`Undo the last payment for ${b.name}?`)) this.api.post(`/bills/${b.id}/undo`, {}).subscribe(() => this.load()); }
-  remove(b: any) { if (confirm(`Delete ${b.name} and its payment history?`)) this.api.del('/bills/' + b.id).subscribe(() => this.load()); }
+  undo(b: any) { if (confirm(`${this.language.text('Undo the last payment for')} ${b.name}?`)) this.api.post(`/bills/${b.id}/undo`, {}).subscribe(() => this.load()); }
+  remove(b: any) { if (confirm(`${this.language.text('Delete')} ${b.name} ${this.language.text('and its payment history?')}`)) this.api.del('/bills/' + b.id).subscribe(() => this.load()); }
 }

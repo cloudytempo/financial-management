@@ -14,7 +14,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     <p class="sub">{{ 'Separate access for Homint operations' | tr }}</p>
     <label>{{ 'Email' | tr }}<input name="email" type="email" [(ngModel)]="email" autocomplete="username" required></label>
     <label>{{ 'Password' | tr }}<input name="password" type="password" [(ngModel)]="password" autocomplete="current-password" required></label>
-    @if (error) { <div class="err">{{ error }}</div> }
+    @if (error) { <div class="err">{{ error | tr }}</div> }
     <button class="btn" type="submit" [disabled]="busy">{{ (busy ? 'Signing in...' : 'Sign in') | tr }}</button>
     <a class="muted small" href="/login" style="text-align:center">{{ 'Back to Homint' | tr }}</a>
   </form><footer class="brand-footer login-brand-footer">{{ 'Powered by CloudyTempo · © 2026 All rights reserved.' | tr }}</footer></div>`,

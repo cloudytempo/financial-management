@@ -11,7 +11,7 @@ const NAMES = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
   template: `
   <div class="prayer-widget" [class.card]="framed">
     <div class="card-h"><h2><app-icon name="moon" [size]="18" />{{ 'Prayer times' | tr }}</h2><span class="muted small">{{ place }}</span></div>
-    @if (error) { <div class="err">{{ error }}</div> }
+    @if (error) { <div class="err">{{ error | tr }}</div> }
     <div class="prayer">
       @for (n of names; track n) { <div [class.next]="next === n">{{ n | tr }}<b>{{ times[n] || '--:--' }}</b></div> }
     </div>

@@ -29,7 +29,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       <ul class="list">@for (u of upcoming; track u.installment_id + '-' + u.period) {
         <li class="item"><span class="ic-badge" [class.warn]="u.days_left <= 3"><app-icon [name]="icon(u.type)" [size]="18" /></span>
           <div class="grow"><div class="t">{{ u.name || u.type }}</div><div class="s">{{ u.due_date }} · {{ 'payment' | tr }} {{ u.period }} {{ 'of' | tr }} {{ u.of }}</div></div>
-          <div class="amt">{{ fmt(u.amount) }}<div><span class="badge" [class.ok]="u.days_left > 3">{{ (u.days_left < 0 ? 'd overdue' : u.days_left === 0 ? 'Today' : 'd') | tr }}</span></div></div></li>
+          <div class="amt">{{ fmt(u.amount) }}<div><span class="badge" [class.ok]="u.days_left > 3">{{ u.days_left < 0 ? -u.days_left + ' ' + ('days overdue' | tr) : u.days_left === 0 ? ('Today' | tr) : ('in' | tr) + ' ' + u.days_left + ' ' + ('days' | tr) }}</span></div></div></li>
       }</ul></div>
   </div>
 
@@ -40,8 +40,8 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       <div class="row between" style="flex-wrap:nowrap">
         <div class="row" style="flex-wrap:nowrap;min-width:0"><span class="ic-badge"><app-icon [name]="icon(i.type)" [size]="18" /></span>
           <div style="min-width:0"><div style="font-weight:700">{{ i.name || i.type }} @if (i.completed) { <span class="badge ok">{{ 'Completed' | tr }}</span> }</div><div class="s muted small">{{ i.type }} · {{ fmt(i.amount) }}/{{ 'month' | tr }} · {{ 'due day' | tr }} {{ i.due_day }}</div></div></div>
-        <div class="row" style="flex-wrap:nowrap;gap:0"><button class="icon-btn" (click)="edit(i)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
-          <button class="icon-btn del" (click)="remove(i)" aria-label="Delete"><app-icon name="trash" [size]="18" /></button></div>
+        <div class="row" style="flex-wrap:nowrap;gap:0"><button class="icon-btn" (click)="edit(i)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
+          <button class="icon-btn del" (click)="remove(i)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button></div>
       </div>
       <div class="row between small" style="margin:.7rem 0 .3rem"><span>{{ i.paid_count }} {{ 'of' | tr }} {{ i.duration_months }} {{ 'paid' | tr }}</span><b>{{ i.progress }}%</b></div>
       <div class="bar" [class.ok]="i.completed"><i [style.width.%]="i.progress"></i></div>
@@ -58,7 +58,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   <app-modal [open]="showForm" [title]="(form.id ? 'Edit installment' : 'Add installment') | tr" (closed)="closeForm()">
     <form (ngSubmit)="save()">
       <div class="fields">
-        <label>{{ 'Type' | tr }}<select name="type" [(ngModel)]="form.type">@for (t of types; track t) { <option>{{ t | tr }}</option> }</select></label>
+        <label>{{ 'Type' | tr }}<select name="type" [(ngModel)]="form.type">@for (t of types; track t) { <option [ngValue]="t">{{ t | tr }}</option> }</select></label>
         <label>{{ 'Name' | tr }}<input name="name" [(ngModel)]="form.name" [placeholder]="'e.g. iPhone 15' | tr"></label>
         <label>{{ 'Monthly amount (MYR)' | tr }}<input name="amount" type="number" inputmode="decimal" step="0.01" min="0.01" [(ngModel)]="form.amount" required></label>
         <label>{{ 'Duration (months)' | tr }}<input name="dur" type="number" inputmode="numeric" min="1" [(ngModel)]="form.duration_months" required></label>
@@ -66,7 +66,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <label>{{ 'Start month' | tr }}<select name="sm" [(ngModel)]="form.start_month">@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></label>
         <label class="full">{{ 'Start year' | tr }}<input name="sy" type="number" inputmode="numeric" [(ngModel)]="form.start_year" required></label>
       </div>
-      @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
+      @if (error) { <div class="err" style="margin-top:.6rem">{{ error | tr }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="closeForm()">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add installment') | tr }}</button></div>
     </form>
   </app-modal>`,
@@ -89,8 +89,8 @@ export class InstallmentsComponent implements OnInit {
     this.api.get<any[]>('/installments/summary').subscribe((s) => {
       this.kMonthly = s.reduce((a, x) => a + Number(x.monthly), 0); this.kRemaining = s.reduce((a, x) => a + Number(x.remaining), 0);
       this.chartCfg = { type: 'bar', data: { labels: s.map((x) => x.type), datasets: [
-        { label: 'Paid', data: s.map((x) => Number(x.paid)), backgroundColor: COLORS[0] },
-        { label: 'Remaining', data: s.map((x) => Number(x.remaining)), backgroundColor: COLORS[1] }] },
+        { label: this.language.text('Paid'), data: s.map((x) => Number(x.paid)), backgroundColor: COLORS[0] },
+        { label: this.language.text('Remaining'), data: s.map((x) => Number(x.remaining)), backgroundColor: COLORS[1] }] },
         options: { scales: { x: { stacked: true }, y: { stacked: true } } } };
     });
   }
@@ -103,6 +103,6 @@ export class InstallmentsComponent implements OnInit {
     const req = f.id ? this.api.put('/installments/' + f.id, f) : this.api.post('/installments', f);
     req.subscribe({ next: () => { this.closeForm(); this.load(); }, error: (e) => (this.error = errMsg(e)) });
   }
-  remove(i: any) { if (confirm(`Delete ${i.name || i.type} and its payment history?`)) this.api.del('/installments/' + i.id).subscribe(() => this.load()); }
+  remove(i: any) { if (confirm(`${this.language.text('Delete')} ${i.name || i.type} ${this.language.text('and its payment history?')}`)) this.api.del('/installments/' + i.id).subscribe(() => this.load()); }
   toggle(i: any, s: any) { this.api.post(`/installments/${i.id}/payments`, { period: s.period, paid: !s.paid }).subscribe(() => this.load()); }
 }

@@ -5,6 +5,7 @@ import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { errMsg } from '../../shared/util';
 import { TranslatePipe } from '../../shared/translate.pipe';
+import { Language } from '../../core/language.service';
 
 @Component({
   selector: 'app-contacts', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe],
@@ -18,11 +19,11 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   </div>
 
   <div class="card" style="margin-bottom:1rem">
-    <label style="position:relative"><span class="sr" style="position:absolute;left:-999px">Search contacts</span>
+    <label style="position:relative"><span class="sr" style="position:absolute;left:-999px">{{ 'Search contacts' | tr }}</span>
       <input type="search" [placeholder]="'Search name or number' | tr" [(ngModel)]="q" style="padding-left:2.4rem">
       <span style="position:absolute;left:.75rem;top:2.15rem;color:var(--muted);line-height:0"><app-icon name="search" [size]="18" /></span></label>
     <div class="seg" style="margin-top:.7rem"><button [class.on]="!cat" (click)="cat = ''">{{ 'All' | tr }}</button>
-      @for (c of cats; track c) { <button [class.on]="cat === c" (click)="cat = c">{{ c }}</button> }</div>
+      @for (c of cats; track c) { <button [class.on]="cat === c" (click)="cat = c">{{ c | tr }}</button> }</div>
   </div>
 
   <div class="card">
@@ -30,14 +31,14 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     <ul class="list">@for (c of shown; track c.id) {
       <li class="item">
         <span class="ava" style="width:42px;height:42px">{{ c.name.charAt(0).toUpperCase() }}</span>
-        <div class="grow"><div class="t">{{ c.name }} <span class="pill">{{ c.category }}</span></div>
+        <div class="grow"><div class="t">{{ c.name }} <span class="pill">{{ c.category | tr }}</span></div>
           <div class="s">{{ c.phone }}@if (c.notes) { · {{ c.notes }} }</div></div>
         <button class="icon-btn" (click)="fav(c)" [attr.aria-label]="c.favorite ? 'Remove from favourites' : 'Add to favourites'" [style.color]="c.favorite ? '#F9A825' : ''">
           <app-icon name="star" [size]="20" /></button>
-        <a class="btn green sm" [href]="tel(c.phone)" aria-label="Call"><app-icon name="call" [size]="16" /><span class="hide-sm">Call</span></a>
-        <a class="icon-btn" [href]="wa(c.phone)" target="_blank" rel="noopener" aria-label="WhatsApp"><app-icon name="message" [size]="18" /></a>
-        <button class="icon-btn" (click)="edit(c)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
-        <button class="icon-btn del" (click)="remove(c)" aria-label="Delete"><app-icon name="trash" [size]="18" /></button>
+        <a class="btn green sm" [href]="tel(c.phone)" [attr.aria-label]="'Call' | tr"><app-icon name="call" [size]="16" /><span class="hide-sm">{{ 'Call' | tr }}</span></a>
+        <a class="icon-btn" [href]="wa(c.phone)" target="_blank" rel="noopener" [attr.aria-label]="'WhatsApp' | tr"><app-icon name="message" [size]="18" /></a>
+        <button class="icon-btn" (click)="edit(c)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
+        <button class="icon-btn del" (click)="remove(c)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button>
       </li>
     }</ul>
   </div>
@@ -45,19 +46,19 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   <app-modal [open]="showForm" [title]="form.id ? 'Edit contact' : 'Add contact'" (closed)="showForm = false">
     <form (ngSubmit)="save()">
       <div class="fields">
-        <label class="full">Name<input name="name" [(ngModel)]="form.name" required></label>
-        <label class="full">Phone number<input name="phone" type="tel" inputmode="tel" [(ngModel)]="form.phone" placeholder="e.g. 012-345 6789" required></label>
-        <label class="full">Category<select name="cat" [(ngModel)]="form.category">@for (c of cats; track c) { <option>{{ c }}</option> }</select></label>
-        <label class="full">Notes<input name="notes" [(ngModel)]="form.notes" placeholder="e.g. TNB careline, plumber"></label>
-        <label class="check full"><input type="checkbox" name="fav" [(ngModel)]="form.favorite"> Show on dashboard (quick call)</label>
+        <label class="full">{{ 'Name' | tr }}<input name="name" [(ngModel)]="form.name" required></label>
+        <label class="full">{{ 'Phone number' | tr }}<input name="phone" type="tel" inputmode="tel" [(ngModel)]="form.phone" [placeholder]="'e.g. 012-345 6789' | tr" required></label>
+        <label class="full">{{ 'Category' | tr }}<select name="cat" [(ngModel)]="form.category">@for (c of cats; track c) { <option [ngValue]="c">{{ c | tr }}</option> }</select></label>
+        <label class="full">{{ 'Notes' | tr }}<input name="notes" [(ngModel)]="form.notes" [placeholder]="'e.g. TNB careline, plumber' | tr"></label>
+        <label class="check full"><input type="checkbox" name="fav" [(ngModel)]="form.favorite"> {{ 'Show on dashboard (quick call)' | tr }}</label>
       </div>
-      @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
+      @if (error) { <div class="err" style="margin-top:.6rem">{{ error | tr }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add contact') | tr }}</button></div>
     </form>
   </app-modal>`,
 })
 export class ContactsComponent implements OnInit {
-  private api = inject(Api);
+  private api = inject(Api); private language = inject(Language);
   cats = ['Family', 'Emergency', 'Utilities', 'Services', 'Work', 'Other'];
   items: any[] = []; q = ''; cat = ''; showForm = false; error = ''; form: any = this.blank();
   get hasEmergency() { return this.items.some((c) => c.category === 'Emergency'); }
@@ -77,6 +78,6 @@ export class ContactsComponent implements OnInit {
     req.subscribe({ next: () => { this.showForm = false; this.load(); }, error: (e) => (this.error = errMsg(e)) });
   }
   fav(c: any) { this.api.put('/contacts/' + c.id, { ...c, favorite: !c.favorite }).subscribe(() => this.load()); }
-  remove(c: any) { if (confirm(`Delete ${c.name}?`)) this.api.del('/contacts/' + c.id).subscribe(() => this.load()); }
+  remove(c: any) { if (confirm(`${this.language.text('Delete')} ${c.name}?`)) this.api.del('/contacts/' + c.id).subscribe(() => this.load()); }
   seed() { this.api.post('/contacts/emergency-seed', {}).subscribe(() => this.load()); }
 }

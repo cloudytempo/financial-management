@@ -18,7 +18,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
       <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />{{ 'Add income' | tr }}</button>
     </div>
   </div>
-  @if (msg) { <div class="okmsg" style="margin-bottom:1rem">{{ msg }}</div> }
+  @if (msg) { <div class="okmsg" style="margin-bottom:1rem">{{ msg | tr }}</div> }
   <div class="seg" style="margin-bottom:1rem">@for (y of years; track y) { <button [class.on]="y === year" (click)="setYear(y)">{{ y }}</button> }</div>
 
   <div class="bento">
@@ -41,8 +41,8 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <div class="grow"><div class="t">{{ r.source }} <span class="pill">{{ months[r.month - 1] }}</span> @if (r.recurring) { <span class="badge ok">{{ 'Recurring' | tr }}</span> }</div>
           @if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
         <div class="amt">{{ fmt(r.amount) }}</div>
-        <button class="icon-btn" (click)="edit(r)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
-        <button class="icon-btn del" (click)="remove(r)" aria-label="Delete"><app-icon name="trash" [size]="18" /></button></li>
+        <button class="icon-btn" (click)="edit(r)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
+        <button class="icon-btn del" (click)="remove(r)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button></li>
     }</ul>
   </div>
 
@@ -50,14 +50,14 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     <form (ngSubmit)="save()">
       <div class="fields">
         <label class="full">{{ 'Source' | tr }}<input name="source" list="sources" [(ngModel)]="form.source" required autocomplete="off">
-          <datalist id="sources">@for (s of sources; track s) { <option [value]="s"></option> }</datalist></label>
+          <datalist id="sources">@for (s of sources; track s) { <option [value]="s" [label]="s | tr"></option> }</datalist></label>
         <label>{{ 'Amount (MYR)' | tr }}<input name="amount" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.amount" required></label>
         <label>{{ 'Year' | tr }}<input name="year" type="number" inputmode="numeric" [(ngModel)]="form.year" required></label>
         <label class="full">{{ 'Month' | tr }}<select name="month" [(ngModel)]="form.month">@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></label>
         <label class="full">{{ 'Remarks' | tr }}<input name="remarks" [(ngModel)]="form.remarks"></label>
         <label class="check full"><input type="checkbox" name="rec" [(ngModel)]="form.recurring"> {{ 'Recurring every month (can be copied forward)' | tr }}</label>
       </div>
-      @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
+      @if (error) { <div class="err" style="margin-top:.6rem">{{ error | tr }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add income') | tr }}</button></div>
     </form>
   </app-modal>`,
@@ -96,10 +96,10 @@ export class IncomeComponent implements OnInit {
     const f = this.form, req = f.id ? this.api.put('/income/' + f.id, f) : this.api.post('/income', f);
     req.subscribe({ next: () => { this.showForm = false; this.load(); }, error: (e) => (this.error = errMsg(e)) });
   }
-  remove(r: any) { if (confirm(`Delete ${r.source} (${MONTHS[r.month - 1]} ${r.year})?`)) this.api.del('/income/' + r.id).subscribe(() => this.load()); }
+  remove(r: any) { if (confirm(`${this.language.text('Delete')} ${r.source} (${this.months[r.month - 1]} ${r.year})?`)) this.api.del('/income/' + r.id).subscribe(() => this.load()); }
   carry() {
     this.api.post<any>('/income/carry', { month: this.now.getMonth() + 1, year: this.now.getFullYear() }).subscribe({
-      next: (r) => { this.msg = r.added ? `Copied ${r.added} recurring item(s) into ${MONTHS[this.now.getMonth()]}.` : 'Nothing to copy: this month already has them, or last month had no recurring income.'; this.load(); },
+      next: (r) => { this.msg = r.added ? `${this.language.text('Copied')} ${r.added} ${this.language.text('recurring item(s) into')} ${this.months[this.now.getMonth()]}.` : this.language.text('Nothing to copy: this month already has them, or last month had no recurring income.'); this.load(); },
       error: (e) => (this.msg = errMsg(e)) });
   }
 }

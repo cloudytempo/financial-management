@@ -34,7 +34,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   @if (anomalies.length) {
     <div class="alert"><app-icon name="alert" /><div><b>{{ 'Unusual spending detected' | tr }}</b>
       <ul>@for (a of anomalies.slice(0, 4); track a.id) {
-        <li>{{ a.type }}, {{ months[a.month - 1] }} {{ a.year }}: {{ fmt(a.amount) }} is {{ a.percentAbove }}% above its usual {{ fmt(a.average) }}</li>
+        <li>{{ a.type }}, {{ months[a.month - 1] }} {{ a.year }}: {{ fmt(a.amount) }} {{ 'is' | tr }} {{ a.percentAbove }}% {{ 'above its usual' | tr }} {{ fmt(a.average) }}</li>
       }</ul></div></div>
   }
 
@@ -56,8 +56,8 @@ import { TranslatePipe } from '../../shared/translate.pipe';
           <div class="grow"><div class="t">{{ r.type }} <span class="pill">{{ months[r.month - 1] }}</span> @if (flagged.has(r.id)) { <span class="badge">{{ 'Unusual' | tr }}</span> }</div>
           @if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
         <div class="amt">{{ fmt(r.amount) }}</div>
-        <button class="icon-btn" (click)="edit(r)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
-        <button class="icon-btn del" (click)="remove(r)" aria-label="Delete"><app-icon name="trash" [size]="18" /></button>
+        <button class="icon-btn" (click)="edit(r)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
+        <button class="icon-btn del" (click)="remove(r)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button>
       </li>}</ul>
   </div>
 
@@ -71,7 +71,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <label class="full">{{ 'Month' | tr }}<select name="month" [(ngModel)]="form.month">@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></label>
         <label class="full">{{ 'Remarks' | tr }}<input name="remarks" [(ngModel)]="form.remarks"></label>
       </div>
-      @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
+      @if (error) { <div class="err" style="margin-top:.6rem">{{ error | tr }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="closeForm()">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add expense') | tr }}</button></div>
     </form>
   </app-modal>
@@ -84,8 +84,8 @@ import { TranslatePipe } from '../../shared/translate.pipe';
         <span class="muted small">({{ parsed.blank }} {{ 'blank-amount rows ignored' | tr }})</span></div>
       <label style="flex-direction:row;align-items:center;gap:.5rem;font-weight:500"><input type="checkbox" [(ngModel)]="skipFuture" style="width:auto;min-height:0"> {{ 'Skip months after this month' | tr }}</label>
     }
-    @if (importMsg) { <div class="okmsg" style="margin-top:.8rem">{{ importMsg }}</div> }
-    @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
+    @if (importMsg) { <div class="okmsg" style="margin-top:.8rem">{{ importMsg | tr }}</div> }
+    @if (error) { <div class="err" style="margin-top:.6rem">{{ error | tr }}</div> }
     <div class="sheet-f"><button class="btn ghost" (click)="showImport = false">{{ 'Close' | tr }}</button>
       <button class="btn" [disabled]="!toImport.length" (click)="doImport()">{{ 'Import' | tr }} {{ toImport.length || '' }} {{ 'records' | tr }}</button></div>
   </app-modal>`,
@@ -123,21 +123,21 @@ export class ExpensesComponent implements OnInit {
     const ys = [...new Set(S.map((s) => Number(s.year)).filter(Number.isFinite))].sort();
     this.years = [...new Set([...ys, this.now.getFullYear()])].sort((a, b) => b - a);
     const sum = (f: (s: any) => boolean) => S.filter(f).reduce((a, s) => a + (Number(s.total) || 0), 0);
-    const monthly = (yr: number) => MONTHS.map((_, i) => sum((s) => Number(s.year) === yr && Number(s.month) === i + 1));
-    this.monthlyCfg = { type: 'bar', data: { labels: MONTHS, datasets: [
+    const monthly = (yr: number) => this.months.map((_, i) => sum((s) => Number(s.year) === yr && Number(s.month) === i + 1));
+    this.monthlyCfg = { type: 'bar', data: { labels: this.months, datasets: [
       { label: String(y - 1), data: monthly(y - 1), backgroundColor: '#D7CCC8' },
       { label: String(y), data: monthly(y), backgroundColor: COLORS[0] }] } };
     const types = [...new Set(S.filter((s) => Number(s.year) === y).map((s) => s.type).filter(Boolean))];
     const totals = types.map((t) => sum((s) => Number(s.year) === y && s.type === t));
     this.hasTypeData = totals.some((total) => total > 0);
     this.hasShareData = this.hasTypeData;
-    this.typeCfg = { type: 'bar', data: { labels: MONTHS, datasets: types.map((t, i) => ({
+    this.typeCfg = { type: 'bar', data: { labels: this.months, datasets: types.map((t, i) => ({
       label: t, backgroundColor: COLORS[i % COLORS.length],
       data: MONTHS.map((_, m) => sum((s) => Number(s.year) === y && Number(s.month) === m + 1 && s.type === t)) })) },
       options: { scales: { x: { stacked: true }, y: { stacked: true } } } };
     this.shareCfg = { type: 'doughnut', data: { labels: types, datasets: [{ data: totals, backgroundColor: types.map((_, i) => COLORS[i % COLORS.length]) }] } };
     this.annualCfg = { type: 'bar', data: { labels: ys.map(String), datasets: [
-      { label: 'Total (RM)', data: ys.map((yr) => sum((s) => Number(s.year) === yr)), backgroundColor: ys.map((yr) => (yr === y ? COLORS[0] : '#D7CCC8')) }] },
+      { label: this.language.text('Total (RM)'), data: ys.map((yr) => sum((s) => Number(s.year) === yr)), backgroundColor: ys.map((yr) => (yr === y ? COLORS[0] : '#D7CCC8')) }] },
       options: { plugins: { legend: { display: false } } } };
     this.kTotal = totals.reduce((a, b) => a + b, 0);
     const active = new Set(S.filter((s) => Number(s.year) === y).map((s) => Number(s.month))).size;
@@ -156,7 +156,7 @@ export class ExpensesComponent implements OnInit {
     req.subscribe({ next: () => { this.closeForm(); this.load(); }, error: (e) => (this.error = errMsg(e)) });
   }
   remove(r: any) {
-    if (confirm(`Delete ${r.type} (${MONTHS[r.month - 1]} ${r.year})?`)) this.api.del('/expenses/' + r.id).subscribe(() => this.load());
+    if (confirm(`${this.language.text('Delete')} ${r.type} (${this.months[r.month - 1]} ${r.year})?`)) this.api.del('/expenses/' + r.id).subscribe(() => this.load());
   }
 
   openImport() { this.parsed = null; this.importMsg = ''; this.error = ''; this.showImport = true; }
@@ -167,7 +167,7 @@ export class ExpensesComponent implements OnInit {
   doImport() {
     this.error = '';
     this.api.post<any>('/expenses/import', { rows: this.toImport }).subscribe({
-      next: (r) => { this.importMsg = `Imported ${r.imported} records. ${r.skipped} already existed${r.invalid ? ', ' + r.invalid + ' invalid' : ''}.`; this.parsed = null; this.load(); },
+      next: (r) => { this.importMsg = `${this.language.text('Imported')} ${r.imported} ${this.language.text('records')}. ${r.skipped} ${this.language.text('already existed')}${r.invalid ? ', ' + r.invalid + ' ' + this.language.text('invalid') : ''}.`; this.parsed = null; this.load(); },
       error: (e) => (this.error = errMsg(e)),
     });
   }
