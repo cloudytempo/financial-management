@@ -81,7 +81,7 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
   </app-modal>
 
   <app-modal [open]="showImport" [title]="'Import expenses' | tr" (closed)="showImport = false">
-    <p class="muted small" style="margin-bottom:.8rem">{{ 'Choose a CSV with columns Type, Amount, Month, Year, Remarks. Your Belanjawanku export works too. Rows already in the app are skipped, so importing twice is safe.' | tr }}</p>
+    <p class="muted small" style="margin-bottom:.8rem">{{ 'Download the CSV template, fill in Type, Amount, Month, Year, and Remarks, then upload it here. Rows already in the app are skipped, so importing twice is safe.' | tr }}</p>
     <a class="btn ghost" href="/assets/expense-import-template.csv" download="homint-expense-template.csv" style="margin-bottom:.8rem"><app-icon name="download" [size]="18" />{{ 'Download CSV template' | tr }}</a>
     <input type="file" accept=".csv,text/csv" (change)="onFile($event)" [attr.aria-label]="'CSV file' | tr">
     @if (parsed) {
