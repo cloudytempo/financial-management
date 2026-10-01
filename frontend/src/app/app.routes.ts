@@ -11,6 +11,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', loadComponent: () => import('./features/admin/admin-dashboard.component').then((m) => m.AdminDashboardComponent) },
+      { path: 'reports', loadComponent: () => import('./features/admin/admin-reports.component').then((m) => m.AdminReportsComponent) },
       { path: 'users', loadComponent: () => import('./features/admin/admin-users.component').then((m) => m.AdminUsersComponent) },
       { path: 'households', loadComponent: () => import('./features/admin/admin-households.component').then((m) => m.AdminHouseholdsComponent) },
     ],

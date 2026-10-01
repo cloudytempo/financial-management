@@ -13,6 +13,8 @@ async function initAdminSchema() {
   await pool.query(`CREATE TABLE IF NOT EXISTS system_admins (
     id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+  await pool.query('ALTER TABLE household_reports ADD COLUMN IF NOT EXISTS reviewed_by_admin_id INT REFERENCES system_admins ON DELETE SET NULL');
+  await pool.query('ALTER TABLE household_reports ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()');
   await lockDown(pool, ['system_admins']);
   if (!process.env.ADMIN_PASSWORD) {
     console.warn('System admin login is not bootstrapped: set ADMIN_PASSWORD in the server environment.');
@@ -170,8 +172,10 @@ adminRouter.get('/activity', wrap(async (_req, res) => {
   res.json(rows);
 }));
 adminRouter.get('/reports', wrap(async (_req, res) => {
-  const { rows } = await pool.query(`SELECT id,household_id,household_name,reporter_name,reported_name,description,status,admin_note,created_at,resolved_at
-    FROM household_reports ORDER BY CASE status WHEN 'open' THEN 0 WHEN 'reviewing' THEN 1 ELSE 2 END,created_at DESC LIMIT 500`);
+  const { rows } = await pool.query(`SELECT r.id,r.household_id,r.household_name,r.reporter_user_id,r.reporter_name,
+    r.reported_user_id,r.reported_name,r.description,r.status,r.admin_note,r.created_at,r.updated_at,r.resolved_at,
+    a.email AS reviewed_by_admin FROM household_reports r LEFT JOIN system_admins a ON a.id=r.reviewed_by_admin_id
+    ORDER BY CASE r.status WHEN 'open' THEN 0 WHEN 'reviewing' THEN 1 ELSE 2 END,r.created_at DESC LIMIT 500`);
   res.json(rows);
 }));
 adminRouter.put('/reports/:id', wrap(async (req, res) => {
@@ -179,10 +183,22 @@ adminRouter.put('/reports/:id', wrap(async (req, res) => {
   const note = String(req.body && req.body.admin_note || '').trim();
   if (!['open', 'reviewing', 'resolved', 'dismissed'].includes(status) || note.length > 2000)
     return res.status(400).json({ error: 'Choose a valid report status and a note under 2000 characters.' });
-  const result = await pool.query(`UPDATE household_reports SET status=$1,admin_note=$2,
-    resolved_at=CASE WHEN $1 IN ('resolved','dismissed') THEN now() ELSE NULL END WHERE id=$3 RETURNING id,status,admin_note`,
-    [status, note, req.params.id]);
-  result.rowCount ? res.json(result.rows[0]) : res.status(404).json({ error: 'Report not found.' });
+  const client = await pool.connect();
+  let report;
+  try {
+    await client.query('BEGIN');
+    const current = (await client.query('SELECT id,household_id,household_name,reported_user_id,status FROM household_reports WHERE id=$1 FOR UPDATE', [req.params.id])).rows[0];
+    if (!current) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Report not found.' }); }
+    report = (await client.query(`UPDATE household_reports SET status=$1,admin_note=$2,reviewed_by_admin_id=$3,updated_at=now(),
+      resolved_at=CASE WHEN $1 IN ('resolved','dismissed') THEN now() ELSE NULL END WHERE id=$4
+      RETURNING id,status,admin_note,updated_at,resolved_at`, [status, note, req.admin.id, current.id])).rows[0];
+    await client.query(`INSERT INTO household_activity(activity_type,household_id,subject_user_id,details)
+      VALUES('report_status_changed',$1,$2,$3)`, [current.household_id, current.reported_user_id,
+      { actor_name: req.admin.email, household_name: current.household_name, previous_status: current.status, status }]);
+    await client.query('COMMIT');
+  } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+  report.reviewed_by_admin = req.admin.email;
+  res.json(report);
 }));
 
 module.exports = { adminAuthRouter, adminRouter, initAdminSchema, requireAdmin };
