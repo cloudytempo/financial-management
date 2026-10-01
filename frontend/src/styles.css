@@ -113,7 +113,7 @@ main:has(.dashboard-page){max-width:none}
 .card-h{display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem;justify-content:space-between}
 .card-h h2{display:flex;align-items:center;gap:.5rem}
 .card-h h2 svg{color:var(--c3)}
-.chart-box{position:relative;height:250px}.chart-box.tall{height:290px}
+.chart-box{position:relative;height:250px}.chart-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:1rem;color:var(--muted);font-size:.9rem;border:1px dashed var(--line);border-radius:12px}.chart-box.tall{height:290px}
 
 /* kpi */
 .kpi{display:flex;gap:.8rem;align-items:center;padding:.9rem 1rem}

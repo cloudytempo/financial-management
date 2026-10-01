@@ -133,10 +133,12 @@ export class DashboardComponent implements OnInit {
   }
 
   private build(S: any[], I: any[], y: number, nowIdx: number) {
+    // Line chart: months with no records are gaps (null), not a drop to RM 0 (covers months before the first record and future months).
+    const mLine = (L: any[], yr: number) => MONTHS.map((_, i) => { const r = L.filter((s) => Number(s.year) === yr && Number(s.month) === i + 1); return r.length ? r.reduce((a, s) => a + (Number(s.total) || 0), 0) : null; });
     const m = (L: any[], yr: number) => MONTHS.map((_, i) => L.filter((s) => Number(s.year) === yr && Number(s.month) === i + 1).reduce((a, s) => a + (Number(s.total) || 0), 0));
     this.expCfg = { type: 'line', data: { labels: MONTHS, datasets: [
-      { label: String(y - 1), data: m(S, y - 1), borderColor: '#BCAAA4', backgroundColor: '#BCAAA4', tension: 0.3, pointRadius: 2 },
-      { label: String(y), data: m(S, y), borderColor: COLORS[0], backgroundColor: 'rgba(165,214,167,.35)', fill: true, tension: 0.3, pointRadius: 3 }] } };
+      { label: String(y - 1), data: mLine(S, y - 1), borderColor: '#BCAAA4', backgroundColor: '#BCAAA4', tension: 0.3, pointRadius: 2 },
+      { label: String(y), data: mLine(S, y), borderColor: COLORS[0], backgroundColor: 'rgba(165,214,167,.35)', fill: true, tension: 0.3, pointRadius: 3 }] }, options: { scales: { y: { beginAtZero: true } } } };
     this.incCfg = { type: 'bar', data: { labels: MONTHS, datasets: [
       { label: 'Income', data: m(I, y), backgroundColor: COLORS[1] }, { label: 'Expenses', data: m(S, y), backgroundColor: COLORS[0] }] } };
     // "current" month = latest month with expense data that is not in the future
