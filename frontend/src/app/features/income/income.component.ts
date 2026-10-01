@@ -5,38 +5,40 @@ import { ChartComponent } from '../../shared/chart.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
+import { Language } from '../../core/language.service';
+import { TranslatePipe } from '../../shared/translate.pipe';
 
 @Component({
-  selector: 'app-income', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent],
+  selector: 'app-income', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
   template: `
   <div class="page-head">
-    <div><h1>Income</h1><p class="sub">Salary, side gigs, pension, and other money coming in</p></div>
+    <div><h1>{{ 'Income' | tr }}</h1><p class="sub">{{ 'Salary, side gigs, pension, and other money coming in' | tr }}</p></div>
     <div class="actions">
-      <button class="btn ghost" (click)="carry()"><app-icon name="repeat" [size]="18" /><span class="hide-sm">Copy recurring</span></button>
-      <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />Add income</button>
+      <button class="btn ghost" (click)="carry()"><app-icon name="repeat" [size]="18" /><span class="hide-sm">{{ 'Copy recurring' | tr }}</span></button>
+      <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />{{ 'Add income' | tr }}</button>
     </div>
   </div>
   @if (msg) { <div class="okmsg" style="margin-bottom:1rem">{{ msg }}</div> }
   <div class="seg" style="margin-bottom:1rem">@for (y of years; track y) { <button [class.on]="y === year" (click)="setYear(y)">{{ y }}</button> }</div>
 
   <div class="bento">
-    <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="banknote" /></span><div><div class="lbl">{{ year }} income</div><div class="val">{{ fmt(kIncome) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">Average per month</div><div class="val">{{ fmt(kAvg) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="wallet" /></span><div><div class="lbl">Left after expenses</div><div class="val" [class.up]="kNet < 0">{{ fmt(kNet) }}</div><div class="foot">expenses {{ fmt(kSpent) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="trend" /></span><div><div class="lbl">Savings rate</div><div class="val">{{ kIncome ? kRate + '%' : '-' }}</div><div class="foot">of income kept</div></div></div>
+    <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="banknote" /></span><div><div class="lbl">{{ year }} {{ 'income' | tr }}</div><div class="val">{{ fmt(kIncome) }}</div></div></div>
+    <div class="card kpi s3"><span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Average per month' | tr }}</div><div class="val">{{ fmt(kAvg) }}</div></div></div>
+    <div class="card kpi s3"><span class="chip-ic"><app-icon name="wallet" /></span><div><div class="lbl">{{ 'Left after expenses' | tr }}</div><div class="val" [class.up]="kNet < 0">{{ fmt(kNet) }}</div><div class="foot">{{ 'expenses' | tr }} {{ fmt(kSpent) }}</div></div></div>
+    <div class="card kpi s3"><span class="chip-ic"><app-icon name="trend" /></span><div><div class="lbl">{{ 'Savings rate' | tr }}</div><div class="val">{{ kIncome ? kRate + '%' : '-' }}</div><div class="foot">{{ 'of income kept' | tr }}</div></div></div>
   </div>
 
   <div class="bento">
-    <div class="card s8"><div class="card-h"><h2><app-icon name="trend" [size]="18" />Income vs expenses, {{ year }}</h2></div>@if (cfg) { <app-chart [config]="cfg" /> }</div>
-    <div class="card s4"><div class="card-h"><h2><app-icon name="banknote" [size]="18" />By source</h2></div>@if (srcCfg) { <app-chart [config]="srcCfg" /> }</div>
+    <div class="card s8"><div class="card-h"><h2><app-icon name="trend" [size]="18" />{{ 'Income vs expenses' | tr }}, {{ year }}</h2></div>@if (cfg) { <app-chart [config]="cfg" /> }</div>
+    <div class="card s4"><div class="card-h"><h2><app-icon name="banknote" [size]="18" />{{ 'By source' | tr }}</h2></div>@if (srcCfg) { <app-chart [config]="srcCfg" /> }</div>
   </div>
 
   <div class="card">
-    <div class="card-h"><h2>Records <span class="pill">{{ shown.length }}</span></h2></div>
-    @if (!shown.length) { <div class="empty">No income recorded for {{ year }}. Add any income source to see savings and budgets work together.</div> }
+    <div class="card-h"><h2>{{ 'Records' | tr }} <span class="pill">{{ shown.length }}</span></h2></div>
+    @if (!shown.length) { <div class="empty">{{ 'No income recorded for' | tr }} {{ year }}. {{ 'Add any income source to see savings and budgets work together.' | tr }}</div> }
     <ul class="list">@for (r of shown; track r.id) {
       <li class="item"><span class="ic-badge"><app-icon [name]="icon(r.source)" [size]="18" /></span>
-        <div class="grow"><div class="t">{{ r.source }} <span class="pill">{{ months[r.month - 1] }}</span> @if (r.recurring) { <span class="badge ok">Recurring</span> }</div>
+        <div class="grow"><div class="t">{{ r.source }} <span class="pill">{{ months[r.month - 1] }}</span> @if (r.recurring) { <span class="badge ok">{{ 'Recurring' | tr }}</span> }</div>
           @if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
         <div class="amt">{{ fmt(r.amount) }}</div>
         <button class="icon-btn" (click)="edit(r)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
@@ -44,25 +46,25 @@ import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
     }</ul>
   </div>
 
-  <app-modal [open]="showForm" [title]="form.id ? 'Edit income' : 'Add income'" (closed)="showForm = false">
+  <app-modal [open]="showForm" [title]="(form.id ? 'Edit income' : 'Add income') | tr" (closed)="showForm = false">
     <form (ngSubmit)="save()">
       <div class="fields">
-        <label class="full">Source<input name="source" list="sources" [(ngModel)]="form.source" required autocomplete="off">
+        <label class="full">{{ 'Source' | tr }}<input name="source" list="sources" [(ngModel)]="form.source" required autocomplete="off">
           <datalist id="sources">@for (s of sources; track s) { <option [value]="s"></option> }</datalist></label>
-        <label>Amount (MYR)<input name="amount" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.amount" required></label>
-        <label>Year<input name="year" type="number" inputmode="numeric" [(ngModel)]="form.year" required></label>
-        <label class="full">Month<select name="month" [(ngModel)]="form.month">@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></label>
-        <label class="full">Remarks<input name="remarks" [(ngModel)]="form.remarks"></label>
-        <label class="check full"><input type="checkbox" name="rec" [(ngModel)]="form.recurring"> Recurring every month (can be copied forward)</label>
+        <label>{{ 'Amount (MYR)' | tr }}<input name="amount" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.amount" required></label>
+        <label>{{ 'Year' | tr }}<input name="year" type="number" inputmode="numeric" [(ngModel)]="form.year" required></label>
+        <label class="full">{{ 'Month' | tr }}<select name="month" [(ngModel)]="form.month">@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></label>
+        <label class="full">{{ 'Remarks' | tr }}<input name="remarks" [(ngModel)]="form.remarks"></label>
+        <label class="check full"><input type="checkbox" name="rec" [(ngModel)]="form.recurring"> {{ 'Recurring every month (can be copied forward)' | tr }}</label>
       </div>
       @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
-      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">Cancel</button><button type="submit" class="btn">{{ form.id ? 'Save changes' : 'Add income' }}</button></div>
+      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add income') | tr }}</button></div>
     </form>
   </app-modal>`,
 })
 export class IncomeComponent implements OnInit {
-  private api = inject(Api);
-  fmt = fmt; months = MONTHS; icon = typeIcon;
+  private api = inject(Api); private language = inject(Language);
+  fmt = fmt; get months() { return MONTHS.map((_, i) => new Date(2024, i, 1).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { month: 'short' })); } icon = typeIcon;
   sources = ['Salary', 'Side gig', 'Pension', 'Freelance', 'Business', 'Rental', 'Investment', 'Bonus', 'Allowance', 'Commission', 'Other'];
   now = new Date(); year = this.now.getFullYear(); years = [this.year]; showForm = false; error = ''; msg = '';
   rows: any[] = []; inc: any[] = []; exp: any[] = []; form: any = this.blank(); cfg: any; srcCfg: any;
@@ -79,9 +81,9 @@ export class IncomeComponent implements OnInit {
   build() {
     const y = this.year, sum = (L: any[], f: (s: any) => boolean) => L.filter(f).reduce((a, s) => a + (Number(s.total) || 0), 0);
     this.years = [...new Set([...this.inc.map((s) => Number(s.year)), ...this.exp.map((s) => Number(s.year)), this.now.getFullYear()])].sort((a, b) => b - a);
-    const mI = MONTHS.map((_, i) => sum(this.inc, (s) => Number(s.year) === y && Number(s.month) === i + 1));
-    const mE = MONTHS.map((_, i) => sum(this.exp, (s) => Number(s.year) === y && Number(s.month) === i + 1));
-    this.cfg = { type: 'bar', data: { labels: MONTHS, datasets: [{ label: 'Income', data: mI, backgroundColor: COLORS[1] }, { label: 'Expenses', data: mE, backgroundColor: COLORS[0] }] } };
+    const mI = this.months.map((_, i) => sum(this.inc, (s) => Number(s.year) === y && Number(s.month) === i + 1));
+    const mE = this.months.map((_, i) => sum(this.exp, (s) => Number(s.year) === y && Number(s.month) === i + 1));
+    this.cfg = { type: 'bar', data: { labels: this.months, datasets: [{ label: this.language.text('Income'), data: mI, backgroundColor: COLORS[1] }, { label: this.language.text('Expenses'), data: mE, backgroundColor: COLORS[0] }] } };
     const srcs = [...new Set(this.inc.filter((s) => Number(s.year) === y).map((s) => s.source).filter(Boolean))];
     this.srcCfg = { type: 'doughnut', data: { labels: srcs, datasets: [{ data: srcs.map((n) => sum(this.inc, (s) => Number(s.year) === y && s.source === n)), backgroundColor: srcs.map((_, i) => COLORS[i % COLORS.length]) }] } };
     this.kIncome = mI.reduce((a, b) => a + b, 0); this.kSpent = mE.reduce((a, b) => a + b, 0);

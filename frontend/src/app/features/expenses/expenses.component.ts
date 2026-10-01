@@ -6,15 +6,17 @@ import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { mapExpenseRows } from '../../shared/csv';
 import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
+import { Language } from '../../core/language.service';
+import { TranslatePipe } from '../../shared/translate.pipe';
 
 @Component({
-  selector: 'app-expenses', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent],
+  selector: 'app-expenses', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
   template: `
   <div class="page-head">
-    <div><h1>Expenses</h1><p class="sub">Compare what you spend month to month and year to year</p></div>
+    <div><h1>{{ 'Expenses' | tr }}</h1><p class="sub">{{ 'Compare what you spend month to month and year to year' | tr }}</p></div>
     <div class="actions">
-      <button class="btn ghost" (click)="openImport()"><app-icon name="upload" [size]="18" /><span class="hide-sm">Import CSV</span></button>
-      <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />Add expense</button>
+      <button class="btn ghost" (click)="openImport()"><app-icon name="upload" [size]="18" /><span class="hide-sm">{{ 'Import CSV' | tr }}</span></button>
+      <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />{{ 'Add expense' | tr }}</button>
     </div>
   </div>
 
@@ -23,35 +25,35 @@ import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
   </div>
 
   <div class="bento">
-    <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="wallet" /></span><div><div class="lbl">{{ year }} total</div><div class="val">{{ fmt(kTotal) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">Average per month</div><div class="val">{{ fmt(kAvg) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="trend" /></span><div><div class="lbl">Biggest category</div><div class="val">{{ kTop || '-' }}</div><div class="foot">{{ fmt(kTopAmt) }}</div></div></div>
-    <div class="card kpi s3"><span class="chip-ic"><app-icon name="alert" /></span><div><div class="lbl">Unusual</div><div class="val">{{ anomalies.length }}</div><div class="foot">flagged expenses</div></div></div>
+    <div class="card kpi dark s3"><span class="chip-ic"><app-icon name="wallet" /></span><div><div class="lbl">{{ year }} {{ 'total' | tr }}</div><div class="val">{{ fmt(kTotal) }}</div></div></div>
+    <div class="card kpi s3"><span class="chip-ic"><app-icon name="calendar" /></span><div><div class="lbl">{{ 'Average per month' | tr }}</div><div class="val">{{ fmt(kAvg) }}</div></div></div>
+    <div class="card kpi s3"><span class="chip-ic"><app-icon name="trend" /></span><div><div class="lbl">{{ 'Biggest category' | tr }}</div><div class="val">{{ kTop || '-' }}</div><div class="foot">{{ fmt(kTopAmt) }}</div></div></div>
+    <div class="card kpi s3"><span class="chip-ic"><app-icon name="alert" /></span><div><div class="lbl">{{ 'Unusual' | tr }}</div><div class="val">{{ anomalies.length }}</div><div class="foot">{{ 'flagged expenses' | tr }}</div></div></div>
   </div>
 
   @if (anomalies.length) {
-    <div class="alert"><app-icon name="alert" /><div><b>Unusual spending detected</b>
+    <div class="alert"><app-icon name="alert" /><div><b>{{ 'Unusual spending detected' | tr }}</b>
       <ul>@for (a of anomalies.slice(0, 4); track a.id) {
         <li>{{ a.type }}, {{ months[a.month - 1] }} {{ a.year }}: {{ fmt(a.amount) }} is {{ a.percentAbove }}% above its usual {{ fmt(a.average) }}</li>
       }</ul></div></div>
   }
 
   <div class="bento">
-    <div class="card s8"><div class="card-h"><h2><app-icon name="trend" [size]="18" />Monthly: {{ year }} vs {{ year - 1 }}</h2></div>@if (monthlyCfg) { <app-chart [config]="monthlyCfg" /> }</div>
-    <div class="card s4"><div class="card-h"><h2><app-icon name="calendar" [size]="18" />Annual totals</h2></div>@if (annualCfg) { <app-chart [config]="annualCfg" /> }</div>
-    <div class="card s8"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ year }} by type, per month</h2></div>@if (typeCfg && hasTypeData) { <app-chart [config]="typeCfg" /> } @else { <div class="empty">No expense types recorded for {{ year }}.</div> }</div>
-    <div class="card s4"><div class="card-h"><h2><app-icon name="wallet" [size]="18" />{{ year }} share by type</h2></div>@if (shareCfg && hasShareData) { <app-chart [config]="shareCfg" /> } @else { <div class="empty">No expense types recorded for {{ year }}.</div> }</div>
+    <div class="card s8"><div class="card-h"><h2><app-icon name="trend" [size]="18" />{{ 'Monthly:' | tr }} {{ year }} {{ 'vs' | tr }} {{ year - 1 }}</h2></div>@if (monthlyCfg) { <app-chart [config]="monthlyCfg" /> }</div>
+    <div class="card s4"><div class="card-h"><h2><app-icon name="calendar" [size]="18" />{{ 'Annual totals' | tr }}</h2></div>@if (annualCfg) { <app-chart [config]="annualCfg" /> }</div>
+    <div class="card s8"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ year }} {{ 'by type, per month' | tr }}</h2></div>@if (typeCfg && hasTypeData) { <app-chart [config]="typeCfg" /> } @else { <div class="empty">{{ 'No expense types recorded for' | tr }} {{ year }}.</div> }</div>
+    <div class="card s4"><div class="card-h"><h2><app-icon name="wallet" [size]="18" />{{ year }} {{ 'share by type' | tr }}</h2></div>@if (shareCfg && hasShareData) { <app-chart [config]="shareCfg" /> } @else { <div class="empty">{{ 'No expense types recorded for' | tr }} {{ year }}.</div> }</div>
   </div>
 
   <div class="card">
-    <div class="card-h"><h2>Records <span class="pill">{{ shown.length }}</span></h2>
-      <div style="width:150px"><select [ngModel]="monthFilter" (ngModelChange)="monthFilter = +$event" aria-label="Filter by month">
-        <option [ngValue]="0">All months</option>@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></div></div>
-    @if (!shown.length) { <div class="empty">No expenses here yet. Use “Add expense” or import your CSV.</div> }
+    <div class="card-h"><h2>{{ 'Records' | tr }} <span class="pill">{{ shown.length }}</span></h2>
+      <div style="width:150px"><select [ngModel]="monthFilter" (ngModelChange)="monthFilter = +$event" [attr.aria-label]="'Filter by month' | tr">
+        <option [ngValue]="0">{{ 'All months' | tr }}</option>@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></div></div>
+    @if (!shown.length) { <div class="empty">{{ 'No expenses here yet. Use “Add expense” or import your CSV.' | tr }}</div> }
     <ul class="list">@for (r of shown; track r.id) {
       <li class="item" [class.flag]="flagged.has(r.id)">
         <span class="ic-badge" [class.warn]="flagged.has(r.id)"><app-icon [name]="icon(r.type)" [size]="18" /></span>
-        <div class="grow"><div class="t">{{ r.type }} <span class="pill">{{ months[r.month - 1] }}</span> @if (flagged.has(r.id)) { <span class="badge">Unusual</span> }</div>
+          <div class="grow"><div class="t">{{ r.type }} <span class="pill">{{ months[r.month - 1] }}</span> @if (flagged.has(r.id)) { <span class="badge">{{ 'Unusual' | tr }}</span> }</div>
           @if (r.remarks) { <div class="s">{{ r.remarks }}</div> }</div>
         <div class="amt">{{ fmt(r.amount) }}</div>
         <button class="icon-btn" (click)="edit(r)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
@@ -59,38 +61,39 @@ import { COLORS, MONTHS, errMsg, fmt, typeIcon } from '../../shared/util';
       </li>}</ul>
   </div>
 
-  <app-modal [open]="showForm" [title]="form.id ? 'Edit expense' : 'Add expense'" (closed)="closeForm()">
+  <app-modal [open]="showForm" [title]="(form.id ? 'Edit expense' : 'Add expense') | tr" (closed)="closeForm()">
     <form (ngSubmit)="save()">
       <div class="fields">
-        <label class="full">Type<input name="type" list="types" [(ngModel)]="form.type" required autocomplete="off">
+        <label class="full">{{ 'Type' | tr }}<input name="type" list="types" [(ngModel)]="form.type" required autocomplete="off">
           <datalist id="types">@for (t of typeOptions; track t) { <option [value]="t"></option> }</datalist></label>
-        <label>Amount (MYR)<input name="amount" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.amount" required></label>
-        <label>Year<input name="year" type="number" inputmode="numeric" [(ngModel)]="form.year" required></label>
-        <label class="full">Month<select name="month" [(ngModel)]="form.month">@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></label>
-        <label class="full">Remarks<input name="remarks" [(ngModel)]="form.remarks"></label>
+        <label>{{ 'Amount (MYR)' | tr }}<input name="amount" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.amount" required></label>
+        <label>{{ 'Year' | tr }}<input name="year" type="number" inputmode="numeric" [(ngModel)]="form.year" required></label>
+        <label class="full">{{ 'Month' | tr }}<select name="month" [(ngModel)]="form.month">@for (m of months; track m; let i = $index) { <option [ngValue]="i + 1">{{ m }}</option> }</select></label>
+        <label class="full">{{ 'Remarks' | tr }}<input name="remarks" [(ngModel)]="form.remarks"></label>
       </div>
       @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
-      <div class="sheet-f"><button type="button" class="btn ghost" (click)="closeForm()">Cancel</button><button type="submit" class="btn">{{ form.id ? 'Save changes' : 'Add expense' }}</button></div>
+      <div class="sheet-f"><button type="button" class="btn ghost" (click)="closeForm()">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add expense') | tr }}</button></div>
     </form>
   </app-modal>
 
-  <app-modal [open]="showImport" title="Import expenses" (closed)="showImport = false">
-    <p class="muted small" style="margin-bottom:.8rem">Choose a CSV with columns Type, Amount, Month, Year, Remarks. Your Belanjawanku export works too. Rows already in the app are skipped, so importing twice is safe.</p>
-    <input type="file" accept=".csv,text/csv" (change)="onFile($event)" aria-label="CSV file">
+  <app-modal [open]="showImport" [title]="'Import expenses' | tr" (closed)="showImport = false">
+    <p class="muted small" style="margin-bottom:.8rem">{{ 'Choose a CSV with columns Type, Amount, Month, Year, Remarks. Your Belanjawanku export works too. Rows already in the app are skipped, so importing twice is safe.' | tr }}</p>
+    <input type="file" accept=".csv,text/csv" (change)="onFile($event)" [attr.aria-label]="'CSV file' | tr">
     @if (parsed) {
-      <div style="margin:.8rem 0"><b>{{ toImport.length }}</b> records ready to import
-        <span class="muted small">({{ parsed.blank }} blank-amount rows ignored)</span></div>
-      <label style="flex-direction:row;align-items:center;gap:.5rem;font-weight:500"><input type="checkbox" [(ngModel)]="skipFuture" style="width:auto;min-height:0"> Skip months after this month</label>
+      <div style="margin:.8rem 0"><b>{{ toImport.length }}</b> {{ 'records ready to import' | tr }}
+        <span class="muted small">({{ parsed.blank }} {{ 'blank-amount rows ignored' | tr }})</span></div>
+      <label style="flex-direction:row;align-items:center;gap:.5rem;font-weight:500"><input type="checkbox" [(ngModel)]="skipFuture" style="width:auto;min-height:0"> {{ 'Skip months after this month' | tr }}</label>
     }
     @if (importMsg) { <div class="okmsg" style="margin-top:.8rem">{{ importMsg }}</div> }
     @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
-    <div class="sheet-f"><button class="btn ghost" (click)="showImport = false">Close</button>
-      <button class="btn" [disabled]="!toImport.length" (click)="doImport()">Import {{ toImport.length || '' }} records</button></div>
+    <div class="sheet-f"><button class="btn ghost" (click)="showImport = false">{{ 'Close' | tr }}</button>
+      <button class="btn" [disabled]="!toImport.length" (click)="doImport()">{{ 'Import' | tr }} {{ toImport.length || '' }} {{ 'records' | tr }}</button></div>
   </app-modal>`,
 })
 export class ExpensesComponent implements OnInit {
   private api = inject(Api);
-  fmt = fmt; months = MONTHS; icon = typeIcon;
+  private language = inject(Language);
+  fmt = fmt; get months() { return MONTHS.map((_, i) => new Date(2024, i, 1).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { month: 'short' })); } icon = typeIcon;
   now = new Date(); year = this.now.getFullYear(); years: number[] = [this.year]; monthFilter = this.now.getMonth() + 1;
   rows: any[] = []; summary: any[] = []; anomalies: any[] = []; flagged = new Set<number>();
   form: any = this.blank(); error = ''; showForm = false; showImport = false;

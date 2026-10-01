@@ -1,23 +1,25 @@
 import { Component, Input, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../../../core/api.service';
+import { Language } from '../../../core/language.service';
 import { IconComponent } from '../../../shared/icon.component';
+import { TranslatePipe } from '../../../shared/translate.pipe';
 import { EVENT_TYPES, MONTHS, errMsg, eventColor, iso } from '../../../shared/util';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
 @Component({
-  selector: 'app-calendar-widget', standalone: true, imports: [FormsModule, IconComponent],
+  selector: 'app-calendar-widget', standalone: true, imports: [FormsModule, IconComponent, TranslatePipe],
   template: `
   <div class="calendar-widget" [class.card]="framed">
     <div class="card-h">
       <h2><app-icon name="calendar" [size]="18" />{{ months[month] }} {{ year }}</h2>
-      <div class="row" style="gap:.15rem"><button class="btn ghost sm" (click)="goTo(todayIso)">Today</button>
-        <button class="icon-btn" (click)="shift(-1)" aria-label="Previous month"><app-icon name="left" /></button>
-        <button class="icon-btn" (click)="shift(1)" aria-label="Next month"><app-icon name="right" /></button></div>
+      <div class="row" style="gap:.15rem"><button class="btn ghost sm" (click)="goTo(todayIso)">{{ 'Today' | tr }}</button>
+        <button class="icon-btn" (click)="shift(-1)" [attr.aria-label]="'Previous month' | tr"><app-icon name="left" /></button>
+        <button class="icon-btn" (click)="shift(1)" [attr.aria-label]="'Next month' | tr"><app-icon name="right" /></button></div>
     </div>
     <div class="legend">@for (t of types; track t.name) {
-      <button class="lg" [class.off]="hidden.has(t.name)" [class.on]="!hidden.has(t.name)" [style.--tc]="t.color" (click)="toggle(t.name)" [attr.aria-pressed]="!hidden.has(t.name)"><i></i>{{ t.name }}</button>
+      <button class="lg" [class.off]="hidden.has(t.name)" [class.on]="!hidden.has(t.name)" [style.--tc]="t.color" (click)="toggle(t.name)" [attr.aria-pressed]="!hidden.has(t.name)"><i></i>{{ t.name | tr }}</button>
     }</div>
 
     <div class="calwrap" [class.full]="full">
@@ -37,37 +39,37 @@ const pad = (n: number) => String(n).padStart(2, '0');
         <div class="sub-h" style="margin-top:0">{{ label(sel) }}</div>
         @for (e of dayEvents; track e.id) {
           <div class="ev" [style.--tc]="color(e.type)">
-            <div class="grow"><div class="t">{{ e.title }}</div><div class="s">{{ e.event_time || 'All day' }} · {{ e.type }}</div></div>
-            <button class="icon-btn" (click)="edit(e)" aria-label="Edit event"><app-icon name="pencil" [size]="16" /></button>
-            <button class="icon-btn del" (click)="remove(e)" aria-label="Delete event"><app-icon name="trash" [size]="16" /></button>
+            <div class="grow"><div class="t">{{ e.title }}</div><div class="s">{{ e.event_time || ('All day' | tr) }} · {{ e.type | tr }}</div></div>
+            <button class="icon-btn" (click)="edit(e)" [attr.aria-label]="'Edit event' | tr"><app-icon name="pencil" [size]="16" /></button>
+            <button class="icon-btn del" (click)="remove(e)" [attr.aria-label]="'Delete event' | tr"><app-icon name="trash" [size]="16" /></button>
           </div>
         }
         @for (d of dayDues; track d.key) {
-          <div class="ev" [style.--tc]="color('Payment')"><div class="grow"><div class="t">{{ d.title }}</div><div class="s">{{ d.kind }} due · RM {{ d.amount }}</div></div></div>
+          <div class="ev" [style.--tc]="color('Payment')"><div class="grow"><div class="t">{{ d.title }}</div><div class="s">{{ d.kind | tr }} {{ 'due' | tr }} · RM {{ d.amount }}</div></div></div>
         }
-        @if (!dayEvents.length && !dayDues.length) { <div class="muted small" style="margin-top:.4rem">Nothing on this day.</div> }
+        @if (!dayEvents.length && !dayDues.length) { <div class="muted small" style="margin-top:.4rem">{{ 'Nothing on this day.' | tr }}</div> }
 
         <form (ngSubmit)="save()" style="margin-top:.9rem">
-          <div class="sub-h" style="margin-top:0">{{ form.id ? 'Edit event' : 'Add event' }}</div>
-          <input name="title" [(ngModel)]="form.title" placeholder="Event title" aria-label="Event title" required>
+          <div class="sub-h" style="margin-top:0">{{ (form.id ? 'Edit event' : 'Add event') | tr }}</div>
+          <input name="title" [(ngModel)]="form.title" [placeholder]="'Event title' | tr" [attr.aria-label]="'Event title' | tr" required>
           <div class="typepick" style="margin:.5rem 0">@for (t of types; track t.name) {
-            <button type="button" class="lg" [class.on]="form.type === t.name" [style.--tc]="t.color" (click)="form.type = t.name"><i></i>{{ t.name }}</button>
+            <button type="button" class="lg" [class.on]="form.type === t.name" [style.--tc]="t.color" (click)="form.type = t.name"><i></i>{{ t.name | tr }}</button>
           }</div>
           <div class="row" style="flex-wrap:nowrap"><input name="date" type="date" [(ngModel)]="form.event_date" required aria-label="Date"><input name="time" type="time" [(ngModel)]="form.event_time" aria-label="Time (optional)"></div>
           @if (error) { <div class="err">{{ error }}</div> }
-          <div class="row" style="margin-top:.55rem"><button type="submit" class="btn"><app-icon [name]="form.id ? 'check' : 'plus'" [size]="18" />{{ form.id ? 'Save event' : 'Add event' }}</button>
-            @if (form.id) { <button type="button" class="btn ghost" (click)="resetForm()">Cancel</button> }</div>
+          <div class="row" style="margin-top:.55rem"><button type="submit" class="btn"><app-icon [name]="form.id ? 'check' : 'plus'" [size]="18" />{{ (form.id ? 'Save event' : 'Add event') | tr }}</button>
+            @if (form.id) { <button type="button" class="btn ghost" (click)="resetForm()">{{ 'Cancel' | tr }}</button> }</div>
         </form>
 
-        <div class="sub-h">Coming up</div>
+        <div class="sub-h">{{ 'Coming up' | tr }}</div>
         @for (c of coming; track c.key) {
           <div class="ev click" [style.--tc]="color(c.type)" (click)="goTo(c.date)" role="button" tabindex="0" (keydown.enter)="goTo(c.date)">
             <span class="datechip"><b>{{ c.date.slice(8) }}</b><span>{{ months[+c.date.slice(5, 7) - 1] }}</span></span>
-            <div class="grow"><div class="t">{{ c.title }}</div><div class="s">{{ c.time || (c.kind === 'event' ? 'All day' : c.kind + ' due') }} · {{ c.type }}@if (c.overdue) { · <span class="badge">Overdue</span> }</div></div>
+            <div class="grow"><div class="t">{{ c.title }}</div><div class="s">{{ c.time || ((c.kind === 'event' ? 'All day' : c.kind + ' due') | tr) }} · {{ c.type | tr }}@if (c.overdue) { · <span class="badge">{{ 'Overdue' | tr }}</span> }</div></div>
           </div>
         }
-        @if (!coming.length) { <div class="muted small" style="margin-top:.4rem">No events or due dates in the next 60 days.</div> }
-        @if (allComing.length > 6) { <button class="btn ghost sm" style="margin-top:.5rem" (click)="showAll = !showAll">{{ showAll ? 'Show less' : 'Show all ' + allComing.length }}</button> }
+        @if (!coming.length) { <div class="muted small" style="margin-top:.4rem">{{ 'No events or due dates in the next 60 days.' | tr }}</div> }
+        @if (allComing.length > 6) { <button class="btn ghost sm" style="margin-top:.5rem" (click)="showAll = !showAll">{{ showAll ? ('Show less' | tr) : ('Show all' | tr) + ' ' + allComing.length }}</button> }
       </div>
     </div>
   </div>`,
@@ -75,8 +77,9 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export class CalendarWidget implements OnInit {
   @Input() full = false;
   @Input() framed = true;
-  private api = inject(Api);
-  months = MONTHS; dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; types = EVENT_TYPES; color = eventColor;
+  private api = inject(Api); private language = inject(Language);
+  get months() { return MONTHS.map((_, i) => new Date(2024, i, 1).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { month: 'short' })); }
+  dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; types = EVENT_TYPES; color = eventColor;
   now = new Date(); year = this.now.getFullYear(); month = this.now.getMonth();
   todayIso = iso(this.now); sel = this.todayIso; showAll = false; error = '';
   events: any[] = []; upcoming: any[] = []; dues: any[] = []; hidden = new Set<string>();
@@ -97,7 +100,7 @@ export class CalendarWidget implements OnInit {
 
   blank() { return { id: null, title: '', type: 'Personal', event_time: '', event_date: this.sel }; }
   isoDay(d: number) { return `${this.year}-${pad(this.month + 1)}-${pad(d)}`; }
-  label(s: string) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long' }); }
+  label(s: string) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { weekday: 'long', day: 'numeric', month: 'long' }); }
   dots(d: number) { return this.dotMap.get(this.isoDay(d)) || []; }
 
   ngOnInit() { this.loadMonth(); this.loadUpcoming(); this.loadDues(); }

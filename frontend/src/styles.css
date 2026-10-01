@@ -67,6 +67,11 @@ main:has(.dashboard-page){max-width:none}
 .admin-account-who b{color:#fff}.admin-account-who span{font-size:.75rem;color:#A7C9BD}
 .admin-side .icon-btn{color:#C2DDD2;background:transparent}.admin-side .icon-btn:hover{background:rgba(255,255,255,.12);color:#fff}
 .admin-main{padding:1.5rem;min-width:0;max-width:1500px;width:100%;margin:0 auto}.admin-kicker{font-size:.68rem;font-weight:800;letter-spacing:.12em;color:var(--admin-purple);margin-bottom:.2rem}
+.brand-footer{padding:.65rem 1rem;text-align:center;color:var(--muted);font-size:.7rem;line-height:1.35}
+.login-brand-footer{color:#fff;background:transparent}
+.admin-main:has(.admin-dashboard-page){height:100dvh;overflow:hidden;display:grid;grid-template-rows:minmax(0,1fr) auto}
+.admin-view:has(.admin-dashboard-page){min-height:0;overflow:hidden}.admin-view:has(.admin-dashboard-page)>app-admin-dashboard{display:block;height:100%;min-height:0}
+.admin-main:has(.admin-dashboard-page)>.brand-footer{color:#7c648f;padding:.35rem .5rem}
 .admin-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin-bottom:1rem}
 .admin-metric{display:flex;flex-direction:column;gap:.15rem}.admin-metric strong{font-size:1.65rem;line-height:1.15;font-variant-numeric:tabular-nums;color:var(--admin-purple)}
 .admin-layout:has(.admin-dashboard-page){height:100dvh;min-height:0;overflow:hidden}

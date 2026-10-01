@@ -5,39 +5,41 @@ import { MODULES } from './modules.config';
 import { Loading } from './loading.service';
 import { IconComponent } from '../shared/icon.component';
 import { ModalComponent } from '../shared/modal.component';
+import { TranslatePipe } from '../shared/translate.pipe';
 
 @Component({
-  selector: 'app-shell', standalone: true, imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, ModalComponent],
+  selector: 'app-shell', standalone: true, imports: [RouterOutlet, RouterLink, RouterLinkActive, IconComponent, ModalComponent, TranslatePipe],
   template: `
   <div class="app">
     <aside class="side">
       <div class="brand"><img class="homint-mark" src="/favicon.svg" alt="">Homint</div>
       <nav class="nav">
-        @for (n of sidebarNav; track n.path) { <a [routerLink]="'/' + n.path" routerLinkActive="active"><app-icon [name]="n.icon" />{{ n.label }}</a> }
+        @for (n of sidebarNav; track n.path) { <a [routerLink]="'/' + n.path" routerLinkActive="active"><app-icon [name]="n.icon" />{{ n.label | tr }}</a> }
       </nav>
       <div class="usercard">
         <span class="ava">{{ initial() }}</span>
         <span class="who"><b>{{ auth.user()?.name }}</b><span>{{ auth.user()?.household?.name }}</span></span>
-        <button class="icon-btn" (click)="auth.logout()" aria-label="Sign out" title="Sign out"><app-icon name="logout" /></button>
+        <button class="icon-btn" (click)="auth.logout()" [attr.aria-label]="'Sign out' | tr" [title]="'Sign out' | tr"><app-icon name="logout" /></button>
       </div>
     </aside>
     <div style="min-width:0">
       <header class="topbar">
         <div class="brand"><img class="homint-mark" src="/favicon.svg" alt="">Homint</div>
-        <div><button class="icon-btn" (click)="auth.logout()" aria-label="Sign out"><app-icon name="logout" /></button></div>
+        <div><button class="icon-btn" (click)="auth.logout()" [attr.aria-label]="'Sign out' | tr"><app-icon name="logout" /></button></div>
       </header>
       <main><router-outlet /></main>
+      <footer class="brand-footer">{{ 'Powered by CloudyTempo · © 2026 All rights reserved.' | tr }}</footer>
     </div>
     <nav class="tabbar">
-      @for (n of primary; track n.path) { <a [routerLink]="'/' + n.path" routerLinkActive="active"><span class="ic"><app-icon [name]="n.icon" [size]="22" /></span>{{ n.label }}</a> }
-      <button class="tab" (click)="moreOpen = true"><span class="ic"><app-icon name="more" [size]="22" /></span>More</button>
+      @for (n of primary; track n.path) { <a [routerLink]="'/' + n.path" routerLinkActive="active"><span class="ic"><app-icon [name]="n.icon" [size]="22" /></span>{{ n.label | tr }}</a> }
+      <button class="tab" (click)="moreOpen = true"><span class="ic"><app-icon name="more" [size]="22" /></span>{{ 'More' | tr }}</button>
     </nav>
   </div>
   @if (loading.isLoading()) { <div class="loading-overlay" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><span>Loading</span></div> }
-  <app-modal [open]="moreOpen" title="More" (closed)="moreOpen = false">
+  <app-modal [open]="moreOpen" [title]="'More' | tr" (closed)="moreOpen = false">
     <div class="morelist">
-      @for (n of more; track n.path) { <a [routerLink]="'/' + n.path" (click)="moreOpen = false"><span class="ic-badge"><app-icon [name]="n.icon" [size]="18" /></span>{{ n.label }}</a> }
-      <button (click)="moreOpen = false; auth.logout()"><span class="ic-badge"><app-icon name="logout" [size]="18" /></span>Sign out</button>
+      @for (n of more; track n.path) { <a [routerLink]="'/' + n.path" (click)="moreOpen = false"><span class="ic-badge"><app-icon [name]="n.icon" [size]="18" /></span>{{ n.label | tr }}</a> }
+      <button (click)="moreOpen = false; auth.logout()"><span class="ic-badge"><app-icon name="logout" [size]="18" /></span>{{ 'Sign out' | tr }}</button>
     </div>
   </app-modal>`,
 })

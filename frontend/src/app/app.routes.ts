@@ -14,6 +14,7 @@ export const routes: Routes = [
       { path: 'reports', loadComponent: () => import('./features/admin/admin-reports.component').then((m) => m.AdminReportsComponent) },
       { path: 'users', loadComponent: () => import('./features/admin/admin-users.component').then((m) => m.AdminUsersComponent) },
       { path: 'households', loadComponent: () => import('./features/admin/admin-households.component').then((m) => m.AdminHouseholdsComponent) },
+      { path: 'settings', loadComponent: () => import('./features/admin/admin-settings.component').then((m) => m.AdminSettingsComponent) },
     ],
   },
   {

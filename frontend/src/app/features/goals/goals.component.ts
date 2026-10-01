@@ -5,65 +5,66 @@ import { ChartComponent } from '../../shared/chart.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { errMsg, fmt } from '../../shared/util';
+import { TranslatePipe } from '../../shared/translate.pipe';
 
 @Component({
-  selector: 'app-goals', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent],
+  selector: 'app-goals', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
   template: `
   <div class="page-head">
-    <div><h1>Goals</h1><p class="sub">Save towards what matters and keep it moving</p></div>
-    <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />Add goal</button>
+    <div><h1>{{ 'Goals' | tr }}</h1><p class="sub">{{ 'Save towards what matters and keep it moving' | tr }}</p></div>
+    <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />{{ 'Add goal' | tr }}</button>
   </div>
 
   @if (reminders.length) {
-    <div class="alert"><app-icon name="bell" /><div><b>Goals that need attention</b>
+    <div class="alert"><app-icon name="bell" /><div><b>{{ 'Goals that need attention' | tr }}</b>
       <ul>@for (g of reminders; track g.id) {
-        <li>{{ g.name }}: @if (g.stale) { no progress update for {{ g.months_since_update }} months }
-          @if (g.stale && g.overdue) { and } @if (g.overdue) { target date {{ g.target_date }} has passed }</li>
+        <li>{{ g.name }}: @if (g.stale) { {{ 'no progress update for' | tr }} {{ g.months_since_update }} {{ 'months' | tr }} }
+          @if (g.stale && g.overdue) { {{ 'and' | tr }} } @if (g.overdue) { {{ 'target date' | tr }} {{ g.target_date }} {{ 'has passed' | tr }} }</li>
       }</ul></div></div>
   }
 
   @if (items.length) {
   <div class="bento">
-    <div class="card s4"><div class="card-h"><h2><app-icon name="check" [size]="18" />Completion status</h2></div>@if (statusCfg) { <app-chart [config]="statusCfg" /> }</div>
-    <div class="card s8"><div class="card-h"><h2><app-icon name="target" [size]="18" />Progress by goal (%)</h2></div>@if (progressCfg) { <app-chart [config]="progressCfg" /> }</div>
-  </div> } @else { <div class="card empty">No goals yet. Add one to start tracking.</div> }
+    <div class="card s4"><div class="card-h"><h2><app-icon name="check" [size]="18" />{{ 'Completion status' | tr }}</h2></div>@if (statusCfg) { <app-chart [config]="statusCfg" /> }</div>
+    <div class="card s8"><div class="card-h"><h2><app-icon name="target" [size]="18" />{{ 'Progress by goal (%)' | tr }}</h2></div>@if (progressCfg) { <app-chart [config]="progressCfg" /> }</div>
+  </div> } @else { <div class="card empty">{{ 'No goals yet. Add one to start tracking.' | tr }}</div> }
 
   <div class="cards">
   @for (g of items; track g.id) {
     <div class="card">
       <div class="row between" style="flex-wrap:nowrap">
         <div class="row" style="flex-wrap:nowrap;min-width:0"><span class="ic-badge" [class.brown]="g.status === 'Ongoing'"><app-icon [name]="g.status === 'Complete' ? 'check' : 'target'" [size]="18" /></span>
-          <div style="min-width:0"><div style="font-weight:700">{{ g.name }} <span class="badge" [class.ok]="g.status === 'Complete'">{{ g.status }}</span></div>
-            <div class="muted small">Target {{ fmt(g.target_amount) }} by {{ g.target_date }} @if (g.overdue) { <span class="badge">Past date</span> }</div></div></div>
+          <div style="min-width:0"><div style="font-weight:700">{{ g.name }} <span class="badge" [class.ok]="g.status === 'Complete'">{{ g.status | tr }}</span></div>
+            <div class="muted small">{{ 'Target' | tr }} {{ fmt(g.target_amount) }} {{ 'by' | tr }} {{ g.target_date }} @if (g.overdue) { <span class="badge">{{ 'Past date' | tr }}</span> }</div></div></div>
         <div class="row" style="flex-wrap:nowrap;gap:0"><button class="icon-btn" (click)="edit(g)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
           <button class="icon-btn del" (click)="remove(g)" aria-label="Delete"><app-icon name="trash" [size]="18" /></button></div>
       </div>
-      <div class="row between small" style="margin:.7rem 0 .3rem"><span>{{ fmt(g.saved_amount) }} saved</span><b>{{ g.progress }}%</b></div>
+      <div class="row between small" style="margin:.7rem 0 .3rem"><span>{{ fmt(g.saved_amount) }} {{ 'saved' | tr }}</span><b>{{ g.progress }}%</b></div>
       <div class="bar" [class.ok]="g.status === 'Complete'"><i [style.width.%]="g.progress"></i></div>
       @if (g.status === 'Ongoing') {
-        <div class="muted small" style="margin-top:.5rem">Last progress update: {{ g.months_since_update < 1 ? 'less than a month ago' : g.months_since_update + ' month(s) ago' }}
-          @if (g.stale) { <span class="badge">No change</span> }</div>
+        <div class="muted small" style="margin-top:.5rem">{{ 'Last progress update:' | tr }} {{ g.months_since_update < 1 ? ('less than a month ago' | tr) : g.months_since_update + ' ' + ('month(s) ago' | tr) }}
+          @if (g.stale) { <span class="badge">{{ 'No change' | tr }}</span> }</div>
         <div class="row" style="margin-top:.7rem;flex-wrap:nowrap">
-          <input type="number" inputmode="decimal" step="0.01" min="0" placeholder="New saved total (MYR)" aria-label="New saved total" [ngModel]="inputs[g.id]" (ngModelChange)="inputs[g.id] = $event">
-          <button class="btn sm" (click)="updateSaved(g)">Update</button>
-          <button class="btn green sm" (click)="complete(g)" title="Mark complete"><app-icon name="check" [size]="16" /></button>
+          <input type="number" inputmode="decimal" step="0.01" min="0" [placeholder]="'New saved total (MYR)' | tr" [attr.aria-label]="'New saved total' | tr" [ngModel]="inputs[g.id]" (ngModelChange)="inputs[g.id] = $event">
+          <button class="btn sm" (click)="updateSaved(g)">{{ 'Update' | tr }}</button>
+          <button class="btn green sm" (click)="complete(g)" [title]="'Mark complete' | tr"><app-icon name="check" [size]="16" /></button>
         </div>
       }
     </div>
   }
   </div>
 
-  <app-modal [open]="showForm" [title]="form.id ? 'Edit goal' : 'Add goal'" (closed)="closeForm()">
+  <app-modal [open]="showForm" [title]="(form.id ? 'Edit goal' : 'Add goal') | tr" (closed)="closeForm()">
     <form (ngSubmit)="save()">
       <div class="fields">
-        <label class="full">Goal name<input name="name" [(ngModel)]="form.name" required></label>
-        <label>Target amount (MYR)<input name="target" type="number" inputmode="decimal" step="0.01" min="0.01" [(ngModel)]="form.target_amount" required></label>
-        <label>Saved so far (MYR)<input name="saved" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.saved_amount"></label>
-        <label>Target date<input name="date" type="date" [(ngModel)]="form.target_date" required></label>
-        <label>Status<select name="status" [(ngModel)]="form.status">@for (s of statuses; track s) { <option>{{ s }}</option> }</select></label>
+        <label class="full">{{ 'Goal name' | tr }}<input name="name" [(ngModel)]="form.name" required></label>
+        <label>{{ 'Target amount (MYR)' | tr }}<input name="target" type="number" inputmode="decimal" step="0.01" min="0.01" [(ngModel)]="form.target_amount" required></label>
+        <label>{{ 'Saved so far (MYR)' | tr }}<input name="saved" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.saved_amount"></label>
+        <label>{{ 'Target date' | tr }}<input name="date" type="date" [(ngModel)]="form.target_date" required></label>
+        <label>{{ 'Status' | tr }}<select name="status" [(ngModel)]="form.status">@for (s of statuses; track s) { <option>{{ s | tr }}</option> }</select></label>
       </div>
       @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
-      <div class="sheet-f"><button type="button" class="btn ghost" (click)="closeForm()">Cancel</button><button type="submit" class="btn">{{ form.id ? 'Save changes' : 'Add goal' }}</button></div>
+      <div class="sheet-f"><button type="button" class="btn ghost" (click)="closeForm()">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add goal') | tr }}</button></div>
     </form>
   </app-modal>`,
 })

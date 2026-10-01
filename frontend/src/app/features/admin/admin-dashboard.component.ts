@@ -5,30 +5,31 @@ import { ChartComponent } from '../../shared/chart.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { errMsg } from '../../shared/util';
+import { TranslatePipe } from '../../shared/translate.pipe';
 
 @Component({
-  selector: 'app-admin-dashboard', standalone: true, imports: [RouterLink, ChartComponent, IconComponent, ModalComponent],
+  selector: 'app-admin-dashboard', standalone: true, imports: [RouterLink, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
   template: `
   <div class="admin-dashboard-page">
-  <div class="page-head admin-dashboard-head"><div><p class="admin-kicker">HOMINT OPERATIONS</p><h1>Dashboard</h1><p class="sub">Account growth and household activity</p></div>
+  <div class="page-head admin-dashboard-head"><div><p class="admin-kicker">{{ 'HOMINT OPERATIONS' | tr }}</p><h1>{{ 'Dashboard' | tr }}</h1><p class="sub">{{ 'Account growth and household activity' | tr }}</p></div>
     <div class="admin-dashboard-actions">
-      <button class="admin-report-trigger" (click)="openReports()" aria-label="Open reports" title="Open reports"><app-icon name="alert" /><span>{{ data.open_reports }}</span></button>
-      <button class="icon-btn" (click)="load()" aria-label="Refresh dashboard" title="Refresh"><app-icon name="refresh" /></button>
+      <button class="admin-report-trigger" (click)="openReports()" [attr.aria-label]="'Open reports' | tr" [title]="'Open reports' | tr"><app-icon name="alert" /><span>{{ data.open_reports }}</span></button>
+      <button class="icon-btn" (click)="load()" [attr.aria-label]="'Refresh' | tr" [title]="'Refresh' | tr"><app-icon name="refresh" /></button>
     </div></div>
   @if (error) { <div class="err" style="margin-bottom:1rem">{{ error }}</div> }
-  <section class="card admin-period-card"><div class="card-h"><h2>New entries</h2><span class="muted small">{{ data.users.active }} active users · {{ data.households.active }} active households</span></div>
+  <section class="card admin-period-card"><div class="card-h"><h2>{{ 'New entries' | tr }}</h2><span class="muted small">{{ data.users.active }} {{ 'active users' | tr }} · {{ data.households.active }} {{ 'active households' | tr }}</span></div>
     <div class="admin-period-grid">
-      <b></b><b>Daily</b><b>Weekly</b><b>Monthly</b>
-      <strong>Users</strong><span>{{ data.users.today }}</span><span>{{ data.users.this_week }}</span><span>{{ data.users.this_month }}</span>
-      <strong>Households</strong><span>{{ data.households.today }}</span><span>{{ data.households.this_week }}</span><span>{{ data.households.this_month }}</span>
+      <b></b><b>{{ 'Daily' | tr }}</b><b>{{ 'Weekly' | tr }}</b><b>{{ 'Monthly' | tr }}</b>
+      <strong>{{ 'Users' | tr }}</strong><span>{{ data.users.today }}</span><span>{{ data.users.this_week }}</span><span>{{ data.users.this_month }}</span>
+      <strong>{{ 'Households' | tr }}</strong><span>{{ data.households.today }}</span><span>{{ data.households.this_week }}</span><span>{{ data.households.this_month }}</span>
     </div>
   </section>
   <div class="admin-dashboard-grid">
-    <section class="card admin-chart-panel"><div class="card-h"><h2>New users and households</h2><span class="muted small">Last 30 days</span></div>@if (chart) { <app-chart [config]="chart" /> }</section>
-    <section class="card admin-activity-panel"><div class="card-h"><h2>{{ showAllActivity ? 'User and household activity' : 'Recent activity' }}</h2>
-      <button class="btn ghost sm" (click)="toggleActivity()">{{ showAllActivity ? 'Show recent' : 'View all activity' }}</button></div>
+    <section class="card admin-chart-panel"><div class="card-h"><h2>{{ 'New users and households' | tr }}</h2><span class="muted small">{{ 'Last 30 days' | tr }}</span></div>@if (chart) { <app-chart [config]="chart" /> }</section>
+    <section class="card admin-activity-panel"><div class="card-h"><h2>{{ (showAllActivity ? 'User and household activity' : 'Recent activity') | tr }}</h2>
+      <button class="btn ghost sm" (click)="toggleActivity()">{{ (showAllActivity ? 'Show recent' : 'View all activity') | tr }}</button></div>
       <div class="admin-activity-scroll">
-      @if (!visibleActivity.length) { <div class="empty">Activity will appear as users join and leave households.</div> }
+      @if (!visibleActivity.length) { <div class="empty">{{ 'Activity will appear as users join and leave households.' | tr }}</div> }
       <ol class="admin-timeline">@for (event of visibleActivity; track event.id) {
         <li><span class="timeline-marker" [class.warn]="event.activity_type.includes('deactivated')" aria-hidden="true"></span>
           <div class="timeline-entry"><div class="row between"><b>{{ activityLabel(event.activity_type) }}</b><time class="muted small">{{ dateTime(event.created_at) }}</time></div>
@@ -38,17 +39,17 @@ import { errMsg } from '../../shared/util';
     </section>
   </div>
   </div>
-  <app-modal [open]="reportsOpen" title="Open reports" (closed)="reportsOpen = false">
+  <app-modal [open]="reportsOpen" [title]="'Open reports' | tr" (closed)="reportsOpen = false">
     <div class="admin-report-modal">
-      @if (reportsLoading) { <p class="muted small">Loading reports...</p> }
-      @else if (!reports.length) { <div class="empty">No open reports.</div> }
+      @if (reportsLoading) { <p class="muted small">{{ 'Loading reports...' | tr }}</p> }
+      @else if (!reports.length) { <div class="empty">{{ 'No open reports.' | tr }}</div> }
       @else { @for (report of reports; track report.id) {
         <article class="admin-report"><div class="row between"><b>{{ report.reported_name }}</b><span class="pill">{{ report.status }}</span></div>
-          <div class="s">{{ report.household_name }} · Reported by {{ report.reporter_name }}</div><p>{{ report.description }}</p>
-          <div class="s">Received {{ dateTime(report.created_at) }}</div>
+          <div class="s">{{ report.household_name }} · {{ 'Reported by' | tr }} {{ report.reporter_name }}</div><p>{{ report.description }}</p>
+          <div class="s">{{ 'Received' | tr }} {{ dateTime(report.created_at) }}</div>
         </article>
       } }
-      <a class="btn" routerLink="/admin/reports" (click)="reportsOpen = false">Open report tracker</a>
+      <a class="btn" routerLink="/admin/reports" (click)="reportsOpen = false">{{ 'Open report tracker' | tr }}</a>
     </div>
   </app-modal>`,
 })

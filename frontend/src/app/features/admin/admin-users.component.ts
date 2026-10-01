@@ -4,35 +4,36 @@ import { Api } from '../../core/api.service';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { errMsg } from '../../shared/util';
+import { TranslatePipe } from '../../shared/translate.pipe';
 
 @Component({
-  selector: 'app-admin-users', standalone: true, imports: [FormsModule, IconComponent, ModalComponent],
+  selector: 'app-admin-users', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe],
   template: `
-  <div class="page-head"><div><p class="admin-kicker">DIRECTORY</p><h1>Users</h1><p class="sub">Manage finance accounts and access</p></div>
-    <button class="icon-btn" (click)="load()" aria-label="Refresh users" title="Refresh"><app-icon name="refresh" /></button></div>
-  <label class="admin-search">Search users<input type="search" [(ngModel)]="query" placeholder="Name, email or household"></label>
+  <div class="page-head"><div><p class="admin-kicker">{{ 'DIRECTORY' | tr }}</p><h1>{{ 'Users' | tr }}</h1><p class="sub">{{ 'Manage finance accounts and access' | tr }}</p></div>
+    <button class="icon-btn" (click)="load()" [attr.aria-label]="'Refresh' | tr" [title]="'Refresh' | tr"><app-icon name="refresh" /></button></div>
+  <label class="admin-search">{{ 'Search users' | tr }}<input type="search" [(ngModel)]="query" [placeholder]="'Name, email or household' | tr"></label>
   @if (error) { <div class="err" style="margin:.7rem 0">{{ error }}</div> }
   <section class="card admin-directory">
-    @if (!shown.length) { <div class="empty">{{ users.length ? 'No users match.' : 'No users found.' }}</div> }
+    @if (!shown.length) { <div class="empty">{{ (users.length ? 'No users match.' : 'No users found.') | tr }}</div> }
     <ul class="list">@for (user of shown; track user.id) {
       <li class="item admin-directory-row">
         <span class="ava">{{ user.name.charAt(0).toUpperCase() }}</span>
-        <div class="grow"><div class="t">{{ user.name }} <span class="pill" [class.admin-status-off]="!user.is_active">{{ user.is_active ? 'Active' : 'Deactivated' }}</span></div>
-          <div class="s">{{ user.email }} · {{ user.household_name || 'No active household' }} · {{ user.household_count }} linked</div>
-          <div class="s">Joined {{ date(user.created_at) }}</div></div>
-        <button class="icon-btn" (click)="edit(user)" [attr.aria-label]="'Edit ' + user.name" title="Edit user"><app-icon name="pencil" /></button>
-        @if (user.is_active) { <button class="btn danger sm" (click)="deactivate(user)">Deactivate</button> }
-        @else { <span class="muted small">Password reset required on next sign in</span> }
+        <div class="grow"><div class="t">{{ user.name }} <span class="pill" [class.admin-status-off]="!user.is_active">{{ (user.is_active ? 'Active' : 'Deactivated') | tr }}</span></div>
+          <div class="s">{{ user.email }} · {{ user.household_name || ('No active household' | tr) }} · {{ user.household_count }} {{ 'linked' | tr }}</div>
+          <div class="s">{{ 'Joined' | tr }} {{ date(user.created_at) }}</div></div>
+        <button class="icon-btn" (click)="edit(user)" [attr.aria-label]="('Edit user' | tr) + ' ' + user.name" [title]="'Edit user' | tr"><app-icon name="pencil" /></button>
+        @if (user.is_active) { <button class="btn danger sm" (click)="deactivate(user)">{{ 'Deactivate' | tr }}</button> }
+        @else { <span class="muted small">{{ 'Password reset required on next sign in' | tr }}</span> }
       </li>
     }</ul>
   </section>
-  <app-modal [open]="showEdit" title="Edit user" (closed)="showEdit = false">
+  <app-modal [open]="showEdit" [title]="'Edit user' | tr" (closed)="showEdit = false">
     <form (ngSubmit)="save()"><div class="fields">
-      <label class="full">Name<input name="name" [(ngModel)]="form.name" required maxlength="100"></label>
-      <label class="full">Email<input name="email" type="email" [(ngModel)]="form.email" required maxlength="254"></label>
+      <label class="full">{{ 'Name' | tr }}<input name="name" [(ngModel)]="form.name" required maxlength="100"></label>
+      <label class="full">{{ 'Email' | tr }}<input name="email" type="email" [(ngModel)]="form.email" required maxlength="254"></label>
     </div>
     @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
-    <div class="sheet-f"><button type="button" class="btn ghost" (click)="showEdit = false">Cancel</button><button class="btn" type="submit">Save changes</button></div></form>
+    <div class="sheet-f"><button type="button" class="btn ghost" (click)="showEdit = false">{{ 'Cancel' | tr }}</button><button class="btn" type="submit">{{ 'Save changes' | tr }}</button></div></form>
   </app-modal>`,
 })
 export class AdminUsersComponent implements OnInit {

@@ -4,28 +4,29 @@ import { Api } from '../../core/api.service';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { errMsg } from '../../shared/util';
+import { TranslatePipe } from '../../shared/translate.pipe';
 
 @Component({
-  selector: 'app-contacts', standalone: true, imports: [FormsModule, IconComponent, ModalComponent],
+  selector: 'app-contacts', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe],
   template: `
   <div class="page-head">
-    <div><h1>Contacts</h1><p class="sub">Tap the green button to call straight from your phone</p></div>
+    <div><h1>{{ 'Contacts' | tr }}</h1><p class="sub">{{ 'Tap the green button to call straight from your phone' | tr }}</p></div>
     <div class="actions">
-      @if (!hasEmergency) { <button class="btn ghost" (click)="seed()"><app-icon name="alert" [size]="18" /><span class="hide-sm">Emergency numbers</span></button> }
-      <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />Add contact</button>
+      @if (!hasEmergency) { <button class="btn ghost" (click)="seed()"><app-icon name="alert" [size]="18" /><span class="hide-sm">{{ 'Emergency numbers' | tr }}</span></button> }
+      <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />{{ 'Add contact' | tr }}</button>
     </div>
   </div>
 
   <div class="card" style="margin-bottom:1rem">
     <label style="position:relative"><span class="sr" style="position:absolute;left:-999px">Search contacts</span>
-      <input type="search" placeholder="Search name or number" [(ngModel)]="q" style="padding-left:2.4rem">
+      <input type="search" [placeholder]="'Search name or number' | tr" [(ngModel)]="q" style="padding-left:2.4rem">
       <span style="position:absolute;left:.75rem;top:2.15rem;color:var(--muted);line-height:0"><app-icon name="search" [size]="18" /></span></label>
-    <div class="seg" style="margin-top:.7rem"><button [class.on]="!cat" (click)="cat = ''">All</button>
+    <div class="seg" style="margin-top:.7rem"><button [class.on]="!cat" (click)="cat = ''">{{ 'All' | tr }}</button>
       @for (c of cats; track c) { <button [class.on]="cat === c" (click)="cat = c">{{ c }}</button> }</div>
   </div>
 
   <div class="card">
-    @if (!shown.length) { <div class="empty">{{ items.length ? 'No contacts match.' : 'No contacts yet. Add one, or start with the emergency numbers.' }}</div> }
+    @if (!shown.length) { <div class="empty">{{ (items.length ? 'No contacts match.' : 'No contacts yet. Add one, or start with the emergency numbers.') | tr }}</div> }
     <ul class="list">@for (c of shown; track c.id) {
       <li class="item">
         <span class="ava" style="width:42px;height:42px">{{ c.name.charAt(0).toUpperCase() }}</span>
@@ -51,7 +52,7 @@ import { errMsg } from '../../shared/util';
         <label class="check full"><input type="checkbox" name="fav" [(ngModel)]="form.favorite"> Show on dashboard (quick call)</label>
       </div>
       @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
-      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">Cancel</button><button type="submit" class="btn">{{ form.id ? 'Save changes' : 'Add contact' }}</button></div>
+      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add contact') | tr }}</button></div>
     </form>
   </app-modal>`,
 })

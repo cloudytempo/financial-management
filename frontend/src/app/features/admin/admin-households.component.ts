@@ -4,32 +4,33 @@ import { Api } from '../../core/api.service';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { errMsg } from '../../shared/util';
+import { TranslatePipe } from '../../shared/translate.pipe';
 
 @Component({
-  selector: 'app-admin-households', standalone: true, imports: [FormsModule, IconComponent, ModalComponent],
+  selector: 'app-admin-households', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe],
   template: `
-  <div class="page-head"><div><p class="admin-kicker">DIRECTORY</p><h1>Households</h1><p class="sub">Manage household status, ownership and membership</p></div>
-    <button class="icon-btn" (click)="load()" aria-label="Refresh households" title="Refresh"><app-icon name="refresh" /></button></div>
-  <label class="admin-search">Search households<input type="search" [(ngModel)]="query" placeholder="Household or owner"></label>
+  <div class="page-head"><div><p class="admin-kicker">{{ 'DIRECTORY' | tr }}</p><h1>{{ 'Households' | tr }}</h1><p class="sub">{{ 'Manage household status, ownership and membership' | tr }}</p></div>
+    <button class="icon-btn" (click)="load()" [attr.aria-label]="'Refresh' | tr" [title]="'Refresh' | tr"><app-icon name="refresh" /></button></div>
+  <label class="admin-search">{{ 'Search households' | tr }}<input type="search" [(ngModel)]="query" [placeholder]="'Household or owner' | tr"></label>
   @if (error) { <div class="err" style="margin:.7rem 0">{{ error }}</div> }
   <section class="card admin-directory">
-    @if (!shown.length) { <div class="empty">{{ households.length ? 'No households match.' : 'No households found.' }}</div> }
+    @if (!shown.length) { <div class="empty">{{ (households.length ? 'No households match.' : 'No households found.') | tr }}</div> }
     <ul class="list">@for (household of shown; track household.id) {
       <li class="item admin-directory-row">
         <span class="ic-badge"><app-icon name="home" /></span>
-        <div class="grow"><div class="t">{{ household.name }} <span class="pill" [class.admin-status-off]="!household.is_active">{{ household.is_active ? 'Active' : 'Deactivated' }}</span></div>
-          <div class="s">Owner: {{ household.owner_name || 'Unassigned' }} · {{ household.member_count }} active members</div>
-          <div class="s">Created {{ date(household.created_at) }}</div></div>
-        <button class="icon-btn" (click)="edit(household)" [attr.aria-label]="'Edit ' + household.name" title="Edit household"><app-icon name="pencil" /></button>
-        @if (household.is_active) { <button class="btn danger sm" (click)="deactivate(household)">Deactivate</button> }
-        @else { <button class="btn green sm" (click)="activate(household)">Activate</button> }
+        <div class="grow"><div class="t">{{ household.name }} <span class="pill" [class.admin-status-off]="!household.is_active">{{ (household.is_active ? 'Active' : 'Deactivated') | tr }}</span></div>
+          <div class="s">{{ 'Owner:' | tr }} {{ household.owner_name || ('Unassigned' | tr) }} · {{ household.member_count }} {{ 'active members' | tr }}</div>
+          <div class="s">{{ 'Created' | tr }} {{ date(household.created_at) }}</div></div>
+        <button class="icon-btn" (click)="edit(household)" [attr.aria-label]="('Edit household' | tr) + ' ' + household.name" [title]="'Edit household' | tr"><app-icon name="pencil" /></button>
+        @if (household.is_active) { <button class="btn danger sm" (click)="deactivate(household)">{{ 'Deactivate' | tr }}</button> }
+        @else { <button class="btn green sm" (click)="activate(household)">{{ 'Activate' | tr }}</button> }
       </li>
     }</ul>
   </section>
-  <app-modal [open]="showEdit" title="Edit household" (closed)="showEdit = false">
-    <form (ngSubmit)="save()"><label>Household name<input name="name" [(ngModel)]="form.name" required maxlength="100"></label>
+  <app-modal [open]="showEdit" [title]="'Edit household' | tr" (closed)="showEdit = false">
+    <form (ngSubmit)="save()"><label>{{ 'Household name' | tr }}<input name="name" [(ngModel)]="form.name" required maxlength="100"></label>
       @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
-      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showEdit = false">Cancel</button><button class="btn" type="submit">Save changes</button></div></form>
+      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showEdit = false">{{ 'Cancel' | tr }}</button><button class="btn" type="submit">{{ 'Save changes' | tr }}</button></div></form>
   </app-modal>`,
 })
 export class AdminHouseholdsComponent implements OnInit {

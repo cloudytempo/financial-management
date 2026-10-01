@@ -4,36 +4,37 @@ import { Router } from '@angular/router';
 import { Auth } from '../../core/auth.service';
 import { IconComponent } from '../../shared/icon.component';
 import { errMsg } from '../../shared/util';
+import { TranslatePipe } from '../../shared/translate.pipe';
 
 @Component({
-  selector: 'app-auth', standalone: true, imports: [FormsModule, IconComponent],
+  selector: 'app-auth', standalone: true, imports: [FormsModule, IconComponent, TranslatePipe],
   template: `
   <div class="authwrap"><div class="auth card">
     <img class="logo homint-auth-logo" src="/favicon.svg" alt="Homint">
-    <h1>{{ mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Reset your password' : mode === 'reactivate' ? 'Reactivate account' : 'Welcome back' }}</h1>
-    <p class="sub">{{ mode === 'signin' ? 'Sign in to Homint' : mode === 'reset' ? 'Enter your username (email) and a new password' : mode === 'reactivate' ? 'Set a new password to restore account access' : 'Start tracking your money' }}</p>
+    <h1>{{ (mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Reset your password' : mode === 'reactivate' ? 'Reactivate account' : 'Welcome back') | tr }}</h1>
+    <p class="sub">{{ (mode === 'signin' ? 'Sign in to Homint' : mode === 'reset' ? 'Enter your username (email) and a new password' : mode === 'reactivate' ? 'Set a new password to restore account access' : 'Start tracking your money') | tr }}</p>
     <form (ngSubmit)="submit()">
-      @if (mode === 'signup') { <label>Name<input name="name" [(ngModel)]="name" autocomplete="name" required></label> }
-      @if (mode !== 'reactivate') { <label>{{ mode === 'reset' ? 'Username (email)' : 'Email' }}<input name="email" type="email" [(ngModel)]="email" autocomplete="username" required></label> }
-      <label>{{ mode === 'reset' || mode === 'reactivate' ? 'New password' : 'Password' }}<input name="password" type="password" [(ngModel)]="password" minlength="8" [attr.autocomplete]="mode === 'signin' ? 'current-password' : 'new-password'" required></label>
+      @if (mode === 'signup') { <label>{{ 'Name' | tr }}<input name="name" [(ngModel)]="name" autocomplete="name" required></label> }
+      @if (mode !== 'reactivate') { <label>{{ (mode === 'reset' ? 'Username (email)' : 'Email') | tr }}<input name="email" type="email" [(ngModel)]="email" autocomplete="username" required></label> }
+      <label>{{ (mode === 'reset' || mode === 'reactivate' ? 'New password' : 'Password') | tr }}<input name="password" type="password" [(ngModel)]="password" minlength="8" [attr.autocomplete]="mode === 'signin' ? 'current-password' : 'new-password'" required></label>
       @if (mode === 'signup') {
         <div class="seg" style="margin-bottom:1rem">
-          <button type="button" [class.on]="householdMode === 'create'" (click)="householdMode = 'create'">Create household</button>
-          <button type="button" [class.on]="householdMode === 'join'" (click)="householdMode = 'join'">Join household</button>
+          <button type="button" [class.on]="householdMode === 'create'" (click)="householdMode = 'create'">{{ 'Create household' | tr }}</button>
+          <button type="button" [class.on]="householdMode === 'join'" (click)="householdMode = 'join'">{{ 'Join household' | tr }}</button>
         </div>
-        <label>Household name<input name="householdName" [(ngModel)]="householdName" autocomplete="organization" required></label>
-        <label>Household password<input name="householdPassword" type="password" [(ngModel)]="householdPassword" minlength="8" autocomplete="new-password" required></label>
+        <label>{{ 'Household name' | tr }}<input name="householdName" [(ngModel)]="householdName" autocomplete="organization" required></label>
+        <label>{{ 'Household password' | tr }}<input name="householdPassword" type="password" [(ngModel)]="householdPassword" minlength="8" autocomplete="new-password" required></label>
       }
-      @if (mode === 'reset' || mode === 'reactivate') { <label>Confirm new password<input name="confirm" type="password" [(ngModel)]="confirm" minlength="8" autocomplete="new-password" required></label> }
+      @if (mode === 'reset' || mode === 'reactivate') { <label>{{ 'Confirm new password' | tr }}<input name="confirm" type="password" [(ngModel)]="confirm" minlength="8" autocomplete="new-password" required></label> }
       @if (error) { <div class="err">{{ error }}</div> }
       @if (info) { <div class="okmsg">{{ info }}</div> }
-      <button class="btn" type="submit">{{ mode === 'signup' ? 'Sign up' : mode === 'reset' ? 'Reset password' : mode === 'reactivate' ? 'Set new password' : 'Sign in' }}</button>
+      <button class="btn" type="submit">{{ (mode === 'signup' ? 'Sign up' : mode === 'reset' ? 'Reset password' : mode === 'reactivate' ? 'Set new password' : 'Sign in') | tr }}</button>
     </form>
     <p class="muted small" style="margin-top:1rem;text-align:center">
-      @if (mode === 'signin') { <a href="#" (click)="go($event, 'reset')">Forgot password?</a> · <a href="#" (click)="go($event, 'signup')">Create an account</a><br><a href="/admin/login">System admin</a> }
-      @else if (mode !== 'reactivate') { <a href="#" (click)="go($event, 'signin')">Back to sign in</a> }
+      @if (mode === 'signin') { <a href="#" (click)="go($event, 'reset')">{{ 'Forgot password?' | tr }}</a> · <a href="#" (click)="go($event, 'signup')">{{ 'Create an account' | tr }}</a><br><a href="/admin/login">{{ 'System admin' | tr }}</a> }
+      @else if (mode !== 'reactivate') { <a href="#" (click)="go($event, 'signin')">{{ 'Back to sign in' | tr }}</a> }
     </p>
-  </div></div>`,
+  </div><footer class="brand-footer login-brand-footer">{{ 'Powered by CloudyTempo · © 2026 All rights reserved.' | tr }}</footer></div>`,
 })
 export class AuthComponent {
   private auth = inject(Auth); private router = inject(Router);

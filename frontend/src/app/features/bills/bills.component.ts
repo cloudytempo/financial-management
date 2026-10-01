@@ -5,13 +5,14 @@ import { ChartComponent } from '../../shared/chart.component';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { COLORS, errMsg, fmt, iso, typeIcon } from '../../shared/util';
+import { TranslatePipe } from '../../shared/translate.pipe';
 
 @Component({
-  selector: 'app-bills', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent],
+  selector: 'app-bills', standalone: true, imports: [FormsModule, ChartComponent, IconComponent, ModalComponent, TranslatePipe],
   template: `
   <div class="page-head">
-    <div><h1>Bills &amp; subscriptions</h1><p class="sub">Recurring payments with no end date, and when each is next due</p></div>
-    <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />Add bill</button>
+    <div><h1>{{ 'Bills & subscriptions' | tr }}</h1><p class="sub">{{ 'Recurring payments with no end date, and when each is next due' | tr }}</p></div>
+    <button class="btn" (click)="openForm()"><app-icon name="plus" [size]="18" />{{ 'Add bill' | tr }}</button>
   </div>
 
   <div class="bento">
@@ -22,10 +23,10 @@ import { COLORS, errMsg, fmt, iso, typeIcon } from '../../shared/util';
   </div>
 
   <div class="bento">
-    <div class="card s4"><div class="card-h"><h2><app-icon name="tag" [size]="18" />Monthly cost by category</h2></div>@if (cfg) { <app-chart [config]="cfg" /> }</div>
+    <div class="card s4"><div class="card-h"><h2><app-icon name="tag" [size]="18" />{{ 'Monthly cost by category' | tr }}</h2></div>@if (cfg) { <app-chart [config]="cfg" /> }</div>
     <div class="card s8">
-      <div class="card-h"><h2>All bills <span class="pill">{{ items.length }}</span></h2></div>
-      @if (!items.length) { <div class="empty">No bills yet. Add Unifi, Netflix, insurance or road tax to get reminders.</div> }
+      <div class="card-h"><h2>{{ 'All bills' | tr }} <span class="pill">{{ items.length }}</span></h2></div>
+      @if (!items.length) { <div class="empty">{{ 'No bills yet. Add Unifi, Netflix, insurance or road tax to get reminders.' | tr }}</div> }
       <ul class="list">@for (b of items; track b.id) {
         <li class="item bill-item" [class.flag]="b.overdue" [style.opacity]="b.status === 'active' ? 1 : .6">
           <span class="ic-badge" [class.warn]="b.overdue"><app-icon [name]="icon(b.category || b.name)" [size]="18" /></span>
@@ -36,18 +37,18 @@ import { COLORS, errMsg, fmt, iso, typeIcon } from '../../shared/util';
               @if (b.status === 'active') { · <span class="badge" [class.ok]="b.days_left > 3">{{ b.days_left < 0 ? -b.days_left + 'd overdue' : b.days_left === 0 ? 'Today' : 'in ' + b.days_left + 'd' }}</span> }</div></div>
           <div class="amt">{{ fmt(b.amount) }}</div>
           <div class="bill-desktop-actions">
-            @if (b.status === 'active') { <button class="btn green sm" (click)="pay(b)" title="Mark this cycle as paid"><app-icon name="check" [size]="16" /><span class="hide-sm">Paid</span></button> }
-            @if (b.paid_count) { <button class="icon-btn" (click)="undo(b)" aria-label="Undo last payment" title="Undo last payment"><app-icon name="undo" [size]="18" /></button> }
-            <button class="icon-btn" (click)="edit(b)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
-            <button class="icon-btn del" (click)="remove(b)" aria-label="Delete"><app-icon name="trash" [size]="18" /></button>
+            @if (b.status === 'active') { <button class="btn green sm" (click)="pay(b)" [title]="'Mark this cycle as paid' | tr"><app-icon name="check" [size]="16" /><span class="hide-sm">{{ 'Paid' | tr }}</span></button> }
+            @if (b.paid_count) { <button class="icon-btn" (click)="undo(b)" [attr.aria-label]="'Undo last payment' | tr" [title]="'Undo last payment' | tr"><app-icon name="undo" [size]="18" /></button> }
+            <button class="icon-btn" (click)="edit(b)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
+            <button class="icon-btn del" (click)="remove(b)" [attr.aria-label]="'Delete' | tr"><app-icon name="trash" [size]="18" /></button>
           </div>
           <details class="bill-mobile-actions">
             <summary class="icon-btn" aria-label="Bill actions"><app-icon name="more" [size]="18" /></summary>
             <div class="bill-menu">
-              @if (b.status === 'active') { <button (click)="pay(b)"><app-icon name="check" [size]="16" />Mark paid</button> }
-              @if (b.paid_count) { <button (click)="undo(b)"><app-icon name="undo" [size]="18" />Undo payment</button> }
-              <button (click)="edit(b)"><app-icon name="pencil" [size]="18" />Edit</button>
-              <button class="del" (click)="remove(b)"><app-icon name="trash" [size]="18" />Delete</button>
+              @if (b.status === 'active') { <button (click)="pay(b)"><app-icon name="check" [size]="16" />{{ 'Mark paid' | tr }}</button> }
+              @if (b.paid_count) { <button (click)="undo(b)"><app-icon name="undo" [size]="18" />{{ 'Undo payment' | tr }}</button> }
+              <button (click)="edit(b)"><app-icon name="pencil" [size]="18" />{{ 'Edit' | tr }}</button>
+              <button class="del" (click)="remove(b)"><app-icon name="trash" [size]="18" />{{ 'Delete' | tr }}</button>
             </div>
           </details>
         </li>
@@ -56,9 +57,9 @@ import { COLORS, errMsg, fmt, iso, typeIcon } from '../../shared/util';
   </div>
 
   <div class="card split-card">
-    <div class="card-h"><h2><app-icon name="users" [size]="18" />Split bills <span class="pill">{{ splits.length }}</span></h2>
-      <button class="btn sm" (click)="openSplitForm()"><app-icon name="plus" [size]="16" />Split a bill</button></div>
-    @if (!splits.length) { <div class="empty">No split bills yet. Add a shared bill and track each person's share.</div> }
+    <div class="card-h"><h2><app-icon name="users" [size]="18" />{{ 'Split bills' | tr }} <span class="pill">{{ splits.length }}</span></h2>
+      <button class="btn sm" (click)="openSplitForm()"><app-icon name="plus" [size]="16" />{{ 'Split a bill' | tr }}</button></div>
+    @if (!splits.length) { <div class="empty">{{ 'No split bills yet. Add a shared bill and track each person\'s share.' | tr }}</div> }
     <ul class="split-list">@for (split of splits; track split.id) {
       <li class="split-entry">
         <div class="row between split-heading"><div class="grow"><div class="t">{{ split.name }} <span class="pill">{{ paidCount(split) }}/{{ split.shares.length }} paid</span></div>
@@ -66,27 +67,27 @@ import { COLORS, errMsg, fmt, iso, typeIcon } from '../../shared/util';
           <button class="icon-btn del" (click)="removeSplit(split)" [attr.aria-label]="'Delete ' + split.name"><app-icon name="trash" [size]="18" /></button></div>
         <ul class="split-shares">@for (share of split.shares; track share.id) {
           <li><span class="share-name">{{ share.name }}</span><span class="amt">{{ fmt(share.amount) }}</span>
-            <button class="chip" [class.paid]="share.paid" (click)="toggleShare(split, share)">{{ share.paid ? 'Paid' : 'Mark paid' }}</button></li>
+            <button class="chip" [class.paid]="share.paid" (click)="toggleShare(split, share)">{{ (share.paid ? 'Paid' : 'Mark paid') | tr }}</button></li>
         }</ul>
       </li>
     }</ul>
   </div>
 
-  <app-modal [open]="showForm" [title]="form.id ? 'Edit bill' : 'Add bill'" (closed)="showForm = false">
+  <app-modal [open]="showForm" [title]="(form.id ? 'Edit bill' : 'Add bill') | tr" (closed)="showForm = false">
     <form (ngSubmit)="save()">
       <div class="fields">
-        <label class="full">Name<input name="name" [(ngModel)]="form.name" placeholder="e.g. Unifi, Netflix, Car insurance" required></label>
-        <label>Category<input name="cat" list="bcats" [(ngModel)]="form.category" placeholder="e.g. Internet"><datalist id="bcats">@for (c of cats; track c) { <option [value]="c"></option> }</datalist></label>
-        <label>Amount (MYR)<input name="amount" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.amount" required></label>
-        <label>Repeats<select name="freq" [(ngModel)]="form.frequency"><option value="monthly">Monthly</option><option value="quarterly">Every 3 months</option><option value="yearly">Yearly</option></select></label>
-        <label>Next due date<input name="due" type="date" [(ngModel)]="form.first_due" required></label>
-        <label class="full">Status<select name="status" [(ngModel)]="form.status"><option value="active">Active</option><option value="paused">Paused</option><option value="cancelled">Cancelled</option></select></label>
-        <label class="check full"><input type="checkbox" name="auto" [(ngModel)]="form.autopay"> Paid automatically (auto-debit)</label>
-        <label class="check full"><input type="checkbox" name="exp" [(ngModel)]="form.add_expense"> Add an expense automatically when I mark it paid</label>
+        <label class="full">{{ 'Name' | tr }}<input name="name" [(ngModel)]="form.name" [placeholder]="'e.g. Unifi, Netflix, Car insurance' | tr" required></label>
+        <label>{{ 'Category' | tr }}<input name="cat" list="bcats" [(ngModel)]="form.category" [placeholder]="'e.g. Internet' | tr"><datalist id="bcats">@for (c of cats; track c) { <option [value]="c"></option> }</datalist></label>
+        <label>{{ 'Amount (MYR)' | tr }}<input name="amount" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="form.amount" required></label>
+        <label>{{ 'Repeats' | tr }}<select name="freq" [(ngModel)]="form.frequency"><option value="monthly">{{ 'Monthly' | tr }}</option><option value="quarterly">{{ 'Every 3 months' | tr }}</option><option value="yearly">{{ 'Yearly' | tr }}</option></select></label>
+        <label>{{ 'Next due date' | tr }}<input name="due" type="date" [(ngModel)]="form.first_due" required></label>
+        <label class="full">{{ 'Status' | tr }}<select name="status" [(ngModel)]="form.status"><option value="active">{{ 'Active' | tr }}</option><option value="paused">{{ 'Paused' | tr }}</option><option value="cancelled">{{ 'Cancelled' | tr }}</option></select></label>
+        <label class="check full"><input type="checkbox" name="auto" [(ngModel)]="form.autopay"> {{ 'Paid automatically (auto-debit)' | tr }}</label>
+        <label class="check full"><input type="checkbox" name="exp" [(ngModel)]="form.add_expense"> {{ 'Add an expense automatically when I mark it paid' | tr }}</label>
       </div>
       <p class="muted small" style="margin-top:.5rem">Turn on the last option only if you do not also enter this bill by hand under Expenses, otherwise it is counted twice. It uses the category above as the expense type.</p>
       @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
-      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">Cancel</button><button type="submit" class="btn">{{ form.id ? 'Save changes' : 'Add bill' }}</button></div>
+      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add bill') | tr }}</button></div>
     </form>
   </app-modal>
   <app-modal [open]="showSplitForm" title="Split a bill" (closed)="showSplitForm = false">
