@@ -94,6 +94,17 @@ input:focus,select:focus{border-color:var(--c2);outline:2px solid var(--g1);outl
 .item .grow{flex:1;min-width:0}.item .t{font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis}
 .item .s{font-size:.8rem;color:var(--muted);white-space:pre-line}
 .item .amt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.bill-desktop-actions{display:flex;align-items:center;gap:.15rem}.bill-mobile-actions{display:none;position:relative}
+.bill-mobile-actions summary{list-style:none;cursor:pointer}.bill-mobile-actions summary::-webkit-details-marker{display:none}
+.bill-menu{position:absolute;z-index:5;right:0;top:calc(100% + 4px);min-width:170px;padding:.3rem;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
+.bill-menu button{display:flex;align-items:center;gap:.55rem;width:100%;padding:.55rem .6rem;border:0;border-radius:7px;background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.bill-menu button:hover{background:var(--soft)}.bill-menu button.del{color:var(--warn)}
+.split-card{margin-bottom:1rem}.split-list,.split-shares{list-style:none;margin:0;padding:0}
+.split-entry{padding:.65rem 0;border-bottom:1px solid var(--line)}.split-entry:last-child{border-bottom:0}
+.split-heading{gap:.5rem}.split-shares{margin:.45rem 0 0 1rem;border-top:1px solid var(--line)}
+.split-shares li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:.7rem;padding:.45rem 0;border-bottom:1px solid var(--line)}
+.split-shares li:last-child{border-bottom:0}.split-shares .share-name{min-width:0;overflow-wrap:anywhere}
+.split-form textarea{width:100%;min-width:0;padding:.55rem .7rem;border:1px solid var(--input-b);border-radius:12px;color:var(--ink);font:inherit;resize:vertical}
 .ic-badge{width:38px;height:38px;border-radius:12px;background:var(--g2);color:var(--c1);display:grid;place-items:center;flex:none}
 .ic-badge.warn{background:var(--warn-bg);color:var(--warn)}.ic-badge.brown{background:var(--tint2);color:var(--c2)}
 .item.flag{background:linear-gradient(90deg,var(--warn-bg),transparent 70%);margin:0 -.5rem;padding-left:.5rem;padding-right:.5rem;border-radius:10px}
@@ -176,6 +187,13 @@ a.btn{text-decoration:none}
   h1{font-size:1.3rem}.bento,.cards{gap:.75rem}.card{padding:.85rem .9rem;border-radius:16px}
   .kpi{padding:.75rem;gap:.6rem}.kpi .chip-ic{width:36px;height:36px}.kpi .val{font-size:1.05rem}
   .chart-box{height:220px}.hide-sm{display:none}
+  .bill-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:.5rem}
+  .bill-item .ic-badge{grid-column:1;grid-row:1;align-self:start}
+  .bill-item .grow{grid-column:2;grid-row:1;align-self:start}
+  .bill-item .amt{grid-column:3;grid-row:1;align-self:start}
+  .bill-desktop-actions{display:none}.bill-mobile-actions{display:block;grid-column:4;grid-row:1;align-self:start}
+  .bill-item .s{overflow-wrap:anywhere}
+  .split-shares{margin-left:0}.split-shares li{gap:.4rem}
   .dashboard-page{gap:.5rem}
   .dashboard-card-body .chart-box{height:130px}
   .theme-options{flex-direction:column}

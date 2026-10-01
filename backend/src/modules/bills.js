@@ -49,6 +49,57 @@ router.get('/summary', wrap(async (req, res) => {
     by: Object.entries(by).map(([category, monthly]) => ({ category, monthly })) });
 }));
 
+router.get('/splits', wrap(async (req, res) => {
+  const splits = await pool.query(`SELECT id,name,total_amount::float8 AS total_amount,to_char(due_date,'YYYY-MM-DD') AS due_date
+    FROM bill_splits WHERE household_id=$1 ORDER BY due_date,id`, [req.household.id]);
+  const shares = await pool.query(`SELECT s.id,s.split_id,s.name,s.amount::float8 AS amount,s.paid
+    FROM bill_split_shares s JOIN bill_splits b ON b.id=s.split_id WHERE b.household_id=$1 ORDER BY s.id`, [req.household.id]);
+  const bySplit = new Map();
+  for (const share of shares.rows) {
+    const list = bySplit.get(share.split_id) || [];
+    list.push(share);
+    bySplit.set(share.split_id, list);
+  }
+  res.json(splits.rows.map((split) => ({ ...split, shares: bySplit.get(split.id) || [] })));
+}));
+router.post('/splits', wrap(async (req, res) => {
+  const { name, total_amount, due_date, people } = req.body || {};
+  const cleanPeople = Array.isArray(people) ? people.map((person) => String(person).trim()).filter(Boolean) : [];
+  const due = new Date(`${due_date}T00:00:00Z`);
+  if (!String(name || '').trim() || String(name).trim().length > 100 || !Number.isFinite(Number(total_amount)) || Number(total_amount) <= 0 ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(due_date || '') || Number.isNaN(due.valueOf()) || due.toISOString().slice(0, 10) !== due_date ||
+    cleanPeople.length < 2 || cleanPeople.length > 30 || cleanPeople.some((person) => person.length > 80))
+    return res.status(400).json({ error: 'Enter a bill name, amount, due date and at least two participants.' });
+  const cents = Math.round(Number(total_amount) * 100);
+  if (cents < cleanPeople.length || cents > 999999999999)
+    return res.status(400).json({ error: 'The total must cover at least MYR 0.01 per person and fit the supported amount range.' });
+  const base = Math.floor(cents / cleanPeople.length), remainder = cents % cleanPeople.length;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const split = (await client.query(`INSERT INTO bill_splits(household_id,name,total_amount,due_date) VALUES($1,$2,$3,$4) RETURNING id`,
+      [req.household.id, String(name).trim(), cents / 100, due_date])).rows[0];
+    for (const [index, person] of cleanPeople.entries()) {
+      await client.query('INSERT INTO bill_split_shares(split_id,name,amount) VALUES($1,$2,$3)',
+        [split.id, person, (base + (index < remainder ? 1 : 0)) / 100]);
+    }
+    await client.query('COMMIT');
+    res.status(201).json({ ok: true });
+  } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+}));
+router.post('/splits/:id/shares/:shareId/toggle', wrap(async (req, res) => {
+  const paid = req.body && req.body.paid;
+  if (!['true', 'false'].includes(String(paid)) || !/^\d+$/.test(req.params.id) || !/^\d+$/.test(req.params.shareId))
+    return res.status(400).json({ error: 'Invalid share.' });
+  const result = await pool.query(`UPDATE bill_split_shares s SET paid=$1 FROM bill_splits b
+    WHERE s.id=$2 AND s.split_id=b.id AND b.id=$3 AND b.household_id=$4`, [paid === true || paid === 'true', req.params.shareId, req.params.id, req.household.id]);
+  result.rowCount ? res.json({ ok: true }) : res.status(404).json({ error: 'Not found' });
+}));
+router.delete('/splits/:id', wrap(async (req, res) => {
+  await pool.query('DELETE FROM bill_splits WHERE id=$1 AND household_id=$2', [req.params.id, req.household.id]);
+  res.status(204).end();
+}));
+
 router.post('/', wrap(async (req, res) => {
   if (!ok(req.body)) return res.status(400).json({ error: 'Invalid bill.' });
   const b = req.body;
@@ -108,6 +159,13 @@ const init = async () => {
   await pool.query(`CREATE TABLE IF NOT EXISTS bill_payments (
     id SERIAL PRIMARY KEY, bill_id INT NOT NULL REFERENCES bills ON DELETE CASCADE,
     due_date DATE NOT NULL, paid_on DATE NOT NULL, amount NUMERIC(12,2) NOT NULL, expense_id INT, UNIQUE (bill_id, due_date))`);
-  await lockDown(pool, ['bills', 'bill_payments']);
+  await pool.query(`CREATE TABLE IF NOT EXISTS bill_splits (
+    id SERIAL PRIMARY KEY, household_id INT NOT NULL REFERENCES households ON DELETE CASCADE,
+    name TEXT NOT NULL, total_amount NUMERIC(12,2) NOT NULL CHECK (total_amount > 0), due_date DATE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now())`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS bill_split_shares (
+    id SERIAL PRIMARY KEY, split_id INT NOT NULL REFERENCES bill_splits ON DELETE CASCADE,
+    name TEXT NOT NULL, amount NUMERIC(12,2) NOT NULL CHECK (amount > 0), paid BOOLEAN NOT NULL DEFAULT false)`);
+  await lockDown(pool, ['bills', 'bill_payments', 'bill_splits', 'bill_split_shares']);
 };
 module.exports = { name: 'bills', router, init };

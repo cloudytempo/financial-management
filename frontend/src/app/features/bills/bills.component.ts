@@ -27,7 +27,7 @@ import { COLORS, errMsg, fmt, iso, typeIcon } from '../../shared/util';
       <div class="card-h"><h2>All bills <span class="pill">{{ items.length }}</span></h2></div>
       @if (!items.length) { <div class="empty">No bills yet. Add Unifi, Netflix, insurance or road tax to get reminders.</div> }
       <ul class="list">@for (b of items; track b.id) {
-        <li class="item" [class.flag]="b.overdue" [style.opacity]="b.status === 'active' ? 1 : .6">
+        <li class="item bill-item" [class.flag]="b.overdue" [style.opacity]="b.status === 'active' ? 1 : .6">
           <span class="ic-badge" [class.warn]="b.overdue"><app-icon [name]="icon(b.category || b.name)" [size]="18" /></span>
           <div class="grow"><div class="t">{{ b.name }}
               @if (b.status !== 'active') { <span class="pill">{{ b.status }}</span> }
@@ -35,13 +35,41 @@ import { COLORS, errMsg, fmt, iso, typeIcon } from '../../shared/util';
             <div class="s">{{ b.category || 'Bill' }} · {{ b.frequency }} · next {{ b.next_due }}
               @if (b.status === 'active') { · <span class="badge" [class.ok]="b.days_left > 3">{{ b.days_left < 0 ? -b.days_left + 'd overdue' : b.days_left === 0 ? 'Today' : 'in ' + b.days_left + 'd' }}</span> }</div></div>
           <div class="amt">{{ fmt(b.amount) }}</div>
-          @if (b.status === 'active') { <button class="btn green sm" (click)="pay(b)" title="Mark this cycle as paid"><app-icon name="check" [size]="16" /><span class="hide-sm">Paid</span></button> }
-          @if (b.paid_count) { <button class="icon-btn" (click)="undo(b)" aria-label="Undo last payment" title="Undo last payment"><app-icon name="undo" [size]="18" /></button> }
-          <button class="icon-btn" (click)="edit(b)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
-          <button class="icon-btn del" (click)="remove(b)" aria-label="Delete"><app-icon name="trash" [size]="18" /></button>
+          <div class="bill-desktop-actions">
+            @if (b.status === 'active') { <button class="btn green sm" (click)="pay(b)" title="Mark this cycle as paid"><app-icon name="check" [size]="16" /><span class="hide-sm">Paid</span></button> }
+            @if (b.paid_count) { <button class="icon-btn" (click)="undo(b)" aria-label="Undo last payment" title="Undo last payment"><app-icon name="undo" [size]="18" /></button> }
+            <button class="icon-btn" (click)="edit(b)" aria-label="Edit"><app-icon name="pencil" [size]="18" /></button>
+            <button class="icon-btn del" (click)="remove(b)" aria-label="Delete"><app-icon name="trash" [size]="18" /></button>
+          </div>
+          <details class="bill-mobile-actions">
+            <summary class="icon-btn" aria-label="Bill actions"><app-icon name="more" [size]="18" /></summary>
+            <div class="bill-menu">
+              @if (b.status === 'active') { <button (click)="pay(b)"><app-icon name="check" [size]="16" />Mark paid</button> }
+              @if (b.paid_count) { <button (click)="undo(b)"><app-icon name="undo" [size]="18" />Undo payment</button> }
+              <button (click)="edit(b)"><app-icon name="pencil" [size]="18" />Edit</button>
+              <button class="del" (click)="remove(b)"><app-icon name="trash" [size]="18" />Delete</button>
+            </div>
+          </details>
         </li>
       }</ul>
     </div>
+  </div>
+
+  <div class="card split-card">
+    <div class="card-h"><h2><app-icon name="users" [size]="18" />Split bills <span class="pill">{{ splits.length }}</span></h2>
+      <button class="btn sm" (click)="openSplitForm()"><app-icon name="plus" [size]="16" />Split a bill</button></div>
+    @if (!splits.length) { <div class="empty">No split bills yet. Add a shared bill and track each person's share.</div> }
+    <ul class="split-list">@for (split of splits; track split.id) {
+      <li class="split-entry">
+        <div class="row between split-heading"><div class="grow"><div class="t">{{ split.name }} <span class="pill">{{ paidCount(split) }}/{{ split.shares.length }} paid</span></div>
+          <div class="s">Due {{ split.due_date }} · {{ fmt(split.total_amount) }} total</div></div>
+          <button class="icon-btn del" (click)="removeSplit(split)" [attr.aria-label]="'Delete ' + split.name"><app-icon name="trash" [size]="18" /></button></div>
+        <ul class="split-shares">@for (share of split.shares; track share.id) {
+          <li><span class="share-name">{{ share.name }}</span><span class="amt">{{ fmt(share.amount) }}</span>
+            <button class="chip" [class.paid]="share.paid" (click)="toggleShare(split, share)">{{ share.paid ? 'Paid' : 'Mark paid' }}</button></li>
+        }</ul>
+      </li>
+    }</ul>
   </div>
 
   <app-modal [open]="showForm" [title]="form.id ? 'Edit bill' : 'Add bill'" (closed)="showForm = false">
@@ -60,25 +88,55 @@ import { COLORS, errMsg, fmt, iso, typeIcon } from '../../shared/util';
       @if (error) { <div class="err" style="margin-top:.6rem">{{ error }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">Cancel</button><button type="submit" class="btn">{{ form.id ? 'Save changes' : 'Add bill' }}</button></div>
     </form>
+  </app-modal>
+  <app-modal [open]="showSplitForm" title="Split a bill" (closed)="showSplitForm = false">
+    <form class="split-form" (ngSubmit)="saveSplit()">
+      <div class="fields">
+        <label class="full">Bill name<input name="splitName" [(ngModel)]="splitForm.name" placeholder="e.g. Dinner, utilities" required maxlength="100"></label>
+        <label>Total amount (MYR)<input name="splitAmount" type="number" inputmode="decimal" step="0.01" min="0.01" [(ngModel)]="splitForm.total_amount" required></label>
+        <label>Due date<input name="splitDue" type="date" [(ngModel)]="splitForm.due_date" required></label>
+        <label class="full">Participants<textarea name="people" [(ngModel)]="splitPeopleText" rows="4" placeholder="One name per line" required></textarea></label>
+      </div>
+      <p class="muted small" style="margin-top:.5rem">The total is split evenly. Any extra cents are assigned one at a time from the top of the list.</p>
+      @if (splitError) { <div class="err" style="margin-top:.6rem">{{ splitError }}</div> }
+      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showSplitForm = false">Cancel</button><button type="submit" class="btn">Create split</button></div>
+    </form>
   </app-modal>`,
 })
 export class BillsComponent implements OnInit {
   private api = inject(Api);
   fmt = fmt; icon = typeIcon; showForm = false; error = '';
   cats = ['Internet', 'Electrical', 'Water', 'Insurance', 'Subscription', 'Phone', 'Road tax', 'Assessment tax', 'Other'];
-  items: any[] = []; sum: any = { count: 0, monthly: 0, yearly: 0, by: [] }; cfg: any; form: any = this.blank();
+  items: any[] = []; splits: any[] = []; showSplitForm = false; splitError = ''; splitPeopleText = '';
+  splitForm: any = this.blankSplit(); sum: any = { count: 0, monthly: 0, yearly: 0, by: [] }; cfg: any; form: any = this.blank();
   get due() { return this.items.filter((b) => b.status === 'active' && b.days_left <= 30); }
   get dueTotal() { return this.due.reduce((a, b) => a + b.amount, 0); }
   get overdue() { return this.items.filter((b) => b.overdue).length; }
 
   blank() { const d = new Date(); return { id: null, name: '', category: '', amount: null, frequency: 'monthly', first_due: iso(new Date(d.getFullYear(), d.getMonth() + 1, 1)), status: 'active', autopay: false, add_expense: false }; }
-  ngOnInit() { this.load(); }
+  ngOnInit() { this.load(); this.loadSplits(); }
   load() {
     this.api.get<any[]>('/bills').subscribe((r) => (this.items = r));
     this.api.get<any>('/bills/summary').subscribe((s) => {
       this.sum = s;
       this.cfg = { type: 'doughnut', data: { labels: s.by.map((x: any) => x.category), datasets: [{ data: s.by.map((x: any) => Number(Number(x.monthly).toFixed(2))), backgroundColor: s.by.map((_: any, i: number) => COLORS[i % COLORS.length]) }] } };
     });
+  }
+  blankSplit() { return { name: '', total_amount: null, due_date: iso(new Date()) }; }
+  loadSplits() { this.api.get<any[]>('/bills/splits').subscribe((r) => (this.splits = r)); }
+  paidCount(split: any) { return split.shares.filter((share: any) => share.paid).length; }
+  openSplitForm() { this.splitForm = this.blankSplit(); this.splitPeopleText = ''; this.splitError = ''; this.showSplitForm = true; }
+  saveSplit() {
+    const people = this.splitPeopleText.split(/\r?\n/).map((person) => person.trim()).filter(Boolean);
+    this.api.post('/bills/splits', { ...this.splitForm, people }).subscribe({
+      next: () => { this.showSplitForm = false; this.loadSplits(); }, error: (e) => (this.splitError = errMsg(e)),
+    });
+  }
+  toggleShare(split: any, share: any) {
+    this.api.post(`/bills/splits/${split.id}/shares/${share.id}/toggle`, { paid: !share.paid }).subscribe(() => this.loadSplits());
+  }
+  removeSplit(split: any) {
+    if (confirm(`Delete split bill ${split.name}?`)) this.api.del('/bills/splits/' + split.id).subscribe(() => this.loadSplits());
   }
   openForm() { this.form = this.blank(); this.error = ''; this.showForm = true; }
   edit(b: any) { this.form = { ...b, first_due: b.next_due }; this.error = ''; this.showForm = true; }
