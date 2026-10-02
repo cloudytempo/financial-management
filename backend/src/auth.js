@@ -226,7 +226,7 @@ router.get('/households', requireAuth, wrap(async (req, res) => {
 router.get('/households/members', requireAuth, wrap(async (req, res) => {
   if (!req.household) return res.json([]);
   const { rows } = await pool.query(
-    `SELECT u.id,u.name,u.email,u.phone,u.birthday,u.bio,(h.created_by=u.id) AS is_owner FROM household_members m
+    `SELECT u.id,u.name,u.email,u.phone,to_char(u.birthday,'YYYY-MM-DD') AS birthday,u.bio,(h.created_by=u.id) AS is_owner FROM household_members m
     JOIN users u ON u.id=m.user_id JOIN households h ON h.id=m.household_id AND h.is_active=true
     WHERE m.household_id=$1 AND u.active_household_id=$1 AND u.is_active=true ORDER BY lower(u.name),u.id`,
     [req.household.id]);
@@ -363,7 +363,7 @@ router.put('/profile', requireAuth, wrap(async (req, res) => {
   let user;
   try {
     await client.query('BEGIN');
-    user = (await client.query('UPDATE users SET phone=$1,bio=$2,birthday=$3 WHERE id=$4 RETURNING id,name,phone,bio,birthday',
+    user = (await client.query(`UPDATE users SET phone=$1,bio=$2,birthday=$3 WHERE id=$4 RETURNING id,name,phone,bio,to_char(birthday,'YYYY-MM-DD') AS birthday`,
       [phone, bio, birthday, req.user.id])).rows[0];
     if (req.household) await syncBirthdayEvent(client, user, req.household.id);
     await client.query('COMMIT');
