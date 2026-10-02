@@ -81,6 +81,8 @@ import { errMsg } from '../../shared/util';
       <button type="button" [class.on]="householdMode === 'create'" (click)="householdMode = 'create'">{{ 'Create new' | tr }}</button>
     </div>
     <form (ngSubmit)="saveHousehold()">
+      <input type="text" name="username" autocomplete="username" class="autofill-decoy" tabindex="-1" aria-hidden="true">
+      <input type="password" name="password" autocomplete="current-password" class="autofill-decoy" tabindex="-1" aria-hidden="true">
       <div class="fields">
         @if (householdMode === 'create') {
           <label>{{ 'Household name' | tr }}<input name="householdName" [(ngModel)]="householdName" required autocomplete="organization"></label>

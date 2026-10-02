@@ -29,6 +29,8 @@ import { TranslatePipe } from '../../shared/translate.pipe';
           <label>{{ 'Household name' | tr }}<input name="householdName" [(ngModel)]="householdName" autocomplete="organization" required></label>
           <label>{{ 'Household address (optional)' | tr }}<input name="householdAddress" [(ngModel)]="householdAddress" autocomplete="street-address"></label>
         } @else {
+          <input type="text" name="username2" autocomplete="username" class="autofill-decoy" tabindex="-1" aria-hidden="true">
+          <input type="password" name="password2" autocomplete="current-password" class="autofill-decoy" tabindex="-1" aria-hidden="true">
           <label>{{ 'Household ID' | tr }}<input name="householdIdJoin" [(ngModel)]="householdId" autocomplete="off" [placeholder]="'Ask the owner for the household ID' | tr" required></label>
         }
         <label>{{ 'Household password' | tr }}
