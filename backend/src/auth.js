@@ -353,6 +353,11 @@ router.post('/notifications/:id/read', requireAuth, wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
+router.get('/profile', requireAuth, wrap(async (req, res) => {
+  const { rows } = await pool.query(`SELECT phone,bio,to_char(birthday,'YYYY-MM-DD') AS birthday FROM users WHERE id=$1`, [req.user.id]);
+  res.json(rows[0] || { phone: '', bio: '', birthday: null });
+}));
+
 router.put('/profile', requireAuth, wrap(async (req, res) => {
   const phone = String(req.body && req.body.phone || '').trim().slice(0, 30);
   const bio = String(req.body && req.body.bio || '').trim().slice(0, 500);

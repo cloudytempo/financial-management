@@ -37,6 +37,7 @@ export class Auth {
     return this.http.put<any>('/api/auth/households/address', { address }).pipe(tap((r) => this.setHousehold({ ...this.user()?.household, address: r.address })));
   }
   updateProfile(profile: { phone: string; bio: string; birthday: string | null }) { return this.http.put('/api/auth/profile', profile); }
+  getProfile() { return this.http.get<any>('/api/auth/profile'); }
   notifications() { return this.http.get<any[]>('/api/auth/notifications'); }
   markNotificationRead(id: number) { return this.http.post('/api/auth/notifications/' + id + '/read', {}); }
   markAllNotificationsRead() { return this.http.post('/api/auth/notifications/read-all', {}); }

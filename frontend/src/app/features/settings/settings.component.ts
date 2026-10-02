@@ -216,8 +216,10 @@ export class SettingsComponent implements OnInit {
     this.loadActivity();
     this.auth.complaintCategories().subscribe({ next: (rows) => { if (rows.length) this.categories = rows; }, error: () => {} });
     this.addressInput = this.auth.user()?.household?.address || '';
-    const me = this.auth.user();
-    this.profile = { phone: me?.phone || '', birthday: me?.birthday || '', bio: me?.bio || '' };
+    this.auth.getProfile().subscribe({
+      next: (p) => (this.profile = { phone: p.phone || '', birthday: p.birthday || '', bio: p.bio || '' }),
+      error: (e) => (this.profileError = errMsg(e)),
+    });
   }
   select(household: any) { this.householdMode = 'enter'; this.householdId = household.public_id; this.householdPassword = ''; }
   mapUrl(address: string) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address); }
