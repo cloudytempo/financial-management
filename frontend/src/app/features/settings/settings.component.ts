@@ -14,7 +14,9 @@ import { errMsg } from '../../shared/util';
   selector: 'app-settings', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
   template: `
   <div class="page-head"><div><h1>{{ 'Settings' | tr }}</h1><p class="sub">{{ 'Manage your household and workspace' | tr }}</p></div></div>
-  <section class="card settings-panel" aria-labelledby="household-title" style="margin-bottom:1rem">
+  <div class="settings-grid">
+  <div class="settings-col">
+  <section class="card settings-panel" aria-labelledby="household-title">
     <h2 id="household-title">{{ 'Household' | tr }}</h2>
     @if (auth.user()?.household?.name) {
       <p class="sub">{{ 'Currently using' | tr }} <b>{{ auth.user()?.household?.name }}</b>.
@@ -46,8 +48,7 @@ import { errMsg } from '../../shared/util';
             @if (member.id === auth.user()?.id) { <span class="pill">{{ 'You' | tr }}</span> }
             @if (member.is_owner) { <span class="pill">{{ 'Owner' | tr }}</span> }
             <br><span class="muted small">{{ member.email }}@if (member.phone) { · {{ member.phone }} }@if (member.birthday) { · 🎂 {{ member.birthday }} }</span></span>
-            @if (member.id !== auth.user()?.id) { <button class="icon-btn" (click)="openReport(member)" [attr.aria-label]="('Report member' | tr) + ' ' + member.name" [title]="'Report member' | tr"><app-icon name="alert" /></button> }
-            @if (isOwner && member.id !== auth.user()?.id) { <button class="icon-btn" (click)="openRemove(member)" [attr.aria-label]="('Remove member' | tr) + ' ' + member.name" [title]="'Remove or ban member' | tr"><app-icon name="shield" /></button> }
+            @if (member.id !== auth.user()?.id) { <button class="icon-btn" (click)="openAction(member)" [attr.aria-label]="('Report or manage member' | tr) + ' ' + member.name" [title]="'Report or manage member' | tr"><app-icon name="alert" /></button> }
           </li>
         }
       </ul>
@@ -64,7 +65,7 @@ import { errMsg } from '../../shared/util';
         <button class="btn ghost sm" type="submit" style="margin-top:.4rem">{{ 'Update household password' | tr }}</button>
       </form>
     }
-    @if (memberActionError) { <div class="err small" style="margin-top:.5rem">{{ memberActionError | tr }}</div> }
+    @if (memberActionError && !showAction) { <div class="err small" style="margin-top:.5rem">{{ memberActionError | tr }}</div> }
     @if (households.length) {
       <div class="seg" style="margin:1rem 0">
         @for (household of households; track household.id) {
@@ -91,20 +92,24 @@ import { errMsg } from '../../shared/util';
     </form>
   </section>
 
-  <section class="card settings-panel" aria-labelledby="activity-title" style="margin-bottom:1rem">
-    <div class="row between"><h2 id="activity-title" style="margin:0">{{ 'Recent activity' | tr }}</h2><button class="icon-btn" (click)="loadActivity()" [attr.aria-label]="'Refresh' | tr"><app-icon name="refresh" /></button></div>
-    @if (activityLoading) { <app-skeleton [rows]="4" /> }
-    @else if (!activity.length) { <p class="muted small" style="margin-top:.5rem">{{ 'No activity yet.' | tr }}</p> }
-    @else {
-      <ol class="admin-timeline" style="margin-top:.5rem">@for (event of activity; track event.id) {
-        <li><span class="timeline-marker" aria-hidden="true"></span>
-          <div class="timeline-entry"><div class="row between"><b>{{ activityLabel(event) | tr }}</b><time class="muted small">{{ dateTime(event.created_at) }}</time></div>
-            <div class="s">{{ event.actor_name }}@if (event.subject_name) { · {{ event.subject_name }} }</div></div></li>
-      }</ol>
-    }
+  <section class="card settings-panel" aria-labelledby="report-title">
+    <h2 id="report-title">{{ 'Detailed report' | tr }}</h2>
+    <p class="sub">{{ 'Download a snapshot of expenses, income, budgets, bills, installments, goals, accounts, contacts and events for this household.' | tr }}</p>
+    @if (reportError) { <div class="err small" style="margin-top:.5rem">{{ reportError | tr }}</div> }
+    <button class="btn" type="button" style="margin-top:.6rem" [disabled]="reportLoading" (click)="downloadReport()">{{ (reportLoading ? 'Generating…' : 'Generate report') | tr }}</button>
   </section>
 
-  <section class="card settings-panel" aria-labelledby="profile-title" style="margin-bottom:1rem">
+  <section class="card settings-panel" aria-labelledby="language-title">
+    <h2 id="language-title">{{ 'Language' | tr }}</h2><p class="sub">{{ 'Choose your language' | tr }}</p>
+    <div class="seg" role="group" [attr.aria-label]="'Language' | tr" style="margin-top:.75rem">
+      <button type="button" [class.on]="language.code() === 'en'" (click)="language.set('en')">{{ 'English' | tr }}</button>
+      <button type="button" [class.on]="language.code() === 'ms'" (click)="language.set('ms')">{{ 'Bahasa Melayu' | tr }}</button>
+    </div>
+  </section>
+  </div>
+
+  <div class="settings-col">
+  <section class="card settings-panel" aria-labelledby="profile-title">
     <h2 id="profile-title">{{ 'My profile' | tr }}</h2>
     <form (ngSubmit)="saveProfile()">
       <div class="fields">
@@ -119,13 +124,6 @@ import { errMsg } from '../../shared/util';
     </form>
   </section>
 
-  <section class="card settings-panel" aria-labelledby="report-title" style="margin-bottom:1rem">
-    <h2 id="report-title">{{ 'Detailed report' | tr }}</h2>
-    <p class="sub">{{ 'Download a snapshot of expenses, income, budgets, bills, installments, goals, accounts, contacts and events for this household.' | tr }}</p>
-    @if (reportError) { <div class="err small" style="margin-top:.5rem">{{ reportError | tr }}</div> }
-    <button class="btn" type="button" style="margin-top:.6rem" [disabled]="reportLoading" (click)="downloadReport()">{{ (reportLoading ? 'Generating…' : 'Generate report') | tr }}</button>
-  </section>
-
   <section class="card settings-panel" aria-labelledby="appearance-title">
     <h2 id="appearance-title">{{ 'Appearance' | tr }}</h2>
     <p class="sub">{{ 'Choose a color theme' | tr }}</p>
@@ -138,30 +136,46 @@ import { errMsg } from '../../shared/util';
       </button>
     </div>
   </section>
-  <section class="card settings-panel" aria-labelledby="language-title">
-    <h2 id="language-title">{{ 'Language' | tr }}</h2><p class="sub">{{ 'Choose your language' | tr }}</p>
-    <div class="seg" role="group" [attr.aria-label]="'Language' | tr" style="margin-top:.75rem">
-      <button type="button" [class.on]="language.code() === 'en'" (click)="language.set('en')">{{ 'English' | tr }}</button>
-      <button type="button" [class.on]="language.code() === 'ms'" (click)="language.set('ms')">{{ 'Bahasa Melayu' | tr }}</button>
+
+  <section class="card settings-panel settings-activity-card" aria-labelledby="activity-title">
+    <div class="row between"><h2 id="activity-title" style="margin:0">{{ 'Recent activity' | tr }}</h2><button class="icon-btn" (click)="loadActivity()" [attr.aria-label]="'Refresh' | tr"><app-icon name="refresh" /></button></div>
+    <div class="settings-activity-scroll">
+      @if (activityLoading) { <app-skeleton [rows]="4" /> }
+      @else if (!activity.length) { <p class="muted small" style="margin-top:.5rem">{{ 'No activity yet.' | tr }}</p> }
+      @else {
+        <ol class="admin-timeline" style="margin-top:.5rem">@for (event of activity; track event.id) {
+          <li><span class="timeline-marker" aria-hidden="true"></span>
+            <div class="timeline-entry"><div class="row between"><b>{{ activityLabel(event) | tr }}</b><time class="muted small">{{ dateTime(event.created_at) }}</time></div>
+              <div class="s">{{ event.actor_name }}@if (event.subject_name) { · {{ event.subject_name }} }</div></div></li>
+        }</ol>
+      }
     </div>
   </section>
-  <app-modal [open]="showReport" [title]="'Report ' + reportTarget?.name" (closed)="showReport = false">
-    <form (ngSubmit)="submitReport()">
-      <label>{{ 'What is this about?' | tr }}<select name="reportCategory" [(ngModel)]="reportCategory">
+  </div>
+  </div>
+
+  <app-modal [open]="showAction" [title]="('Manage' | tr) + ' ' + actionTarget?.name" (closed)="showAction = false">
+    <form (ngSubmit)="submitAction()">
+      <label>{{ 'What is this about?' | tr }}<select name="actionCategory" [(ngModel)]="actionCategory">
         @for (category of categories; track category) { <option [value]="category">{{ category | tr }}</option> }
+        @if (isOwner) { <option value="Invalid Member">{{ 'Invalid Member' | tr }}</option> }
       </select></label>
-      <label>{{ 'Why should an admin review this member?' | tr }}
-        <textarea name="reportReason" [(ngModel)]="reportReason" rows="4" minlength="10" maxlength="2000" required [placeholder]="'Describe why you think this person does not belong in the household' | tr"></textarea></label>
+      @if (actionCategory === 'Invalid Member') {
+        <div class="action-invalid-panel">
+          <p class="muted small">{{ 'Remove this person from the household. You can also ban them from rejoining.' | tr }}</p>
+          <label class="row" style="flex-wrap:nowrap"><input type="checkbox" name="banMember" [(ngModel)]="removeBan"> {{ 'Also ban this person from rejoining this household' | tr }}</label>
+          <label>{{ 'Reason (optional)' | tr }}<textarea name="removeReason" [(ngModel)]="removeReason" rows="3" maxlength="500" [placeholder]="'Why is this member being removed?' | tr"></textarea></label>
+        </div>
+      } @else {
+        <label>{{ 'Why should an admin review this member?' | tr }}
+          <textarea name="reportReason" [(ngModel)]="reportReason" rows="4" minlength="10" maxlength="2000" required [placeholder]="'Describe why you think this person does not belong in the household' | tr"></textarea></label>
+      }
       @if (memberActionError) { <div class="err" style="margin-top:.6rem">{{ memberActionError | tr }}</div> }
-      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showReport = false">{{ 'Cancel' | tr }}</button><button class="btn" type="submit">{{ 'Send report' | tr }}</button></div>
-    </form>
-  </app-modal>
-  <app-modal [open]="showRemove" [title]="'Remove ' + removeTarget?.name" (closed)="showRemove = false">
-    <form (ngSubmit)="submitRemove()">
-      <label class="row" style="flex-wrap:nowrap"><input type="checkbox" name="banMember" [(ngModel)]="removeBan"> {{ 'Also ban this person from rejoining this household' | tr }}</label>
-      <label>{{ 'Reason (optional)' | tr }}<textarea name="removeReason" [(ngModel)]="removeReason" rows="3" maxlength="500"></textarea></label>
-      @if (memberActionError) { <div class="err" style="margin-top:.6rem">{{ memberActionError | tr }}</div> }
-      <div class="sheet-f"><button type="button" class="btn ghost" (click)="showRemove = false">{{ 'Cancel' | tr }}</button><button class="btn danger" type="submit">{{ (removeBan ? 'Ban and remove' : 'Remove member') | tr }}</button></div>
+      <div class="sheet-f">
+        <button type="button" class="btn ghost" (click)="showAction = false">{{ 'Cancel' | tr }}</button>
+        @if (actionCategory === 'Invalid Member') { <button class="btn danger" type="submit">{{ (removeBan ? 'Ban and remove' : 'Remove member') | tr }}</button> }
+        @else { <button class="btn" type="submit">{{ 'Send report' | tr }}</button> }
+      </div>
     </form>
   </app-modal>`,
 })
@@ -169,9 +183,9 @@ export class SettingsComponent implements OnInit {
   theme = inject(Theme); auth = inject(Auth); language = inject(Language); private api = inject(Api);
   households: any[] = []; members: any[] = []; membersLoading = true; memberError = ''; householdMode: 'enter' | 'create' = 'enter';
   householdName = ''; householdId = ''; householdAddress = ''; householdPassword = ''; householdError = ''; addressInput = '';
-  nextOwnerId: number | null = null; memberActionError = ''; showReport = false; reportTarget: any = null; reportReason = '';
-  categories: string[] = ['Harassment', 'Inappropriate behavior', 'Financial dispute', 'Property damage', 'Rule violation', 'Other']; reportCategory = 'Other';
-  showRemove = false; removeTarget: any = null; removeBan = false; removeReason = '';
+  nextOwnerId: number | null = null; memberActionError = '';
+  categories: string[] = ['Harassment', 'Inappropriate behavior', 'Financial dispute', 'Property damage', 'Rule violation', 'Other'];
+  showAction = false; actionTarget: any = null; actionCategory = 'Other'; reportReason = ''; removeBan = false; removeReason = '';
   newHouseholdPassword = ''; passwordError = ''; copied = false;
   activity: any[] = []; activityLoading = true;
   profile: any = { phone: '', birthday: '', bio: '' }; profileError = ''; profileSaved = false;
@@ -209,21 +223,22 @@ export class SettingsComponent implements OnInit {
       next: () => { this.nextOwnerId = null; this.reloadMembers(); }, error: (e) => (this.memberActionError = errMsg(e)),
     });
   }
-  openReport(member: any) { this.reportTarget = member; this.reportReason = ''; this.reportCategory = 'Other'; this.memberActionError = ''; this.showReport = true; }
-  submitReport() {
-    if (!this.reportTarget) return;
-    this.memberActionError = '';
-    this.api.post('/auth/households/members/' + this.reportTarget.id + '/report', { description: this.reportReason, category: this.reportCategory }).subscribe({
-      next: () => { this.showReport = false; this.reportTarget = null; this.reportReason = ''; },
-      error: (e) => (this.memberActionError = errMsg(e)),
-    });
+  openAction(member: any) {
+    this.actionTarget = member; this.actionCategory = 'Other'; this.reportReason = ''; this.removeBan = false; this.removeReason = '';
+    this.memberActionError = ''; this.showAction = true;
   }
-  openRemove(member: any) { this.removeTarget = member; this.removeBan = false; this.removeReason = ''; this.memberActionError = ''; this.showRemove = true; }
-  submitRemove() {
-    if (!this.removeTarget) return;
+  submitAction() {
+    if (!this.actionTarget) return;
     this.memberActionError = '';
-    this.auth.removeMember(this.removeTarget.id, this.removeBan, this.removeReason).subscribe({
-      next: () => { this.showRemove = false; this.removeTarget = null; this.reloadMembers(); },
+    if (this.actionCategory === 'Invalid Member') {
+      this.auth.removeMember(this.actionTarget.id, this.removeBan, this.removeReason).subscribe({
+        next: () => { this.showAction = false; this.actionTarget = null; this.reloadMembers(); },
+        error: (e) => (this.memberActionError = errMsg(e)),
+      });
+      return;
+    }
+    this.api.post('/auth/households/members/' + this.actionTarget.id + '/report', { description: this.reportReason, category: this.actionCategory }).subscribe({
+      next: () => { this.showAction = false; this.actionTarget = null; this.reportReason = ''; },
       error: (e) => (this.memberActionError = errMsg(e)),
     });
   }

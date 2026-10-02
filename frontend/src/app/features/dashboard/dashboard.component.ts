@@ -53,18 +53,29 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
       <section class="dashboard-section"><h3><app-icon name="credit-card" [size]="16" />{{ 'Installments by type' | tr }}</h3>@if (installmentsLoading) { <app-skeleton variant="chart" /> } @else if (insCfg) { <app-chart [config]="insCfg" /> }</section>
     </div></article>
 
-    <article class="card dashboard-card"><div class="card-h"><h2><app-icon name="target" [size]="18" />{{ 'Goals' | tr }}</h2><a routerLink="/goals" class="small">{{ 'Manage' | tr }}</a></div><div class="dashboard-card-body dashboard-goal-body">
+    <article class="card dashboard-card"><div class="card-h"><h2><app-icon name="target" [size]="18" />{{ 'Goals & accounts' | tr }}</h2><a routerLink="/goals" class="small">{{ 'Manage' | tr }}</a></div><div class="dashboard-card-body dashboard-goal-body">
       <div class="dashboard-goal-split">
-        <div class="dashboard-goal-chart">@if (goalsLoading) { <app-skeleton variant="chart" /> } @else if (goalCfg) { <app-chart [config]="goalCfg" /> } @else { <div class="empty">{{ 'Goal summary is unavailable.' | tr }}</div> }</div>
+        <div class="dashboard-goal-chart">
+          @if (goalsLoading) { <app-skeleton variant="chart" /> }
+          @else if (goalCfg) {
+            <app-chart [config]="goalCfg" />
+            <div class="goal-chart-legend">
+              <span class="goal-chip complete"><i></i>{{ goalSummary.complete }} {{ 'complete' | tr }}</span>
+              <span class="goal-chip ongoing"><i></i>{{ goalSummary.ongoing }} {{ 'ongoing' | tr }}</span>
+            </div>
+          } @else { <div class="empty">{{ 'Goal summary is unavailable.' | tr }}</div> }
+        </div>
         <div class="dashboard-goal-accounts">
           <h3><app-icon name="landmark" [size]="16" />{{ 'Accounts' | tr }}</h3>
           @if (accountsLoading) { <app-skeleton [rows]="2" /> }
-          @else if (!accounts.accounts?.length) { <div class="muted small">{{ 'No accounts yet.' | tr }} <a routerLink="/accounts">{{ 'Add one' | tr }}</a>.</div> }
+          @else if (!accounts.accounts?.length) { <div class="empty small">{{ 'No accounts yet.' | tr }} <a routerLink="/accounts">{{ 'Add one' | tr }}</a>.</div> }
           @else {
-            <div class="row between small"><span>{{ 'Net worth' | tr }}</span><b>{{ fmt(accounts.net_worth) }}</b></div>
-            <div class="row between small"><span>{{ 'Assets' | tr }}</span><span>{{ fmt(accounts.total_assets) }}</span></div>
-            <div class="row between small"><span>{{ 'Liabilities' | tr }}</span><span>{{ fmt(accounts.total_liabilities) }}</span></div>
-            <a routerLink="/accounts" class="small">{{ 'View accounts' | tr }}</a>
+            <div class="account-stat-grid">
+              <div class="account-stat net"><span class="account-stat-lbl">{{ 'Net worth' | tr }}</span><b class="account-stat-val" [class.up]="accounts.net_worth >= 0" [class.down]="accounts.net_worth < 0">{{ fmt(accounts.net_worth) }}</b></div>
+              <div class="account-stat"><span class="account-stat-lbl"><app-icon name="arrow-up" [size]="11" />{{ 'Assets' | tr }}</span><span class="account-stat-val up">{{ fmt(accounts.total_assets) }}</span></div>
+              <div class="account-stat"><span class="account-stat-lbl"><app-icon name="arrow-down" [size]="11" />{{ 'Liabilities' | tr }}</span><span class="account-stat-val down">{{ fmt(accounts.total_liabilities) }}</span></div>
+            </div>
+            <a routerLink="/accounts" class="btn ghost sm" style="margin-top:.6rem;align-self:flex-start">{{ 'View accounts' | tr }}</a>
           }
         </div>
       </div>
@@ -127,6 +138,7 @@ export class DashboardComponent implements OnInit {
   get today() { return new Date().toLocaleDateString(this.language.code() === 'ms' ? 'ms-MY' : 'en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
   payments: any[] = []; anomalies: any[] = []; goalReminders: any[] = []; favs: any[] = [];
   budget: any = { rows: [] }; typeHasData = false; accounts: any = { accounts: [], total_assets: 0, total_liabilities: 0, net_worth: 0 }; accountsLoading = true;
+  goalSummary = { complete: 0, ongoing: 0 };
   expCfg: any; insCfg: any; goalCfg: any; typeCfg: any; incCfg: any;
   expensesLoading = true; cashflowLoading = true; installmentsLoading = true; goalsLoading = true;
   paymentsLoading = true; budgetLoading = true; anomaliesLoading = true; remindersLoading = true; favsLoading = true;
@@ -150,7 +162,9 @@ export class DashboardComponent implements OnInit {
     this.api.get<any[]>('/goals/reminders').subscribe({ next: (r) => { this.goalReminders = r; this.remindersLoading = false; }, error: () => (this.remindersLoading = false) });
     this.goalsLoading = true;
     this.api.get<any>('/goals/summary').subscribe({ next: (s) => {
-      this.goalCfg = { type: 'doughnut', data: { labels: [this.language.text('Complete'), this.language.text('Ongoing')], datasets: [{ data: [s.complete, s.ongoing], backgroundColor: ['#66BB6A', '#5D4037'] }] } };
+      this.goalSummary = { complete: s.complete, ongoing: s.ongoing };
+      this.goalCfg = { type: 'doughnut', data: { labels: [this.language.text('Complete'), this.language.text('Ongoing')], datasets: [{ data: [s.complete, s.ongoing], backgroundColor: ['#66BB6A', '#5D4037'] }] },
+        options: { plugins: { legend: { display: false } } } };
       this.goalsLoading = false;
     }, error: () => (this.goalsLoading = false) });
     this.anomaliesLoading = true;
