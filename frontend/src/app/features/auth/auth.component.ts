@@ -16,7 +16,10 @@ import { TranslatePipe } from '../../shared/translate.pipe';
     <form (ngSubmit)="submit()">
       @if (mode === 'signup') { <label>{{ 'Name' | tr }}<input name="name" [(ngModel)]="name" autocomplete="name" required></label> }
       @if (mode !== 'reactivate') { <label>{{ (mode === 'reset' ? 'Username (email)' : 'Email') | tr }}<input name="email" type="email" [(ngModel)]="email" autocomplete="username" required></label> }
-      <label>{{ (mode === 'reset' || mode === 'reactivate' ? 'New password' : 'Password') | tr }}<input name="password" type="password" [(ngModel)]="password" minlength="8" [attr.autocomplete]="mode === 'signin' ? 'current-password' : 'new-password'" required></label>
+      <label>{{ (mode === 'reset' || mode === 'reactivate' ? 'New password' : 'Password') | tr }}
+        <div class="pw-field"><input name="password" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password" minlength="8" [attr.autocomplete]="mode === 'signin' ? 'current-password' : 'new-password'" required>
+          <button type="button" class="pw-toggle" (click)="showPassword = !showPassword" [attr.aria-label]="(showPassword ? 'Hide password' : 'Show password') | tr"><app-icon [name]="showPassword ? 'eye-off' : 'eye'" [size]="16" /></button></div>
+      </label>
       @if (mode === 'signup') {
         <div class="seg" style="margin-bottom:1rem">
           <button type="button" [class.on]="householdMode === 'create'" (click)="householdMode = 'create'">{{ 'Create household' | tr }}</button>
@@ -26,11 +29,19 @@ import { TranslatePipe } from '../../shared/translate.pipe';
           <label>{{ 'Household name' | tr }}<input name="householdName" [(ngModel)]="householdName" autocomplete="organization" required></label>
           <label>{{ 'Household address (optional)' | tr }}<input name="householdAddress" [(ngModel)]="householdAddress" autocomplete="street-address"></label>
         } @else {
-          <label>{{ 'Household ID' | tr }}<input name="householdId" [(ngModel)]="householdId" [placeholder]="'Ask the owner for the household ID' | tr" required></label>
+          <label>{{ 'Household ID' | tr }}<input name="householdIdJoin" [(ngModel)]="householdId" autocomplete="off" [placeholder]="'Ask the owner for the household ID' | tr" required></label>
         }
-        <label>{{ 'Household password' | tr }}<input name="householdPassword" type="password" [(ngModel)]="householdPassword" minlength="8" autocomplete="new-password" required></label>
+        <label>{{ 'Household password' | tr }}
+          <div class="pw-field"><input name="householdPassword" [type]="showHouseholdPassword ? 'text' : 'password'" [(ngModel)]="householdPassword" minlength="8" autocomplete="off" required>
+            <button type="button" class="pw-toggle" (click)="showHouseholdPassword = !showHouseholdPassword" [attr.aria-label]="(showHouseholdPassword ? 'Hide password' : 'Show password') | tr"><app-icon [name]="showHouseholdPassword ? 'eye-off' : 'eye'" [size]="16" /></button></div>
+        </label>
       }
-      @if (mode === 'reset' || mode === 'reactivate') { <label>{{ 'Confirm new password' | tr }}<input name="confirm" type="password" [(ngModel)]="confirm" minlength="8" autocomplete="new-password" required></label> }
+      @if (mode === 'reset' || mode === 'reactivate') {
+        <label>{{ 'Confirm new password' | tr }}
+          <div class="pw-field"><input name="confirm" [type]="showConfirm ? 'text' : 'password'" [(ngModel)]="confirm" minlength="8" autocomplete="new-password" required>
+            <button type="button" class="pw-toggle" (click)="showConfirm = !showConfirm" [attr.aria-label]="(showConfirm ? 'Hide password' : 'Show password') | tr"><app-icon [name]="showConfirm ? 'eye-off' : 'eye'" [size]="16" /></button></div>
+        </label>
+      }
       @if (error) { <div class="err">{{ error | tr }}</div> }
       @if (info) { <div class="okmsg">{{ info | tr }}</div> }
       <button class="btn" type="submit">{{ (mode === 'signup' ? 'Sign up' : mode === 'reset' ? 'Reset password' : mode === 'reactivate' ? 'Set new password' : 'Sign in') | tr }}</button>
@@ -45,6 +56,7 @@ export class AuthComponent {
   private auth = inject(Auth); private router = inject(Router);
   mode: 'signin' | 'signup' | 'reset' | 'reactivate' = 'signin';
   name = ''; email = ''; password = ''; confirm = ''; error = ''; info = '';
+  showPassword = false; showHouseholdPassword = false; showConfirm = false;
   reactivationToken = '';
   householdMode: 'create' | 'join' = 'create'; householdName = ''; householdId = ''; householdPassword = ''; householdAddress = '';
   go(e: Event, m: 'signin' | 'signup' | 'reset') { e.preventDefault(); this.mode = m; this.error = ''; this.info = ''; this.password = ''; this.confirm = ''; }

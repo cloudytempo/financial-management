@@ -60,7 +60,10 @@ import { errMsg } from '../../shared/util';
     }
     @if (isOwner) {
       <form (ngSubmit)="savePassword()" style="margin-top:1rem">
-        <label>{{ 'New household password' | tr }}<input name="newHouseholdPassword" type="password" [(ngModel)]="newHouseholdPassword" minlength="8" placeholder="••••••••"></label>
+        <label>{{ 'New household password' | tr }}
+          <div class="pw-field"><input name="newHouseholdPassword" [type]="showNewHouseholdPassword ? 'text' : 'password'" [(ngModel)]="newHouseholdPassword" minlength="8" autocomplete="off" placeholder="••••••••">
+            <button type="button" class="pw-toggle" (click)="showNewHouseholdPassword = !showNewHouseholdPassword" [attr.aria-label]="(showNewHouseholdPassword ? 'Hide password' : 'Show password') | tr"><app-icon [name]="showNewHouseholdPassword ? 'eye-off' : 'eye'" [size]="16" /></button></div>
+        </label>
         @if (passwordError) { <div class="err small" style="margin-top:.4rem">{{ passwordError | tr }}</div> }
         <button class="btn ghost sm" type="submit" style="margin-top:.4rem">{{ 'Update household password' | tr }}</button>
       </form>
@@ -83,9 +86,12 @@ import { errMsg } from '../../shared/util';
           <label>{{ 'Household name' | tr }}<input name="householdName" [(ngModel)]="householdName" required autocomplete="organization"></label>
           <label>{{ 'Household address (optional)' | tr }}<input name="householdAddress2" [(ngModel)]="householdAddress"></label>
         } @else {
-          <label>{{ 'Household ID' | tr }}<input name="householdId" [(ngModel)]="householdId" required [placeholder]="'Ask the owner for the household ID' | tr"></label>
+          <label>{{ 'Household ID' | tr }}<input name="householdIdEntry" [(ngModel)]="householdId" required autocomplete="off" [placeholder]="'Ask the owner for the household ID' | tr"></label>
         }
-        <label>{{ 'Household password' | tr }}<input name="householdPassword" type="password" [(ngModel)]="householdPassword" minlength="8" required autocomplete="current-password"></label>
+        <label>{{ 'Household password' | tr }}
+          <div class="pw-field"><input name="householdPassword" [type]="showHouseholdPassword ? 'text' : 'password'" [(ngModel)]="householdPassword" minlength="8" required autocomplete="off">
+            <button type="button" class="pw-toggle" (click)="showHouseholdPassword = !showHouseholdPassword" [attr.aria-label]="(showHouseholdPassword ? 'Hide password' : 'Show password') | tr"><app-icon [name]="showHouseholdPassword ? 'eye-off' : 'eye'" [size]="16" /></button></div>
+        </label>
       </div>
       @if (householdError) { <div class="err" style="margin-top:.6rem">{{ householdError | tr }}</div> }
       <div style="margin-top:1rem"><button class="btn" type="submit">{{ (householdMode === 'create' ? 'Create and enter' : 'Enter household') | tr }}</button></div>
@@ -186,7 +192,7 @@ export class SettingsComponent implements OnInit {
   nextOwnerId: number | null = null; memberActionError = '';
   categories: string[] = ['Harassment', 'Inappropriate behavior', 'Financial dispute', 'Property damage', 'Rule violation', 'Other'];
   showAction = false; actionTarget: any = null; actionCategory = 'Other'; reportReason = ''; removeBan = false; removeReason = '';
-  newHouseholdPassword = ''; passwordError = ''; copied = false;
+  newHouseholdPassword = ''; passwordError = ''; copied = false; showNewHouseholdPassword = false; showHouseholdPassword = false;
   activity: any[] = []; activityLoading = true;
   profile: any = { phone: '', birthday: '', bio: '' }; profileError = ''; profileSaved = false;
   reportLoading = false; reportError = '';

@@ -277,7 +277,7 @@ const MALAY: Record<string, string> = {
   'Unban': 'Buka sekatan', 'Ban': 'Sekat', 'Banned': 'Disekat',
   'They will not be able to sign in until unbanned.': 'Mereka tidak dapat log masuk sehingga sekatan dibuka.',
   'ID:': 'ID:', 'Show occupants': 'Tunjukkan penghuni', 'Hide occupants': 'Sembunyikan penghuni',
-  'No active occupants.': 'Tiada penghuni aktif.',
+  'No active occupants.': 'Tiada penghuni aktif.', 'Show password': 'Tunjukkan kata laluan', 'Hide password': 'Sembunyikan kata laluan',
 };
 
 @Injectable({ providedIn: 'root' })
