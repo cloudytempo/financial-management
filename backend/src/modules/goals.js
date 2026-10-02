@@ -57,4 +57,4 @@ const init = async () => { await pool.query(`CREATE TABLE IF NOT EXISTS goals (
   last_progress_at TIMESTAMPTZ NOT NULL DEFAULT now(), created_at TIMESTAMPTZ DEFAULT now())`);
   await lockDown(pool, ['goals']); };
 
-module.exports = { name: 'goals', router, init };
+module.exports = { name: 'goals', router, init, list };

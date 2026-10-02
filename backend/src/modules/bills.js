@@ -179,4 +179,4 @@ const init = async () => {
     name TEXT NOT NULL, amount NUMERIC(12,2) NOT NULL CHECK (amount > 0), paid BOOLEAN NOT NULL DEFAULT false)`);
   await lockDown(pool, ['bills', 'bill_payments', 'bill_splits', 'bill_split_shares']);
 };
-module.exports = { name: 'bills', router, init };
+module.exports = { name: 'bills', router, init, loadAll };

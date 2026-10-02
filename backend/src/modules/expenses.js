@@ -23,8 +23,8 @@ router.get('/summary', wrap(async (req, res) => {
 }));
 
 // Abnormality rule: amount > avg of the same type's other months + max(2 std-dev, 30% of avg); needs >=3 other records.
-router.get('/anomalies', wrap(async (req, res) => {
-  const { rows } = await pool.query(`SELECT ${COLS} FROM expenses WHERE household_id=$1`, [req.household.id]);
+async function anomaliesFor(householdId) {
+  const { rows } = await pool.query(`SELECT ${COLS} FROM expenses WHERE household_id=$1`, [householdId]);
   const byType = {};
   rows.forEach((r) => (byType[r.type.toLowerCase()] ||= []).push(r));
   const out = [];
@@ -36,8 +36,9 @@ router.get('/anomalies', wrap(async (req, res) => {
     if (avg > 0 && r.amount > avg + Math.max(2 * sd, avg * 0.3))
       out.push({ ...r, average: +avg.toFixed(2), percentAbove: Math.round((r.amount / avg - 1) * 100) });
   }
-  res.json(out.sort((a, b) => b.year * 12 + b.month - (a.year * 12 + a.month)));
-}));
+  return out.sort((a, b) => b.year * 12 + b.month - (a.year * 12 + a.month));
+}
+router.get('/anomalies', wrap(async (req, res) => res.json(await anomaliesFor(req.household.id))));
 
 // Bulk import: [{type, amount, month, year, remarks}]. Identical records (same type/month/year/amount) are skipped, so re-importing is safe.
 router.post('/import', wrap(async (req, res) => {
@@ -104,4 +105,4 @@ router.delete('/:id', wrap(async (req, res) => {
   res.status(204).end();
 }));
 
-module.exports = { name: 'expenses', router };
+module.exports = { name: 'expenses', router, anomaliesFor };

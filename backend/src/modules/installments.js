@@ -102,4 +102,4 @@ router.post('/:id/payments', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
-module.exports = { name: 'installments', router };
+module.exports = { name: 'installments', router, loadAll };

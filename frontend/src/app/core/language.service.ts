@@ -278,6 +278,9 @@ const MALAY: Record<string, string> = {
   'They will not be able to sign in until unbanned.': 'Mereka tidak dapat log masuk sehingga sekatan dibuka.',
   'ID:': 'ID:', 'Show occupants': 'Tunjukkan penghuni', 'Hide occupants': 'Sembunyikan penghuni',
   'No active occupants.': 'Tiada penghuni aktif.', 'Show password': 'Tunjukkan kata laluan', 'Hide password': 'Sembunyikan kata laluan',
+  'Download as Markdown': 'Muat turun sebagai Markdown', 'Household financial report': 'Laporan kewangan isi rumah',
+  'Generate a readable financial report covering income, expenses, budgets, bills, installments and goals for this household.':
+    'Jana laporan kewangan yang mudah dibaca merangkumi pendapatan, perbelanjaan, bajet, bil, ansuran dan matlamat untuk isi rumah ini.',
 };
 
 @Injectable({ providedIn: 'root' })

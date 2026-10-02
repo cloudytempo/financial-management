@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer } from '@angular/platform-browser';
 import { Auth } from '../../core/auth.service';
 import { Api } from '../../core/api.service';
 import { Theme } from '../../core/theme.service';
@@ -9,6 +10,7 @@ import { ModalComponent } from '../../shared/modal.component';
 import { TranslatePipe } from '../../shared/translate.pipe';
 import { SkeletonComponent } from '../../shared/skeleton.component';
 import { errMsg } from '../../shared/util';
+import { renderMarkdown } from '../../shared/markdown';
 
 @Component({
   selector: 'app-settings', standalone: true, imports: [FormsModule, IconComponent, ModalComponent, TranslatePipe, SkeletonComponent],
@@ -102,9 +104,9 @@ import { errMsg } from '../../shared/util';
 
   <section class="card settings-panel" aria-labelledby="report-title">
     <h2 id="report-title">{{ 'Detailed report' | tr }}</h2>
-    <p class="sub">{{ 'Download a snapshot of expenses, income, budgets, bills, installments, goals, accounts, contacts and events for this household.' | tr }}</p>
+    <p class="sub">{{ 'Generate a readable financial report covering income, expenses, budgets, bills, installments and goals for this household.' | tr }}</p>
     @if (reportError) { <div class="err small" style="margin-top:.5rem">{{ reportError | tr }}</div> }
-    <button class="btn" type="button" style="margin-top:.6rem" [disabled]="reportLoading" (click)="downloadReport()">{{ (reportLoading ? 'Generating…' : 'Generate report') | tr }}</button>
+    <button class="btn" type="button" style="margin-top:.6rem" [disabled]="reportLoading" (click)="generateReport()">{{ (reportLoading ? 'Generating…' : 'Generate report') | tr }}</button>
   </section>
 
   <section class="card settings-panel" aria-labelledby="language-title">
@@ -185,10 +187,18 @@ import { errMsg } from '../../shared/util';
         @else { <button class="btn" type="submit">{{ 'Send report' | tr }}</button> }
       </div>
     </form>
+  </app-modal>
+
+  <app-modal [open]="showReportModal" [title]="'Household financial report' | tr" (closed)="showReportModal = false">
+    <div class="report-modal-body" [innerHTML]="reportHtml"></div>
+    <div class="sheet-f">
+      <button type="button" class="btn ghost" (click)="showReportModal = false">{{ 'Close' | tr }}</button>
+      <button type="button" class="btn" (click)="downloadReportMarkdown()">{{ 'Download as Markdown' | tr }}</button>
+    </div>
   </app-modal>`,
 })
 export class SettingsComponent implements OnInit {
-  theme = inject(Theme); auth = inject(Auth); language = inject(Language); private api = inject(Api);
+  theme = inject(Theme); auth = inject(Auth); language = inject(Language); private api = inject(Api); private sanitizer = inject(DomSanitizer);
   households: any[] = []; members: any[] = []; membersLoading = true; memberError = ''; householdMode: 'enter' | 'create' = 'enter';
   householdName = ''; householdId = ''; householdAddress = ''; householdPassword = ''; householdError = ''; addressInput = '';
   nextOwnerId: number | null = null; memberActionError = '';
@@ -197,7 +207,7 @@ export class SettingsComponent implements OnInit {
   newHouseholdPassword = ''; passwordError = ''; copied = false; showNewHouseholdPassword = false; showHouseholdPassword = false;
   activity: any[] = []; activityLoading = true;
   profile: any = { phone: '', birthday: '', bio: '' }; profileError = ''; profileSaved = false;
-  reportLoading = false; reportError = '';
+  reportLoading = false; reportError = ''; showReportModal = false; reportMarkdown = ''; reportHtml: any = '';
   get isOwner() { return this.members.some((member) => member.id === this.auth.user()?.id && member.is_owner); }
   get otherMembers() { return this.members.filter((member) => member.id !== this.auth.user()?.id); }
   ngOnInit() {
@@ -277,19 +287,23 @@ export class SettingsComponent implements OnInit {
       : this.auth.enterHousehold(this.householdId, this.householdPassword);
     request.subscribe({ next: () => window.location.reload(), error: (error) => (this.householdError = errMsg(error)) });
   }
-  downloadReport() {
+  generateReport() {
     this.reportError = ''; this.reportLoading = true;
-    this.api.get<any>('/reports/full').subscribe({
+    this.api.get<any>('/reports/narrative').subscribe({
       next: (report) => {
-        this.reportLoading = false;
-        const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url; link.download = `${report.household_name || 'household'}-report-${new Date().toISOString().slice(0, 10)}.json`;
-        link.click();
-        URL.revokeObjectURL(url);
+        this.reportLoading = false; this.reportMarkdown = report.markdown;
+        this.reportHtml = this.sanitizer.bypassSecurityTrustHtml(renderMarkdown(report.markdown));
+        this.showReportModal = true;
       },
       error: (e) => { this.reportError = errMsg(e); this.reportLoading = false; },
     });
+  }
+  downloadReportMarkdown() {
+    const blob = new Blob([this.reportMarkdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url; link.download = `household-report-${new Date().toISOString().slice(0, 10)}.md`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 }

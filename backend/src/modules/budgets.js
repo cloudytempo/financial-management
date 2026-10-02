@@ -3,12 +3,11 @@ const pool = require('../db');
 const { wrap, lockDown } = require('../util');
 
 // Effective limit for a month = the latest limit set on or before that month, per category.
-router.get('/status', wrap(async (req, res) => {
+async function statusFor(householdId, year, month) {
   const now = new Date();
-  const year = +req.query.year || now.getFullYear(), month = +req.query.month || now.getMonth() + 1;
   const b = await pool.query(`SELECT DISTINCT ON (lower(category)) category, amount::float8 AS amount FROM budgets
-    WHERE household_id=$1 AND (effective_year*12+effective_month) <= $2 ORDER BY lower(category), effective_year DESC, effective_month DESC`, [req.household.id, year * 12 + month]);
-  const e = await pool.query('SELECT lower(type) AS k, MIN(type) AS type, SUM(amount)::float8 AS spent FROM expenses WHERE household_id=$1 AND year=$2 AND month=$3 GROUP BY lower(type)', [req.household.id, year, month]);
+    WHERE household_id=$1 AND (effective_year*12+effective_month) <= $2 ORDER BY lower(category), effective_year DESC, effective_month DESC`, [householdId, year * 12 + month]);
+  const e = await pool.query('SELECT lower(type) AS k, MIN(type) AS type, SUM(amount)::float8 AS spent FROM expenses WHERE household_id=$1 AND year=$2 AND month=$3 GROUP BY lower(type)', [householdId, year, month]);
   const spent = new Map(e.rows.map((r) => [r.k, r.spent]));
   const isCur = year === now.getFullYear() && month === now.getMonth() + 1;
   const dim = new Date(year, month, 0).getDate(), day = isCur ? now.getDate() : dim;
@@ -19,9 +18,14 @@ router.get('/status', wrap(async (req, res) => {
   }).sort((a, c) => c.pct - a.pct);
   const budgeted = new Set(b.rows.map((r) => r.category.toLowerCase()));
   const totalLimit = rows.reduce((a, r) => a + r.limit, 0), totalSpent = rows.reduce((a, r) => a + r.spent, 0);
-  res.json({ year, month, rows, totalLimit, totalSpent,
+  return { year, month, rows, totalLimit, totalSpent,
     unbudgeted: e.rows.filter((r) => !budgeted.has(r.k) && r.spent > 0).map((r) => ({ category: r.type, spent: r.spent })),
-    safePerDay: isCur ? Math.max(0, (totalLimit - totalSpent) / (dim - day + 1)) : null });
+    safePerDay: isCur ? Math.max(0, (totalLimit - totalSpent) / (dim - day + 1)) : null };
+}
+router.get('/status', wrap(async (req, res) => {
+  const now = new Date();
+  const year = +req.query.year || now.getFullYear(), month = +req.query.month || now.getMonth() + 1;
+  res.json(await statusFor(req.household.id, year, month));
 }));
 
 router.post('/', wrap(async (req, res) => {
@@ -43,4 +47,4 @@ const init = async () => {
     effective_year SMALLINT NOT NULL, effective_month SMALLINT NOT NULL CHECK (effective_month BETWEEN 1 AND 12), created_at TIMESTAMPTZ DEFAULT now())`);
   await lockDown(pool, ['budgets']);
 };
-module.exports = { name: 'budgets', router, init };
+module.exports = { name: 'budgets', router, init, statusFor };

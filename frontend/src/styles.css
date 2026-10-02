@@ -237,8 +237,20 @@ input:focus,select:focus{border-color:var(--c2);outline:2px solid var(--g1);outl
 .loading-spinner{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--c2);border-radius:50%;animation:loading-spin .75s linear infinite}
 @keyframes loading-spin{to{transform:rotate(360deg)}}
 .sheet{background:#fff;border-radius:22px;width:min(580px,100%);max-height:92vh;overflow:auto;padding:1.1rem 1.25rem 1.25rem;box-shadow:0 20px 60px rgba(62,39,35,.35)}
+.sheet:has(.report-modal-body){width:min(840px,100%)}
 .sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}.sheet-h h2{font-size:1.15rem}
 .sheet-f{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem}
+.report-modal-body{font-size:.88rem;line-height:1.5}
+.report-modal-body h1{font-size:1.25rem;margin:0 0 .3rem}
+.report-modal-body h2{font-size:1.05rem;margin:1.3rem 0 .5rem;padding-top:.8rem;border-top:1px solid var(--line)}
+.report-modal-body h2:first-of-type{border-top:none;padding-top:0;margin-top:.6rem}
+.report-modal-body h3{font-size:.92rem;margin:.9rem 0 .4rem;color:var(--muted)}
+.report-modal-body p{margin:.4rem 0}
+.report-modal-body ul{margin:.3rem 0 .6rem 1.1rem;padding:0}
+.report-modal-body li{margin:.2rem 0}
+.report-modal-body table{width:100%;border-collapse:collapse;margin:.4rem 0 .8rem;display:block;overflow-x:auto;white-space:nowrap}
+.report-modal-body th,.report-modal-body td{padding:.4rem .6rem;border-bottom:1px solid var(--line);text-align:left;font-size:.84rem}
+.report-modal-body th{color:var(--muted);font-weight:700}
 
 /* calendar + prayer */
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
