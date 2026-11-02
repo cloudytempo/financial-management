@@ -10,6 +10,12 @@ export const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).p
 export const fmt = (n: number) => 'RM ' + (n || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const errMsg = (e: any) => e?.error?.error || 'Something went wrong. Try again.';
 
+export function downloadBlob(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+}
+
 export const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 // Downscales to fit the server's 150 KB cap; WebP keeps QR edges sharp at small sizes.
 export async function shrinkImage(file: File, maxBytes = 140 * 1024): Promise<Blob> {

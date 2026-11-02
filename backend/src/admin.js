@@ -2,7 +2,8 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('./db');
-const { wrap, lockDown } = require('./util');
+const { wrap, lockDown, logActivity } = require('./util');
+const { systemExport } = require('./exporter');
 const SECRET = process.env.JWT_SECRET;
 const adminAuthRouter = express.Router();
 const adminRouter = express.Router();
@@ -233,6 +234,12 @@ adminRouter.put('/reports/:id', wrap(async (req, res) => {
   } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
   report.reviewed_by_admin = req.admin.email;
   res.json(report);
+}));
+
+adminRouter.get('/export', wrap(async (req, res) => {
+  const ext = await systemExport(req, res);
+  await logActivity(pool, 'system_data_exported', null, null, null, { actor_name: req.admin.email, household_name: 'All households', format: ext === 'zip' ? 'CSV' : 'Excel' })
+    .catch((e) => console.error(e));
 }));
 
 module.exports = { adminAuthRouter, adminRouter, initAdminSchema, requireAdmin };

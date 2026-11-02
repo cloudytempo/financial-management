@@ -9,7 +9,7 @@ import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { TranslatePipe } from '../../shared/translate.pipe';
 import { SkeletonComponent } from '../../shared/skeleton.component';
-import { errMsg } from '../../shared/util';
+import { errMsg, downloadBlob } from '../../shared/util';
 import { renderMarkdown } from '../../shared/markdown';
 
 @Component({
@@ -107,6 +107,17 @@ import { renderMarkdown } from '../../shared/markdown';
     <p class="sub">{{ 'Generate a readable financial report covering income, expenses, budgets, bills, installments and goals for this household.' | tr }}</p>
     @if (reportError) { <div class="err small" style="margin-top:.5rem">{{ reportError | tr }}</div> }
     <button class="btn" type="button" style="margin-top:.6rem" [disabled]="reportLoading" (click)="generateReport()">{{ (reportLoading ? 'Generating…' : 'Generate report') | tr }}</button>
+  </section>
+
+  <section class="card settings-panel" aria-labelledby="export-title">
+    <h2 id="export-title">{{ 'Export data' | tr }}</h2>
+    <p class="sub">{{ 'Download every record for this household as Excel or CSV. Contact QR images are not included.' | tr }}</p>
+    <div class="seg" role="group" [attr.aria-label]="'Export format' | tr" style="margin-top:.6rem">
+      <button type="button" [class.on]="exportFormat === 'xlsx'" (click)="exportFormat = 'xlsx'">Excel</button>
+      <button type="button" [class.on]="exportFormat === 'csv'" (click)="exportFormat = 'csv'">CSV</button>
+    </div>
+    @if (exportError) { <div class="err small" style="margin-top:.5rem">{{ exportError | tr }}</div> }
+    <button class="btn" type="button" style="margin-top:.6rem" [disabled]="exporting" (click)="exportData()">{{ (exporting ? 'Exporting…' : 'Export my household data') | tr }}</button>
   </section>
 
   <section class="card settings-panel" aria-labelledby="language-title">
@@ -208,6 +219,7 @@ export class SettingsComponent implements OnInit {
   activity: any[] = []; activityLoading = true;
   profile: any = { phone: '', birthday: '', bio: '' }; profileError = ''; profileSaved = false;
   reportLoading = false; reportError = ''; showReportModal = false; reportMarkdown = ''; reportHtml: any = '';
+  exportFormat: 'xlsx' | 'csv' = 'xlsx'; exporting = false; exportError = '';
   get isOwner() { return this.members.some((member) => member.id === this.auth.user()?.id && member.is_owner); }
   get otherMembers() { return this.members.filter((member) => member.id !== this.auth.user()?.id); }
   ngOnInit() {
@@ -298,6 +310,14 @@ export class SettingsComponent implements OnInit {
         this.showReportModal = true;
       },
       error: (e) => { this.reportError = errMsg(e); this.reportLoading = false; },
+    });
+  }
+  exportData() {
+    this.exportError = ''; this.exporting = true;
+    const ext = this.exportFormat === 'csv' ? 'zip' : 'xlsx';
+    this.api.getBlob('/export?format=' + this.exportFormat).subscribe({
+      next: (blob) => { downloadBlob(blob, `homint-household-${new Date().toISOString().slice(0, 10)}.${ext}`); this.exporting = false; this.loadActivity(); },
+      error: () => { this.exportError = 'Something went wrong. Try again.'; this.exporting = false; },
     });
   }
   downloadReportMarkdown() {
