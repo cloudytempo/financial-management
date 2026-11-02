@@ -7,6 +7,8 @@ const MALAY: Record<string, string> = {
   'Sign out': 'Log keluar', 'System admin': 'Pentadbir sistem', 'Income': 'Pendapatan', 'Expenses': 'Perbelanjaan', 'Budget': 'Bajet',
   'Bills': 'Bil', 'Installments': 'Ansuran', 'Goals': 'Matlamat', 'Calendar': 'Kalendar', 'Contacts': 'Kenalan', 'More': 'Lagi',
   'Language': 'Bahasa', 'Choose your language': 'Pilih bahasa anda', 'English': 'English', 'Bahasa Melayu': 'Bahasa Melayu', 'Loading': 'Memuatkan',
+  'Please wait…': 'Sila tunggu…', 'Payment QR': 'QR pembayaran', 'Choose QR image': 'Pilih imej QR', 'Remove QR': 'Buang QR',
+  'Choose a PNG, JPEG or WebP image.': 'Pilih imej PNG, JPEG atau WebP.', 'The image could not be read.': 'Imej tidak dapat dibaca.',
   'Powered by CloudyTempo · © 2026 All rights reserved.': 'Dikuasakan oleh CloudyTempo · © 2026 Hak cipta terpelihara.',
   'Manage your household and workspace': 'Urus isi rumah dan ruang kerja anda', 'Household': 'Isi rumah', 'Members': 'Ahli',
   'Loading members...': 'Memuatkan ahli...', 'Could not load household members.': 'Tidak dapat memuatkan ahli isi rumah.',

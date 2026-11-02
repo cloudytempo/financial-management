@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Auth } from '../../core/auth.service';
+import { Loading } from '../../core/loading.service';
 import { IconComponent } from '../../shared/icon.component';
 import { errMsg } from '../../shared/util';
 import { TranslatePipe } from '../../shared/translate.pipe';
@@ -55,7 +56,7 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   </div><footer class="brand-footer login-brand-footer">{{ 'Powered by CloudyTempo · © 2026 All rights reserved.' | tr }}</footer></div>`,
 })
 export class AuthComponent {
-  private auth = inject(Auth); private router = inject(Router);
+  private auth = inject(Auth); private router = inject(Router); private loading = inject(Loading);
   mode: 'signin' | 'signup' | 'reset' | 'reactivate' = 'signin';
   name = ''; email = ''; password = ''; confirm = ''; error = ''; info = '';
   showPassword = false; showHouseholdPassword = false; showConfirm = false;
@@ -73,17 +74,19 @@ export class AuthComponent {
     }
     if (this.mode === 'reactivate') {
       if (this.password !== this.confirm) { this.error = 'The two passwords do not match.'; return; }
+      this.loading.start();
       this.auth.reactivate(this.reactivationToken, this.password).subscribe({
-        next: (r) => this.router.navigate([r.user.household ? '/dashboard' : '/settings']), error: fail,
+        next: (r) => this.router.navigate([r.user.household ? '/dashboard' : '/settings']).finally(() => this.loading.finish()), error: (e) => { this.loading.finish(); fail(e); },
       });
       return;
     }
     const obs = this.mode === 'signup'
       ? this.auth.signup(this.name, this.email, this.password, this.householdMode, this.householdName, this.householdPassword, this.householdId, this.householdAddress)
       : this.auth.login(this.email, this.password);
+    this.loading.start();
     obs.subscribe({ next: (r) => {
-      if (r.reactivationRequired) { this.reactivationToken = r.token; this.mode = 'reactivate'; this.password = ''; return; }
-      this.router.navigate([r.user.household ? '/dashboard' : '/settings']);
-    }, error: fail });
+      if (r.reactivationRequired) { this.reactivationToken = r.token; this.mode = 'reactivate'; this.password = ''; this.loading.finish(); return; }
+      this.router.navigate([r.user.household ? '/dashboard' : '/settings']).finally(() => this.loading.finish());
+    }, error: (e) => { this.loading.finish(); fail(e); } });
   }
 }

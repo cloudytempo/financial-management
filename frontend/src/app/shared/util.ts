@@ -9,6 +9,24 @@ export const eventColor = (t: string) => EVENT_TYPES.find((x) => x.name === t)?.
 export const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export const fmt = (n: number) => 'RM ' + (n || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const errMsg = (e: any) => e?.error?.error || 'Something went wrong. Try again.';
+
+export const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+// Downscales to fit the server's 150 KB cap; WebP keeps QR edges sharp at small sizes.
+export async function shrinkImage(file: File, maxBytes = 140 * 1024): Promise<Blob> {
+  const bmp = await createImageBitmap(file);
+  try {
+    for (const max of [480, 320, 220]) {
+      const s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(bmp.width * s)); c.height = Math.max(1, Math.round(bmp.height * s));
+      const g = c.getContext('2d')!;
+      g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+      const blob = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/webp', 0.85));
+      if (blob && IMAGE_TYPES.includes(blob.type) && blob.size <= maxBytes) return blob;
+    }
+  } finally { bmp.close(); }
+  throw new Error('image too large');
+}
 export const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
 export function typeIcon(t: string): string {
   const s = (t || '').toLowerCase();

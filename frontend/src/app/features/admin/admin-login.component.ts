@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Auth } from '../../core/auth.service';
+import { Loading } from '../../core/loading.service';
 import { IconComponent } from '../../shared/icon.component';
 import { errMsg } from '../../shared/util';
 import { TranslatePipe } from '../../shared/translate.pipe';
@@ -24,13 +25,13 @@ import { TranslatePipe } from '../../shared/translate.pipe';
   </form><footer class="brand-footer login-brand-footer">{{ 'Powered by CloudyTempo · © 2026 All rights reserved.' | tr }}</footer></div>`,
 })
 export class AdminLoginComponent {
-  private auth = inject(Auth); private router = inject(Router);
+  private auth = inject(Auth); private router = inject(Router); private loading = inject(Loading);
   email = 'admin@homint.com'; password = ''; error = ''; busy = false; showPassword = false;
   login() {
-    this.error = ''; this.busy = true;
+    this.error = ''; this.busy = true; this.loading.start();
     this.auth.adminLogin(this.email, this.password).subscribe({
-      next: () => this.router.navigate(['/admin/dashboard']),
-      error: (e) => { this.error = errMsg(e); this.busy = false; },
+      next: () => this.router.navigate(['/admin/dashboard']).finally(() => this.loading.finish()),
+      error: (e) => { this.error = errMsg(e); this.busy = false; this.loading.finish(); },
     });
   }
 }

@@ -35,5 +35,7 @@ export class Api {
   post<T>(u: string, b: any) { return this.invalidate(this.http.post<T>('/api' + u, b)); }
   put<T>(u: string, b: any) { return this.invalidate(this.http.put<T>('/api' + u, b)); }
   upload<T>(u: string, f: File) { return this.invalidate(this.http.post<T>('/api' + u, f, { headers: { 'Content-Type': 'application/octet-stream' } })); }
+  putBlob<T>(u: string, b: Blob) { return this.invalidate(this.http.put<T>('/api' + u, b, { headers: { 'Content-Type': b.type } })); }
+  getBlob(u: string) { return this.http.get('/api' + u, { responseType: 'blob' }); }
   del(u: string) { return this.invalidate(this.http.delete('/api' + u)); }
 }

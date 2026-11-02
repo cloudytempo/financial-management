@@ -2,11 +2,13 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpInterceptorFn } from '@angular/common/http';
 import { CanActivateFn, Router } from '@angular/router';
 import { catchError, tap, throwError } from 'rxjs';
+import { Loading } from './loading.service';
 
 @Injectable({ providedIn: 'root' })
 export class Auth {
   private http = inject(HttpClient);
   private router = inject(Router);
+  private loading = inject(Loading);
   token = signal<string | null>(localStorage.getItem('token'));
   user = signal<any>(JSON.parse(localStorage.getItem('user') || 'null'));
   adminToken = signal<string | null>(localStorage.getItem('admin_token'));
@@ -62,15 +64,25 @@ export class Auth {
     localStorage.setItem('admin_user', JSON.stringify(r.user));
     this.adminToken.set(r.token); this.adminUser.set(r.user);
   }
-  logout() {
-    localStorage.removeItem('token'); localStorage.removeItem('user');
-    this.token.set(null); this.user.set(null);
-    this.router.navigate(['/login']);
+  logout(animate = true) {
+    const done = () => {
+      localStorage.removeItem('token'); localStorage.removeItem('user');
+      this.token.set(null); this.user.set(null);
+      return this.router.navigate(['/login']);
+    };
+    if (animate) this.withLoading(done); else done();
   }
   logoutAdmin() {
-    localStorage.removeItem('admin_token'); localStorage.removeItem('admin_user');
-    this.adminToken.set(null); this.adminUser.set(null);
-    this.router.navigate(['/admin/login']);
+    this.withLoading(() => {
+      localStorage.removeItem('admin_token'); localStorage.removeItem('admin_user');
+      this.adminToken.set(null); this.adminUser.set(null);
+      return this.router.navigate(['/admin/login']);
+    });
+  }
+  // Keeps the overlay visible briefly so the sign-out feels acknowledged even when navigation is instant.
+  private withLoading(action: () => Promise<unknown>) {
+    this.loading.start();
+    setTimeout(() => action().finally(() => this.loading.finish()), 500);
   }
   requireHouseholdSelection() {
     const user = this.user();
@@ -99,7 +111,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const r = t && req.url.startsWith('/api') ? req.clone({ setHeaders: { Authorization: `Bearer ${t}` } }) : req;
   return next(r).pipe(catchError((e) => {
     if (e.status === 401 && adminApi) auth.logoutAdmin();
-    else if (e.status === 401 && !req.url.includes('/auth/')) auth.logout();
+    else if (e.status === 401 && !req.url.includes('/auth/')) auth.logout(false);
     else if (e.status === 409 && e.error?.error === 'Choose an active household to continue.') auth.requireHouseholdSelection();
     return throwError(() => e);
   }));

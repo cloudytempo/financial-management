@@ -1,9 +1,10 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { of } from 'rxjs';
 import { Api } from '../../core/api.service';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
-import { errMsg } from '../../shared/util';
+import { errMsg, IMAGE_TYPES, shrinkImage } from '../../shared/util';
 import { TranslatePipe } from '../../shared/translate.pipe';
 import { Language } from '../../core/language.service';
 import { SkeletonComponent } from '../../shared/skeleton.component';
@@ -37,6 +38,7 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
           <div class="s">{{ c.phone }}@if (c.notes) { · {{ c.notes }} }</div></div>
         <button class="icon-btn" (click)="fav(c)" [attr.aria-label]="c.favorite ? 'Remove from favourites' : 'Add to favourites'" [style.color]="c.favorite ? '#F9A825' : ''">
           <app-icon name="star" [size]="20" /></button>
+        @if (c.has_qr) { <button class="icon-btn" (click)="viewQr(c)" [attr.aria-label]="'Payment QR' | tr" [title]="'Payment QR' | tr"><app-icon name="qr" [size]="18" /></button> }
         <a class="btn green sm" [href]="tel(c.phone)" [attr.aria-label]="'Call' | tr"><app-icon name="call" [size]="16" /><span class="hide-sm">{{ 'Call' | tr }}</span></a>
         <a class="icon-btn" [href]="wa(c.phone)" target="_blank" rel="noopener" [attr.aria-label]="'WhatsApp' | tr"><app-icon name="message" [size]="18" /></a>
         <button class="icon-btn" (click)="edit(c)" [attr.aria-label]="'Edit' | tr"><app-icon name="pencil" [size]="18" /></button>
@@ -53,16 +55,25 @@ import { SkeletonComponent } from '../../shared/skeleton.component';
         <label class="full">{{ 'Category' | tr }}<select name="cat" [(ngModel)]="form.category">@for (c of cats; track c) { <option [ngValue]="c">{{ c | tr }}</option> }</select></label>
         <label class="full">{{ 'Notes' | tr }}<input name="notes" [(ngModel)]="form.notes" [placeholder]="'e.g. TNB careline, plumber' | tr"></label>
         <label class="check full"><input type="checkbox" name="fav" [(ngModel)]="form.favorite"> {{ 'Show on dashboard (quick call)' | tr }}</label>
+        <div class="full">
+          <label>{{ 'Payment QR' | tr }}<input type="file" name="qr" accept="image/png,image/jpeg,image/webp" (change)="pickQr($event)"></label>
+          @if (qrPreview) { <img [src]="qrPreview" alt="" style="display:block;margin-top:.5rem;width:120px;height:120px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:8px"> }
+          @if (qrPreview || (form.has_qr && !removeQr)) { <button type="button" class="btn ghost sm" style="margin-top:.4rem" (click)="clearQr()">{{ 'Remove QR' | tr }}</button> }
+        </div>
       </div>
       @if (error) { <div class="err" style="margin-top:.6rem">{{ error | tr }}</div> }
       <div class="sheet-f"><button type="button" class="btn ghost" (click)="showForm = false">{{ 'Cancel' | tr }}</button><button type="submit" class="btn">{{ (form.id ? 'Save changes' : 'Add contact') | tr }}</button></div>
     </form>
+  </app-modal>
+  <app-modal [open]="!!qrView" [title]="qrView?.name || ''" (closed)="closeQr()">
+    @if (qrView) { <img [src]="qrView.url" [alt]="'Payment QR' | tr" style="display:block;margin:0 auto;width:100%;max-width:360px;background:#fff"> }
   </app-modal>`,
 })
 export class ContactsComponent implements OnInit {
   private api = inject(Api); private language = inject(Language);
   cats = ['Family', 'Emergency', 'Utilities', 'Services', 'Work', 'Other'];
   items: any[] = []; q = ''; cat = ''; loading = true; showForm = false; error = ''; form: any = this.blank();
+  qrBlob: Blob | null = null; qrPreview = ''; removeQr = false; qrView: { name: string; url: string } | null = null;
   get hasEmergency() { return this.items.some((c) => c.category === 'Emergency'); }
   get shown() {
     const q = this.q.trim().toLowerCase();
@@ -73,11 +84,31 @@ export class ContactsComponent implements OnInit {
   wa(p: string) { const d = p.replace(/[^\d+]/g, ''); return 'https://wa.me/' + (d.startsWith('+') ? d.slice(1) : d.startsWith('0') ? '60' + d.slice(1) : d); } // Malaysian 01x numbers -> 601x
   ngOnInit() { this.load(); }
   load() { this.loading = true; this.api.get<any[]>('/contacts').subscribe({ next: (r) => { this.items = r; this.loading = false; }, error: (e) => { this.error = errMsg(e); this.loading = false; } }); }
-  openForm() { this.form = this.blank(); this.error = ''; this.showForm = true; }
-  edit(c: any) { this.form = { ...c }; this.error = ''; this.showForm = true; }
+  openForm() { this.form = this.blank(); this.resetQr(); this.error = ''; this.showForm = true; }
+  edit(c: any) { this.form = { ...c }; this.resetQr(); this.error = ''; this.showForm = true; }
+  private resetQr() { if (this.qrPreview) URL.revokeObjectURL(this.qrPreview); this.qrBlob = null; this.qrPreview = ''; this.removeQr = false; }
+  async pickQr(ev: Event) {
+    const input = ev.target as HTMLInputElement, file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!IMAGE_TYPES.includes(file.type) || file.size > 10 * 1024 * 1024) { this.error = 'Choose a PNG, JPEG or WebP image.'; return; }
+    try {
+      const blob = await shrinkImage(file);
+      this.resetQr(); this.qrBlob = blob; this.qrPreview = URL.createObjectURL(blob); this.error = '';
+    } catch { this.error = 'The image could not be read.'; }
+  }
+  clearQr() { this.resetQr(); this.removeQr = true; }
+  viewQr(c: any) {
+    this.api.getBlob('/contacts/' + c.id + '/qr').subscribe({ next: (b) => (this.qrView = { name: c.name, url: URL.createObjectURL(b) }), error: (e) => (this.error = errMsg(e)) });
+  }
+  closeQr() { if (this.qrView) URL.revokeObjectURL(this.qrView.url); this.qrView = null; }
   save() {
-    const f = this.form, req = f.id ? this.api.put('/contacts/' + f.id, f) : this.api.post('/contacts', f);
-    req.subscribe({ next: () => { this.showForm = false; this.load(); }, error: (e) => (this.error = errMsg(e)) });
+    const f = this.form, req = f.id ? this.api.put<any>('/contacts/' + f.id, f) : this.api.post<any>('/contacts', f);
+    req.subscribe({ next: (r: any) => {
+      const id = f.id ?? r.id;
+      const qr = this.qrBlob ? this.api.putBlob('/contacts/' + id + '/qr', this.qrBlob) : this.removeQr && f.has_qr ? this.api.del('/contacts/' + id + '/qr') : of(null);
+      qr.subscribe({ next: () => { this.showForm = false; this.load(); }, error: (e) => { f.id = id; this.error = errMsg(e); this.load(); } });
+    }, error: (e) => (this.error = errMsg(e)) });
   }
   fav(c: any) { this.api.put('/contacts/' + c.id, { ...c, favorite: !c.favorite }).subscribe(() => this.load()); }
   remove(c: any) { if (confirm(`${this.language.text('Delete')} ${c.name}?`)) this.api.del('/contacts/' + c.id).subscribe(() => this.load()); }
